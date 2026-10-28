@@ -48,7 +48,7 @@ let isServerReady = false;
 const serverReadyPromise = new Promise(async (resolve) => {
     try {
         const start = Date.now();
-        await fetch(`${API_URL}/`);
+        await fetch(`${API_URL}/ping`).catch(() => fetch(`${API_URL}/`));
         isServerReady = true;
         console.log(`[ALFAAZ] Backend Pulse: OK (${Date.now() - start}ms)`);
         resolve(true);

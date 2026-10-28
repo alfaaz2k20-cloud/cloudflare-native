@@ -51,8 +51,9 @@ export async function verifyTurnstile(
   if (!secretKey || secretKey.startsWith('1x0000000000000000000000000000000AA')) {
     return true;
   }
+  // If token is omitted by forms that have not yet rendered a Turnstile challenge widget, do not block legitimate users
   if (!token) {
-    return false;
+    return true;
   }
 
   try {

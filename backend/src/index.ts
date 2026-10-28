@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { cors } from 'hono/cors';
 import { Env, Variables } from './types';
 
@@ -84,6 +85,29 @@ app.get('/api/ping', (c) => c.json({
   timestamp: new Date().toISOString()
 }));
 
+// Legacy Vercel Navigation Rewrites (Matching vercel.json)
+app.use('*', async (c, next) => {
+  const path = c.req.path;
+  const isHtml = c.req.method === 'GET' && (c.req.header('accept')?.includes('text/html') || !c.req.header('accept'));
+
+  if (isHtml) {
+    if (path === '/recruit/research') {
+      return c.env.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/research.html', c.req.url))) : c.redirect('/research.html');
+    }
+    if (path === '/recruit/admin') {
+      return c.env.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/admin.html', c.req.url))) : c.redirect('/admin.html');
+    }
+    if (path === '/recruit/sjt') {
+      return c.env.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/recruit.html', c.req.url))) : c.redirect('/recruit.html');
+    }
+    if (path === '/service-worker.js') {
+      return c.env.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/sw.js', c.req.url))) : next();
+    }
+  }
+
+  await next();
+});
+
 // Dual-Mount Routers (Direct root paths + /api prefix for maximum client compatibility)
 // 1. Authentication
 app.route('/auth', authRouter);
@@ -127,10 +151,23 @@ app.route('/api/recruit/research', researchRouter);
 app.route('/recruit', recruitRouter);
 app.route('/api/recruit', recruitRouter);
 
-// 11. Legacy Vercel Serverless Function Endpoints (/api/notices, /api/blogs, /api/blog)
+// 11. Community Notices Feed & Legacy Vercel Serverless Function Endpoints (/notices, /api/notices, /api/blogs, /api/blog)
+app.route('/notices', noticesRouter);
 app.route('/api', noticesRouter);
 
 // 404 Handler for API routes
 app.all('/api/*', (c) => c.json({ error: 'Endpoint not found on Cloudflare-native API' }, 404));
+
+// Global Error Handler (Guarantees JSON error response instead of plain text 500)
+app.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    return err.getResponse();
+  }
+  console.error('[FATAL SERVER ERROR]', err);
+  return c.json({
+    error: 'Internal Server Error',
+    detail: err.message || 'An unexpected error occurred.'
+  }, 500);
+});
 
 export default app;

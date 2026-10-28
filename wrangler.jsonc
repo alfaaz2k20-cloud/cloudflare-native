@@ -1,40 +1,35 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "alfaaz-cloudflare-native",
-  "main": "backend/src/index.ts",
-  "compatibility_date": "2024-11-01",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
-  "assets": {
-    "directory": "./frontend/dist",
-    "binding": "ASSETS",
-    "html_handling": "auto-trailing-slash",
-    "not_found_handling": "404-page"
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "alfaaz-d1",
-      "database_id": "00000000-0000-0000-0000-000000000000",
-      "migrations_dir": "database/migrations"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "VAULT_BUCKET",
-      "bucket_name": "alfaaz-vault"
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "CACHE_KV",
-      "id": "alfaaz-cache-kv"
-    }
-  ],
-  "vars": {
-    "ENV": "development",
-    "FRONTEND_URL": "http://localhost:8787",
-    "EMAIL_PROVIDER": "dev"
-  }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "alfaaz-cloudflare-native",
+	"main": "backend/src/index.ts",
+	"compatibility_date": "2024-11-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": "./frontend/dist",
+		"binding": "ASSETS",
+		"html_handling": "auto-trailing-slash",
+		"not_found_handling": "404-page"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "alfaaz-d1",
+			"database_id": "28a3ae5b-4d30-4e04-8c95-d764588e72f5",
+			"migrations_dir": "database/migrations"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "CACHE_KV",
+			"id": "a199adbc0269462b9227f908a80025e2"
+		}
+	],
+	"vars": {
+		"ENV": "production",
+		"FRONTEND_URL": "https://alfaaz-cloudflare-native.alfaaz2k20.workers.dev",
+		"JWT_SECRET": "Alfaaz-Production-Master-Secret-Key-2026-!SecureJWT#",
+		"EMAIL_PROVIDER": "dev"
+	}
 }

@@ -1,10 +1,10 @@
-import { Hono } from 'hono';
+import { Hono, Context } from 'hono';
 import { Env, Variables } from '../types';
 
 const noticesRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// GET /api/notices - Live community notices feed for landing page
-noticesRouter.get('/notices', async (c) => {
+// Handler for live community notices feed
+async function handleNotices(c: Context<{ Bindings: Env; Variables: Variables }>) {
   // Query active open events
   const eventsResult = await c.env.DB.prepare(`
     SELECT e.id, e.name, e.event_date, e.description, e.capacity,
@@ -42,9 +42,29 @@ noticesRouter.get('/notices', async (c) => {
     about_text: exhRow.about_text
   } : null;
 
+  // Query latest published blog matching cdn.py behavior
+  const blogRow = await c.env.DB.prepare(`
+    SELECT id, title, excerpt, created_at
+    FROM blogs
+    WHERE is_published = 1
+    ORDER BY created_at DESC
+    LIMIT 1
+  `).first<{ id: number; title: string; excerpt: string; created_at: string }>();
+
+  const latest_blog = blogRow ? {
+    id: blogRow.id,
+    title: blogRow.title,
+    excerpt: blogRow.excerpt,
+    created_at: blogRow.created_at
+  } : null;
+
   c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
-  return c.json({ events, exhibition });
-});
+  return c.json({ events, exhibition, latest_blog });
+}
+
+// Support both GET /notices and GET / (when mounted at /notices or /api/notices)
+noticesRouter.get('/notices', handleNotices);
+noticesRouter.get('/', handleNotices);
 
 // GET /api/blogs - Legacy Vercel endpoint: List all published blogs
 noticesRouter.get('/blogs', async (c) => {

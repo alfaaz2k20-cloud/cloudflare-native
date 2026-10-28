@@ -699,5 +699,26 @@ describe('Real Route-Level D1 SQLite & R2 Integration Test Suite', () => {
       expect(appRow.full_name).toBe('Amrita Sher-Gil');
       expect(appRow.status).toBe('PENDING');
     });
+
+    it('GET /api/notices returns live notice feed matching schema { events, exhibition, latest_blog }', async () => {
+      // Seed a test blog
+      await mockDb.prepare('INSERT INTO blogs (title, excerpt, content, is_published) VALUES (?, ?, ?, 1)')
+        .bind('Kashmiri Aesthetic Modernism', 'A deep contemplation on art', 'Full content here')
+        .run();
+
+      const res = await app.request('/api/notices', { method: 'GET' }, getTestEnv());
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data).toHaveProperty('events');
+      expect(data).toHaveProperty('exhibition');
+      expect(data).toHaveProperty('latest_blog');
+      expect(Array.isArray(data.events)).toBe(true);
+      expect(data.latest_blog).not.toBeNull();
+      expect(data.latest_blog.title).toBeTruthy();
+
+      // Test dual-mount /notices as well
+      const dualRes = await app.request('/notices', { method: 'GET' }, getTestEnv());
+      expect(dualRes.status).toBe(200);
+    });
   });
 });
