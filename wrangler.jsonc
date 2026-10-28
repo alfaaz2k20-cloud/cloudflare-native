@@ -12,6 +12,7 @@
 		"html_handling": "auto-trailing-slash",
 		"not_found_handling": "404-page"
 	},
+	"workers_dev": true,
 	"d1_databases": [
 		{
 			"binding": "DB",
@@ -28,7 +29,7 @@
 	],
 	"vars": {
 		"ENV": "production",
-		"FRONTEND_URL": "https://alfaaz-cloudflare-native.alfaaz2k20.workers.dev",
+		"FRONTEND_URL": "https://alfaazcollective.org",
 		"JWT_SECRET": "Alfaaz-Production-Master-Secret-Key-2026-!SecureJWT#",
 		"EMAIL_PROVIDER": "dev"
 	}
