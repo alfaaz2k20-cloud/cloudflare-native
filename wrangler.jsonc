@@ -13,6 +13,12 @@
 		"not_found_handling": "404-page"
 	},
 	"workers_dev": true,
+	"routes": [
+		{
+			"pattern": "alfaazcollective.org",
+			"custom_domain": true
+		}
+	],
 	"d1_databases": [
 		{
 			"binding": "DB",

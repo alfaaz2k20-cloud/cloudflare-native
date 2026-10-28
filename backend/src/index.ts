@@ -87,21 +87,25 @@ app.get('/api/ping', (c) => c.json({
 
 // Legacy Vercel Navigation Rewrites (Matching vercel.json)
 app.use('*', async (c, next) => {
-  const path = c.req.path;
-  const isHtml = c.req.method === 'GET' && (c.req.header('accept')?.includes('text/html') || !c.req.header('accept'));
+  const path = c.req.path.replace(/\/+$/, '') || '/';
+  const method = c.req.method;
 
-  if (isHtml) {
-    if (path === '/recruit/research') {
-      return c.env.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/research.html', c.req.url))) : c.redirect('/research.html');
+  if (method === 'GET') {
+    if (path === '/recruit/sjt') {
+      return c.env?.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/recruit.html', c.req.url))) : c.redirect('/recruit.html');
     }
     if (path === '/recruit/admin') {
-      return c.env.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/admin.html', c.req.url))) : c.redirect('/admin.html');
+      return c.env?.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/admin.html', c.req.url))) : c.redirect('/admin.html');
     }
-    if (path === '/recruit/sjt') {
-      return c.env.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/recruit.html', c.req.url))) : c.redirect('/recruit.html');
+    if (path === '/recruit/research') {
+      const isJsonPreferred = c.req.header('accept')?.includes('application/json') && !c.req.header('accept')?.includes('text/html');
+      const hasAuth = Boolean(c.req.header('authorization'));
+      if (!hasAuth && !isJsonPreferred) {
+        return c.env?.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/research.html', c.req.url))) : c.redirect('/research.html');
+      }
     }
     if (path === '/service-worker.js') {
-      return c.env.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/sw.js', c.req.url))) : next();
+      return c.env?.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/sw.js', c.req.url))) : next();
     }
   }
 

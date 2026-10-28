@@ -6,7 +6,7 @@ FOUNDED: 2020 in Srinagar, Kashmir
 TAGLINE: Art • Literature • Culture
 MISSION: "A bridge between art, literature, and existence." Fostering contemplative, multidisciplinary spaces where raw creativity meets intimate collaboration. Celebrating valley artists, writers, poets, and visual practitioners through curated physical exhibitions, open forums, community gatherings, and digital archives.
 AESTHETIC & PHILOSOPHY: Total brutalist minimalism, high-contrast typography, spacious and unhurried contemplation. Rooted deeply in the Himalayan and Kashmiri consciousness while sustaining an open conversation with global artistic and philosophical movements.
-WEBSITE: https://alfaazcollective.vercel.app
+WEBSITE: https://alfaazcollective.org
 INSTAGRAM: https://www.instagram.com/alfaaz.2020 (Handle: @alfaaz.2020 / alfaaz2020)
 LINKTREE: https://linktr.ee/alfaaz2k20
 EMAIL: alfaaz2k20@gmail.com
