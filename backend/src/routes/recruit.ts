@@ -7,6 +7,8 @@ import { ingestTelemetryBatch } from '../services/telemetry';
 import { extractSessionFeatures } from '../services/features';
 import { integrateSessionEvidence } from '../services/evidence';
 import { getEmailProvider } from '../notifications/email';
+import { verifyTurnstile } from '../middleware/rate_limit';
+import { verifyToken, getJwtSecret } from '../auth/crypto';
 
 const recruitRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -38,6 +40,14 @@ async function requireConsentedSession(db: D1Database, sessionId: string) {
 // POST /recruit/consent - Step 0: Consent & counterbalanced Latin Square assignment
 recruitRouter.post('/consent', async (c) => {
   const body = await c.req.json().catch(() => ({}));
+
+  const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+  if (!turnstileValid) {
+    return c.json({ error: 'Turnstile verification failed. Please complete the security challenge.', detail: 'Turnstile verification failed.' }, 403);
+  }
+
   const confirmed18Plus = body.confirmed_18_plus !== undefined ? Boolean(body.confirmed_18_plus) : true;
   const choices = body.choices || {};
 
@@ -456,10 +466,10 @@ recruitRouter.post('/schedule-interview', async (c) => {
   });
 });
 
-// GET /recruit/interview-booking/:session_id - Get existing booking
+// GET /recruit/interview-booking/:session_id - Get existing booking (protected PII)
 recruitRouter.get('/interview-booking/:session_id', async (c) => {
   const sessionId = c.req.param('session_id');
-  const booking = await c.env.DB.prepare(`
+  const booking: any = await c.env.DB.prepare(`
     SELECT session_id, candidate_name, candidate_email, candidate_phone,
            slot_date, slot_time, slot_display, notes, created_at, status
     FROM interview_bookings
@@ -468,6 +478,36 @@ recruitRouter.get('/interview-booking/:session_id', async (c) => {
 
   if (!booking) {
     return c.json({ booking: null });
+  }
+
+  // Check optional auth header for admin privileges
+  const authHeader = c.req.header('Authorization');
+  let isAdmin = false;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.substring(7).trim();
+      const secret = getJwtSecret(c.env);
+      const payload = await verifyToken(token, secret);
+      if (payload && payload.status === 'ADMIN') {
+        isAdmin = true;
+      }
+    } catch {
+      // ignore token verification failure
+    }
+  }
+
+  // If unauthenticated caller, protect candidate PII (name, email, phone, notes)
+  if (!isAdmin) {
+    return c.json({
+      booking: {
+        session_id: booking.session_id,
+        slot_date: booking.slot_date,
+        slot_time: booking.slot_time,
+        slot_display: booking.slot_display,
+        status: booking.status,
+        created_at: booking.created_at
+      }
+    });
   }
 
   return c.json({ booking });

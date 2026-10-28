@@ -83,8 +83,9 @@ vaultRouter.post('/submit', requireAuth, async (c) => {
 });
 
 // GET /vault/file/:key - Serve uploaded file from Cloudflare R2
-vaultRouter.get('/file/:key{.*}', async (c) => {
-  const key = decodeURIComponent(c.req.param('key'));
+vaultRouter.get('/file/:key{.*}', requireAuth, async (c) => {
+  const rawKey = c.req.param('key') || '';
+  const key = decodeURIComponent(rawKey);
   if (!c.env.VAULT_BUCKET) {
     return c.text('R2 storage bucket not configured in this environment.', 503);
   }
@@ -97,7 +98,7 @@ vaultRouter.get('/file/:key{.*}', async (c) => {
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set('etag', object.httpEtag);
-  headers.set('cache-control', 'public, max-age=86400');
+  headers.set('cache-control', 'private, no-transform');
 
   return new Response(object.body, { headers });
 });

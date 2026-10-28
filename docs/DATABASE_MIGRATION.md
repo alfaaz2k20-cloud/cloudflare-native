@@ -107,24 +107,54 @@ When explicitly authorized to deploy to Cloudflare:
 2. Paste the assigned `database_id` into `wrangler.jsonc`.
 3. Apply migrations remotely:
    ```bash
-   npx wrangler d1 migrations apply DB --remote
-   ```
-4. Seed initial master administrator:
+4. Provision Initial Production Administrator:
+   *SECURITY MANDATE: NEVER execute development seed files (`database/seeds/0001_dev_seed.sql`) against any remote or production database.*
+   Development seeds contain publicly known testing credentials (`curator2026!`, `alfaaz2026!`). Production provisioning must apply schema migrations only.
+   
+   To provision the initial production administrator securely, run the standalone bootstrap script:
    ```bash
-   npx wrangler d1 execute DB --remote --file=database/seeds/0001_dev_seed.sql
+   npm run bootstrap:admin -- --email="admin@alfaazcollective.org"
    ```
+   Or pass credentials via environment variables:
+   ```bash
+   BOOTSTRAP_ADMIN_EMAIL="admin@alfaazcollective.org" npm run bootstrap:admin
+   ```
+   This generates a PBKDF2 Web Crypto hash with 100,000 iterations and a 16-byte random salt, outputting a safe SQL migration or inserting via Wrangler D1.
 
 ---
 
-## 5. Backup, Export & Disaster Recovery
+## 5. Non-Destructive Migrations & Repeatability Rules
 
-### 5.1 Exporting Database to SQL Dump
-Cloudflare D1 supports exporting schema and data directly:
+1. **Schema Migrations Only in Production:**
+   - Always run `npx wrangler d1 migrations apply DB --remote`.
+   - Never apply dev seeds remotely.
+2. **Strictly Non-Destructive DDL:**
+   - All migrations must use `CREATE TABLE IF NOT EXISTS` and `CREATE INDEX IF NOT EXISTS`.
+   - Never use `DROP TABLE` or destructive altering statements in production migration files.
+3. **Foreign Keys Enforcement:**
+   - Every migration must begin with `PRAGMA foreign_keys = ON;` to ensure relational integrity.
+
+---
+
+## 6. Backup, Export & Disaster Recovery
+
+### 6.1 Safe Data Migration Plan from Legacy Systems
+When migrating existing data from legacy databases (e.g. Render PostgreSQL / Supabase):
+1. Export legacy records into normalized JSON or CSV formatted dumps.
+2. Transform datetime fields into ISO 8601 UTC strings (`YYYY-MM-DDTHH:MM:SS.SSSZ`).
+3. Convert boolean values to `0` or `1`.
+4. Run validation checks to ensure foreign key parent records exist before inserting child records.
+5. Ingest data using batch SQL statements via `wrangler d1 execute DB --remote --file=legacy_import.sql` or the D1 REST API.
+
+### 6.2 Exporting Database to SQL Dump
+Cloudflare D1 supports exporting schema and data directly for automated backups:
 ```bash
 npx wrangler d1 export alfaaz-d1 --remote --output=backup_$(date +%Y%m%d).sql
 ```
 
-### 5.2 Restoring from SQL Dump
+### 6.3 Restoring from SQL Dump
+In a disaster recovery scenario:
 ```bash
 npx wrangler d1 execute alfaaz-d1 --remote --file=backup_20261028.sql
 ```
+

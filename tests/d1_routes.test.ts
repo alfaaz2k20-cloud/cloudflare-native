@@ -380,12 +380,22 @@ describe('Real Route-Level D1 SQLite & R2 Integration Test Suite', () => {
       const dupData: any = await dupRes.json();
       expect(dupData.detail).toContain('just taken');
 
-      // 4. Retrieve booking
-      const checkBooking = await app.request(`/recruit/interview-booking/${sId}`, {}, getTestEnv());
+      // 4. Retrieve booking (Admin retrieves full candidate PII; unauthenticated gets safe booking without PII)
+      const adminToken = await createToken('admin@alfaaz.com', 'ADMIN', jwtSecret);
+      const checkBooking = await app.request(`/recruit/interview-booking/${sId}`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      }, getTestEnv());
       expect(checkBooking.status).toBe(200);
       const bookingData: any = await checkBooking.json();
       expect(bookingData.booking).toBeDefined();
       expect(bookingData.booking.candidate_email).toBe('jalib@alfaaz.local');
+
+      // Unauthenticated caller cannot see candidate PII
+      const unauthCheck = await app.request(`/recruit/interview-booking/${sId}`, {}, getTestEnv());
+      const unauthData: any = await unauthCheck.json();
+      expect(unauthData.booking.candidate_email).toBeUndefined();
+      expect(unauthData.booking.candidate_phone).toBeUndefined();
+      expect(unauthData.booking.slot_display).toBeDefined();
     });
   });
 
@@ -639,9 +649,12 @@ describe('Real Route-Level D1 SQLite & R2 Integration Test Suite', () => {
       expect(subRow).toBeDefined();
       expect(subRow.file_url).toContain('/vault/file/');
 
-      // Now retrieve the file via the returned URL
-      const getFileRes = await app.request(subRow.file_url, {}, getTestEnv());
+      // Now retrieve the file via the returned URL (authenticated)
+      const getFileRes = await app.request(subRow.file_url, {
+        headers: { Authorization: `Bearer ${token}` }
+      }, getTestEnv());
       expect(getFileRes.status).toBe(200);
+      expect(getFileRes.headers.get('cache-control')).toContain('private');
       const fileContent = await getFileRes.text();
       expect(fileContent).toBe('Ye daagh daagh ujaala ye shab-gazeeda sahar');
     });

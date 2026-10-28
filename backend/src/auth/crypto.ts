@@ -1,6 +1,22 @@
 // Web Crypto API implementations for Password Hashing (PBKDF2) and JWT (HMAC-SHA256)
 // Zero external native dependencies — 100% Cloudflare Workers runtime compatible.
 
+import { Env } from '../types';
+
+export function getJwtSecret(env?: Env): string {
+  const nodeEnv = typeof (globalThis as any).process !== 'undefined' ? (globalThis as any).process.env?.NODE_ENV : undefined;
+  const isProd = (env?.ENVIRONMENT === 'production') ||
+                 (env?.ENV === 'production') ||
+                 (env?.NODE_ENV === 'production') ||
+                 (nodeEnv === 'production');
+
+  if (isProd && (!env?.JWT_SECRET || env.JWT_SECRET.trim() === '')) {
+    throw new Error('FATAL SECURITY ERROR: JWT_SECRET must be explicitly configured in production environment.');
+  }
+
+  return env?.JWT_SECRET || 'dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars';
+}
+
 function bufferToHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer))
     .map(b => b.toString(16).padStart(2, '0'))

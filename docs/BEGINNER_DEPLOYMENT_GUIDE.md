@@ -119,12 +119,28 @@ Run your schema migrations against the live Cloudflare D1 database:
 ```bash
 npx wrangler d1 migrations apply DB --remote
 ```
+*Note: Never execute development seed files (`database/seeds/0001_dev_seed.sql`) against remote production.*
 
-### Step 3.6: Configure Production Secrets
+### Step 3.6: Bootstrap Initial Production Administrator
+To create the initial production administrator securely without hardcoded credentials, run the bootstrap CLI:
+```bash
+npm run bootstrap:admin -- --email="admin@alfaazcollective.org"
+```
+Or specify a password and output SQL directly:
+```bash
+npm run bootstrap:admin -- --email="admin@alfaazcollective.org" --output-sql=admin_bootstrap.sql
+```
+Apply the generated SQL statement to your remote production D1 database:
+```bash
+npx wrangler d1 execute DB --remote --file=admin_bootstrap.sql
+```
+*Security note:* Delete `admin_bootstrap.sql` immediately after execution and store the generated administrator password in your secure password manager.
+
+### Step 3.7: Configure Production Secrets
 Set sensitive credentials using Wrangler encrypted secrets (they will never appear in code):
 ```bash
 npx wrangler secret put JWT_SECRET
-# Enter a random 64-character secret string
+# Enter a random 64-character secret string (MANDATORY: startup will fail if unset in production)
 
 npx wrangler secret put PHANTOM_SECRET_TOKEN
 # Enter a random secret token for Curator AI essay generation
@@ -139,7 +155,7 @@ npx wrangler secret put GROQ_API_KEY
 # (Optional) Enter your Groq API key from Groq Console
 ```
 
-### Step 3.7: Deploy to Cloudflare Edge
+### Step 3.8: Deploy to Cloudflare Edge
 Build both frontend and backend, then deploy:
 ```bash
 npm run build

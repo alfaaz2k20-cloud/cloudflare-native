@@ -12,9 +12,18 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     full_name TEXT,
-    status TEXT NOT NULL DEFAULT 'PARTICIPANT'
+    status TEXT NOT NULL DEFAULT 'PARTICIPANT',
+    password_reset_at DATETIME
 );
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- 1b. Consumed Password Reset Tokens (Replay Protection)
+CREATE TABLE IF NOT EXISTS consumed_tokens (
+    token_hash TEXT PRIMARY KEY,
+    consumed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_consumed_tokens_exp ON consumed_tokens(expires_at);
 
 -- 2. Administrative Audit Logs
 CREATE TABLE IF NOT EXISTS admin_audit_logs (
@@ -133,18 +142,7 @@ CREATE TABLE IF NOT EXISTS submissions (
 );
 CREATE INDEX IF NOT EXISTS idx_submissions_author ON submissions(author_email);
 
--- 10. Candidate Identity (Recruitment)
-CREATE TABLE IF NOT EXISTS applicant_identities (
-    session_id TEXT PRIMARY KEY,
-    full_name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    phone_or_contact TEXT,
-    linkedin_url TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_identities_email ON applicant_identities(email);
-
--- 11. Recruitment Sessions
+-- 10. Recruitment Sessions
 CREATE TABLE IF NOT EXISTS recruit_sessions (
     session_id TEXT PRIMARY KEY,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -162,6 +160,18 @@ CREATE TABLE IF NOT EXISTS recruit_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_sessions_status ON recruit_sessions(status);
 CREATE INDEX IF NOT EXISTS idx_sessions_created ON recruit_sessions(created_at DESC);
+
+-- 11. Candidate Identity (Recruitment)
+CREATE TABLE IF NOT EXISTS applicant_identities (
+    session_id TEXT PRIMARY KEY,
+    full_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone_or_contact TEXT,
+    linkedin_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES recruit_sessions(session_id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_identities_email ON applicant_identities(email);
 
 -- 12. Affirmative Consent Records
 CREATE TABLE IF NOT EXISTS consent_records (
@@ -372,9 +382,10 @@ CREATE TABLE IF NOT EXISTS interview_bookings (
     status TEXT NOT NULL DEFAULT 'SCHEDULED',
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (session_id) REFERENCES recruit_sessions(session_id) ON DELETE CASCADE
+    FOREIGN KEY (session_id) REFERENCES recruit_sessions(session_id) ON DELETE CASCADE,
+    UNIQUE(slot_date, slot_time)
 );
-CREATE INDEX IF NOT EXISTS idx_bookings_slot ON interview_bookings(slot_date, slot_time);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_slot ON interview_bookings(slot_date, slot_time);
 
 -- 25. Interview Settings
 CREATE TABLE IF NOT EXISTS interview_settings (

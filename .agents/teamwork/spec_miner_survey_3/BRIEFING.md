@@ -1,4 +1,4 @@
-# BRIEFING — 2026-10-28T11:05:00Z
+# BRIEFING — 2026-10-28T11:25:00Z
 
 ## Mission
 Probe authoritative Cloudflare-native specs, documentation, database schema integrity, free-tier limits, feature parity, security reviews, and beginner deployment guides to discover discrepancies, error modes, and gaps for the audit pass.
@@ -23,20 +23,22 @@ Probe authoritative Cloudflare-native specs, documentation, database schema inte
 
 ## Current Parent
 - Conversation ID: e0caba17-5a36-4219-a37c-98835d52c4b8
-- Updated: not yet
+- Updated: 2026-10-28T11:25:00Z
 
 ## Task Summary
 - **What to build**: Comprehensive survey report `survey_specs.md` and handoff report `handoff.md`.
 - **Success criteria**:
-  1. Full reconciliation of Free-tier limits in `docs/FREE_TIER_COSTS_AND_LIMITS.md` vs official Cloudflare specs (D1 storage 500MB vs 10GB, reads/writes, workers, R2, Turnstile, transactional email) and document error modes when quotas are exceeded.
-  2. Cross-check `docs/FEATURE_PARITY_MATRIX.md` against actual Hono routes, D1 queries, frontend controllers, and note psychometric disclaimer requirement.
-  3. Audit all 28 tables in `database/migrations/0001_initial_schema.sql` for foreign keys, cascade rules, unique indexes, SQLite compatibility, plus migration & backup procedures in `docs/DATABASE_MIGRATION.md`.
-  4. Inspect `docs/SECURITY_REVIEW.md` and `docs/BEGINNER_DEPLOYMENT_GUIDE.md` for gaps vs requirements.
+  1. Full reconciliation of Free-tier limits in `docs/FREE_TIER_COSTS_AND_LIMITS.md` vs official Cloudflare specs (D1 storage 500MB vs 10GB, reads/writes, workers, R2, Turnstile, transactional email) and document error modes when quotas are exceeded. [COMPLETED]
+  2. Cross-check `docs/FEATURE_PARITY_MATRIX.md` against actual Hono routes, D1 queries, frontend controllers, and note psychometric disclaimer requirement. [COMPLETED]
+  3. Audit all 25 tables in `database/migrations/0001_initial_schema.sql` for foreign keys, cascade rules, unique indexes, SQLite compatibility, plus migration & backup procedures in `docs/DATABASE_MIGRATION.md`. [COMPLETED]
+  4. Inspect `docs/SECURITY_REVIEW.md` and `docs/BEGINNER_DEPLOYMENT_GUIDE.md` for gaps vs requirements. [COMPLETED]
 - **Interface contracts**: `docs/*`, `ORIGINAL_REQUEST.md`, `database/migrations/*`, `src/*`.
 - **Code layout**: Read-only inspection; outputs in `.agents/teamwork/spec_miner_survey_3/`.
 
 ## Key Decisions Made
-- Will conduct exhaustive line-by-line verification of docs and schemas against codebase and official specs.
+- Confirmed test suite runs 65 tests cleanly using real SQLite in-memory (`DatabaseSync`).
+- Benchmarked PBKDF2: 100k iters (~104ms) vs 600k iters (~1044ms); 600k is incompatible with Worker 10ms CPU limit.
+- Documented D1 limit correction (500 MB per DB, not 10 GB), remote seed finding in `DATABASE_MIGRATION.md:114`, unauthenticated R2 access in `vault.ts`, missing FK in `applicant_identities`, non-unique index on `interview_bookings`, and unwired Turnstile.
 
 ## Artifact Index
 - DISPATCH.md — Initial dispatch assignment

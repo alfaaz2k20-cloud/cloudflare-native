@@ -1,5 +1,5 @@
 import { Context, Next } from 'hono';
-import { verifyToken } from '../auth/crypto';
+import { verifyToken, getJwtSecret } from '../auth/crypto';
 import { Env, JwtUserPayload } from '../types';
 
 export async function requireAuth(c: Context<{ Bindings: Env; Variables: { user: JwtUserPayload } }>, next: Next) {
@@ -9,7 +9,7 @@ export async function requireAuth(c: Context<{ Bindings: Env; Variables: { user:
   }
 
   const token = authHeader.substring(7).trim();
-  const secret = c.env.JWT_SECRET || 'dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars';
+  const secret = getJwtSecret(c.env);
 
   try {
     const payload = await verifyToken(token, secret);
@@ -30,7 +30,7 @@ export async function requireAdmin(c: Context<{ Bindings: Env; Variables: { user
   }
 
   const token = authHeader.substring(7).trim();
-  const secret = c.env.JWT_SECRET || 'dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars';
+  const secret = getJwtSecret(c.env);
 
   try {
     const payload = await verifyToken(token, secret) as JwtUserPayload;

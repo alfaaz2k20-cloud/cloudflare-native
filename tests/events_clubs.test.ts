@@ -1,152 +1,275 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import app from '../backend/src/index';
+import { createMockD1, createMockR2, createMockKV } from './helpers/d1_mock';
+import { createToken } from '../backend/src/auth/crypto';
 
-describe('Community Events & Collective Circles Subsystem', () => {
-  describe('Event Registration & Capacity Enforcement', () => {
-    interface EventRecord {
-      id: number;
-      name: string;
-      capacity: number;
-      registration_open: boolean;
-      registrations: string[];
-    }
+describe('Community Events & Collective Circles Subsystem (Real Route Integration)', () => {
+  let mockDb: ReturnType<typeof createMockD1>;
+  let mockR2: ReturnType<typeof createMockR2>;
+  let mockKv: ReturnType<typeof createMockKV>;
+  const jwtSecret = 'test-suite-super-secret-key-32-chars-long';
 
-    function attemptRegisterEvent(event: EventRecord, userEmail: string, whatsapp?: string) {
-      if (!event.registration_open) {
-        return { success: false, status: 400, error: 'Registration is closed for this event.' };
-      }
+  function getTestEnv() {
+    return {
+      DB: mockDb as any,
+      VAULT_BUCKET: mockR2 as any,
+      CACHE_KV: mockKv as any,
+      JWT_SECRET: jwtSecret,
+      ADMIN_PASSWORD: 'curator2026!',
+      EMAIL_PROVIDER: 'dev' as const
+    };
+  }
 
-      if (event.registrations.includes(userEmail)) {
-        return { success: false, status: 400, error: 'You are already registered for this gathering.' };
-      }
+  beforeEach(() => {
+    mockDb = createMockD1();
+    mockR2 = createMockR2();
+    mockKv = createMockKV();
+  });
 
-      if (event.capacity > 0 && event.registrations.length >= event.capacity) {
-        return { success: false, status: 400, error: 'Event is already at full capacity.' };
-      }
+  describe('Event Registration & Capacity Enforcement (/events/*)', () => {
+    it('successfully registers an authenticated user when capacity has space', async () => {
+      const userToken = await createToken('newuser@alfaaz.local', 'PARTICIPANT', jwtSecret);
 
-      event.registrations.push(userEmail);
-      return { success: true, status: 200, message: 'Registration confirmed.' };
-    }
+      // Event 1 is 'Harud Poetry Gathering' with capacity 30, open in dev seed
+      const res = await app.request('/events/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          event_id: 1,
+          whatsapp_number: '+91 94190 12345'
+        })
+      }, getTestEnv());
 
-    it('successfully registers user when capacity has space', () => {
-      const event: EventRecord = {
-        id: 1,
-        name: 'Kaamil Literature Circle',
-        capacity: 25,
-        registration_open: true,
-        registrations: ['existing1@alfaaz.local']
-      };
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data.status).toBe('SUCCESS');
 
-      const res = attemptRegisterEvent(event, 'newuser@alfaaz.local');
-      expect(res.success).toBe(true);
-      expect(event.registrations).toHaveLength(2);
+      // Verify row in D1
+      const reg = await mockDb.prepare('SELECT * FROM event_registrations WHERE event_id = ? AND user_email = ?')
+        .bind(1, 'newuser@alfaaz.local')
+        .first();
+      expect(reg).toBeDefined();
     });
 
-    it('rejects registration when event registration is closed', () => {
-      const event: EventRecord = {
-        id: 2,
-        name: 'Past Gathering',
-        capacity: 50,
-        registration_open: false,
-        registrations: []
-      };
+    it('rejects registration when event registration is closed', async () => {
+      // Insert a closed event
+      await mockDb.prepare(`
+        INSERT INTO events (id, name, description, event_date, capacity, registration_open)
+        VALUES (99, 'Closed Gathering', 'Past event', 'Oct 01, 2026', 50, 0)
+      `).run();
 
-      const res = attemptRegisterEvent(event, 'user@alfaaz.local');
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('closed');
+      const userToken = await createToken('user@alfaaz.local', 'PARTICIPANT', jwtSecret);
+
+      const res = await app.request('/events/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ event_id: 99 })
+      }, getTestEnv());
+
+      expect(res.status).toBe(400);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Registration closed');
     });
 
-    it('rejects duplicate registration attempt by same user', () => {
-      const event: EventRecord = {
-        id: 3,
-        name: 'Photography Walk',
-        capacity: 15,
-        registration_open: true,
-        registrations: ['photographer@alfaaz.local']
-      };
+    it('rejects duplicate registration attempt by the same user', async () => {
+      // volunteer@alfaaz.com is already registered for event 1 in seed
+      const userToken = await createToken('volunteer@alfaaz.com', 'PARTICIPANT', jwtSecret);
 
-      const res = attemptRegisterEvent(event, 'photographer@alfaaz.local');
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('already registered');
+      const res = await app.request('/events/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ event_id: 1 })
+      }, getTestEnv());
+
+      expect(res.status).toBe(400);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Already registered');
     });
 
-    it('enforces capacity limit strictly and rejects once full', () => {
-      const event: EventRecord = {
-        id: 4,
-        name: 'Limited Intimate Workshop',
-        capacity: 2,
-        registration_open: true,
-        registrations: ['user1@alfaaz.local', 'user2@alfaaz.local']
-      };
+    it('enforces capacity limit strictly and rejects once full', async () => {
+      // Create an event with capacity 1 and fill it
+      await mockDb.prepare(`
+        INSERT INTO events (id, name, description, event_date, capacity, registration_open)
+        VALUES (100, 'Micro Salon', 'One attendee only', 'Nov 20, 2026', 1, 1)
+      `).run();
+      await mockDb.prepare(`
+        INSERT INTO event_registrations (event_id, user_email)
+        VALUES (100, 'first@alfaaz.local')
+      `).run();
 
-      const res = attemptRegisterEvent(event, 'user3@alfaaz.local');
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('full capacity');
+      const userToken = await createToken('second@alfaaz.local', 'PARTICIPANT', jwtSecret);
+
+      const res = await app.request('/events/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ event_id: 100 })
+      }, getTestEnv());
+
+      expect(res.status).toBe(400);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Event full');
     });
 
-    it('allows unlimited registrations if capacity is 0', () => {
-      const event: EventRecord = {
-        id: 5,
-        name: 'Open Valley Gathering',
-        capacity: 0,
-        registration_open: true,
-        registrations: Array.from({ length: 500 }, (_, i) => `user${i}@alfaaz.local`)
-      };
+    it('allows unlimited registrations if capacity is 0', async () => {
+      // Create an open event with capacity 0 (unlimited)
+      await mockDb.prepare(`
+        INSERT INTO events (id, name, description, event_date, capacity, registration_open)
+        VALUES (101, 'Open Public Reading', 'Unlimited capacity', 'Dec 01, 2026', 0, 1)
+      `).run();
 
-      const res = attemptRegisterEvent(event, 'unlimited_user@alfaaz.local');
-      expect(res.success).toBe(true);
-      expect(event.registrations).toHaveLength(501);
+      const userToken = await createToken('anyone@alfaaz.local', 'PARTICIPANT', jwtSecret);
+
+      const res = await app.request('/events/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ event_id: 101 })
+      }, getTestEnv());
+
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data.status).toBe('SUCCESS');
+    });
+
+    it('GET /events/my-registrations returns all events registered by the caller', async () => {
+      const userToken = await createToken('volunteer@alfaaz.com', 'PARTICIPANT', jwtSecret);
+
+      const res = await app.request('/events/my-registrations', {
+        headers: { Authorization: `Bearer ${userToken}` }
+      }, getTestEnv());
+
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(Array.isArray(data)).toBe(true);
+      expect(data.length).toBeGreaterThanOrEqual(1);
+      expect(data[0].event_name).toBe('Harud Poetry Gathering');
     });
   });
 
-  describe('Club Application State Machine', () => {
-    interface ClubApp {
-      id: number;
-      user_email: string;
-      club_name: string;
-      status: 'PENDING' | 'APPROVED' | 'REJECTED';
-      admin_note?: string | null;
-    }
+  describe('Collective Circles & Clubs (/clubs/*)', () => {
+    it('allows applying to a valid creative club', async () => {
+      const userToken = await createToken('writer@alfaaz.local', 'PARTICIPANT', jwtSecret);
 
-    it('initializes new club applications with PENDING status', () => {
-      const newApp: ClubApp = {
-        id: 1,
-        user_email: 'artist@alfaaz.local',
-        club_name: 'Art and Crafts',
-        status: 'PENDING'
-      };
-      expect(newApp.status).toBe('PENDING');
+      const res = await app.request('/clubs/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          club_name: 'Literature',
+          note: 'Poetry enthusiast eager to join the circle.'
+        })
+      }, getTestEnv());
+
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data.status).toBe('PENDING');
+
+      // Verify in DB
+      const appRow: any = await mockDb.prepare('SELECT * FROM club_applications WHERE user_email = ?')
+        .bind('writer@alfaaz.local')
+        .first();
+      expect(appRow).toBeDefined();
+      expect(appRow.club_name).toBe('Literature');
     });
 
-    it('updates status to APPROVED upon admin approval', () => {
-      const app: ClubApp = {
-        id: 1,
-        user_email: 'artist@alfaaz.local',
-        club_name: 'Art and Crafts',
-        status: 'PENDING'
-      };
+    it('rejects applying with an invalid club name', async () => {
+      const userToken = await createToken('writer@alfaaz.local', 'PARTICIPANT', jwtSecret);
 
-      app.status = 'APPROVED';
-      app.admin_note = 'Welcome to the circle.';
+      const res = await app.request('/clubs/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          club_name: 'InvalidClubXYZ'
+        })
+      }, getTestEnv());
 
-      expect(app.status).toBe('APPROVED');
-      expect(app.admin_note).toBe('Welcome to the circle.');
+      expect(res.status).toBe(400);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Invalid club');
     });
 
-    it('supports reverting reviewed application back to PENDING', () => {
-      const app: ClubApp = {
-        id: 1,
-        user_email: 'artist@alfaaz.local',
-        club_name: 'Art and Crafts',
-        status: 'REJECTED',
-        admin_note: 'Portfolio needs more work.'
-      };
+    it('rejects duplicate pending club applications from the same user', async () => {
+      const userToken = await createToken('writer@alfaaz.local', 'PARTICIPANT', jwtSecret);
 
-      // Revert action
-      app.status = 'PENDING';
-      app.admin_note = null;
+      // Pre-insert a pending application
+      await mockDb.prepare("INSERT INTO club_applications (user_email, club_name, status) VALUES (?, 'Literature', 'PENDING')")
+        .bind('writer@alfaaz.local')
+        .run();
 
-      expect(app.status).toBe('PENDING');
-      expect(app.admin_note).toBeNull();
+      const res = await app.request('/clubs/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          club_name: 'Literature'
+        })
+      }, getTestEnv());
+
+      expect(res.status).toBe(400);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Pending application exists');
+    });
+
+    it('blocks applying if user is already an approved member of another club', async () => {
+      const userToken = await createToken('member@alfaaz.local', 'PARTICIPANT', jwtSecret);
+
+      // Pre-insert an approved membership
+      await mockDb.prepare("INSERT INTO club_applications (user_email, club_name, status) VALUES (?, 'Film Club', 'APPROVED')")
+        .bind('member@alfaaz.local')
+        .run();
+
+      const res = await app.request('/clubs/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          club_name: 'Philosophy'
+        })
+      }, getTestEnv());
+
+      expect(res.status).toBe(400);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Already a member of Film Club');
+    });
+
+    it('GET /clubs/my-status returns the applicant status', async () => {
+      const userToken = await createToken('status_user@alfaaz.local', 'PARTICIPANT', jwtSecret);
+
+      await mockDb.prepare("INSERT INTO club_applications (user_email, club_name, status, note) VALUES (?, 'Art & Craft', 'PENDING', 'My art samples')")
+        .bind('status_user@alfaaz.local')
+        .run();
+
+      const res = await app.request('/clubs/my-status', {
+        headers: { Authorization: `Bearer ${userToken}` }
+      }, getTestEnv());
+
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data.status).toBe('PENDING');
+      expect(data.club_name).toBe('Art & Craft');
     });
   });
 });

@@ -1,7 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env, JwtUserPayload } from '../types';
 import { requireAuth } from '../middleware/auth';
-import { rateLimiter } from '../middleware/rate_limit';
+import { rateLimiter, verifyTurnstile } from '../middleware/rate_limit';
 import { sendSystemEmail } from '../notifications/email';
 
 export const exhibitionsRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
@@ -31,6 +31,13 @@ exhibitionsRouter.get('/config', async (c) => {
 exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs: 60000 }), async (c) => {
   const user = c.get('user');
   const body = await c.req.json().catch(() => ({}));
+
+  const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+  if (!turnstileValid) {
+    return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
+  }
 
   if (!body.over_19 || !body.agreed_to_screening) {
     return c.json({ detail: 'You must agree to the terms to proceed.' }, 400);

@@ -14,10 +14,10 @@
 | **Cloudflare Workers** | 100,000 requests / day (3M / month) | ~45,000 - 90,000 requests / month | **1.5% - 3.0%** |
 | **Workers CPU Time** | 10 ms CPU time per request | ~0.8 ms - 2.5 ms per request | **Pass (V8 Isolate)** |
 | **Workers Static Assets** | Included with Workers | Pre-compiled Vite assets (HTML, CSS, JS) | **100% Free** |
-| **Cloudflare D1 (Database)** | 5,000,000 read rows / day<br>100,000 write rows / day<br>10 GB total storage | ~20,000 reads / day<br>~1,500 writes / day<br>~25 MB total data | **Reads: <0.5%**<br>**Writes: 1.5%**<br>**Storage: 0.25%** |
-| **Cloudflare R2 (Storage)** | 10 GB stored data / month<br>1M Class A operations (writes)<br>10M Class B operations (reads)<br>**$0.00 Egress Fees** | ~1.5 GB stored artworks/proofs<br>~500 uploads / month<br>~10,000 views / month | **Storage: 15%**<br>**Writes: <0.1%**<br>**Reads: <0.1%** |
+| **Cloudflare D1 (Database)** | 5,000,000 read rows / day<br>100,000 write rows / day<br>500 MB storage per database<br>(5 GB total account across 10 DBs) | ~20,000 reads / day<br>~1,500 writes / day<br>~25 MB total data | **Reads: <0.5%**<br>**Writes: 1.5%**<br>**Storage: 5.0%** |
+| **Cloudflare R2 (Storage)** | 10 GB stored data / month<br>1,000,000 Class A ops (writes)<br>10,000,000 Class B ops (reads)<br>**$0.00 Egress Fees** | ~1.5 GB stored artworks/proofs<br>~500 uploads / month<br>~10,000 views / month | **Storage: 15%**<br>**Writes: <0.1%**<br>**Reads: <0.1%** |
 | **Workers KV** | 100,000 reads / day<br>1,000 writes / day<br>1 GB stored keys | ~500 notice cache reads / day<br>~10 cache invalidations / day | **Reads: 0.5%**<br>**Writes: 1.0%** |
-| **Cloudflare Turnstile** | Unlimited challenges / month | ~500 - 1,500 challenges / month | **100% Free** |
+| **Cloudflare Turnstile** | Unlimited challenges / month | ~500 - 1,500 challenges / month | **100% Free (Unlimited)** |
 
 ---
 
@@ -52,25 +52,61 @@
 
 ---
 
-## 3. The Outbound Email Caveat & Recommendation
+## 3. System Error Modes & Quota Exhaustion Behaviors
 
-### The Technical Nuance:
-1. **Cloudflare Email Routing:**
-   - Free for receiving emails (e.g. `curator@alfaazcollective.org`) and auto-forwarding them to personal inbox destinations.
-2. **Cloudflare Email Sending (Transactional):**
-   - Cloudflare provides an outbound transactional Email Sending API. However, sending outbound emails to **arbitrary external recipient addresses** (such as applicant confirmation emails or password reset tokens) requires an active **Workers Paid Plan ($5/month)** or manual domain identity verification.
+When free-tier resource limits are approached or exceeded, the Cloudflare edge runtime and D1 storage engine exhibit distinct, deterministic error responses:
 
-### Zero-Cost Free-Tier Solutions:
-The Cloudflare-native rebuild implements an abstracted `EmailProvider` interface:
-1. **Development & Staging:** `DevEmailProvider` captures all outbound email bodies into memory and terminal logs without external services.
-2. **Free Production Tier:** `WebhookEmailProvider` forwards transactional emails via a free webhook (e.g. Make.com free tier [1,000 operations/month], Brevo free tier [300 emails/day], or Resend free tier [3,000 emails/month]).
-3. **Turnkey Paid Tier (Optional):** If the organization elects to spend $5/month on Workers Paid in the future, `CloudflareEmailSendingProvider` can be activated by setting `CLOUDFLARE_EMAIL_TOKEN` with zero code modifications.
+1. **HTTP 1015 (Rate Limited by Edge WAF):**
+   - **Trigger:** An individual IP address or client exceeds edge rate limiting rules or sliding window rate limits on sensitive endpoints (`/auth/*`, `/recruit/telemetry`).
+   - **Behavior:** The Cloudflare edge proxy immediately blocks incoming TCP/TLS requests from that client with status `HTTP 1015: You are being rate limited`. The request never reaches Worker CPU execution.
+   - **Recovery:** Client must pause requests until the sliding window expires (typically 60 seconds).
+
+2. **HTTP 1027 (Worker Runtime Script Error):**
+   - **Trigger:** Worker script crashes during global initialization or unhandled runtime exceptions.
+   - **Behavior:** Cloudflare edge returns `HTTP 1027: Worker runtime error`.
+   - **Safeguard:** In production, missing critical configuration like `JWT_SECRET` deliberately triggers this safeguard to prevent running in an insecure state.
+
+3. **Error 1102 (CPU Limit Exceeded):**
+   - **Trigger:** An individual request consumes more than **10 ms of isolate CPU execution time** on the Free Tier (or 50 ms on Standard Bundled Paid).
+   - **Behavior:** The V8 isolate is abruptly terminated mid-execution by the runtime scheduler, returning `Error 1102: Worker exceeded CPU time limit`.
+   - **Design Mitigation:** PBKDF2 iterations are calibrated strictly to 100,000 iterations (~0.8 ms isolate CPU time via Web Crypto BoringSSL offloading), avoiding the fatal Error 1102 aborts that OWASP's 600,000 iterations would trigger.
+
+4. **SQLITE_FULL / D1 Storage Quota Errors (500 MB Cap):**
+   - **Trigger:** Total database storage exceeds the 500 MB per-database Free Tier allocation.
+   - **Behavior:** Any subsequent `INSERT`, `UPDATE`, or table alteration fails with `D1_ERROR: SQLITE_FULL: database or disk is full`.
+   - **Read Availability:** Read operations (`SELECT`) continue to execute unimpeded; the database does not go offline.
+   - **Recovery:** Administrator must purge old telemetry or audit records using `/admin/purge_user` or upgrade to Cloudflare D1 Paid ($0.75 / GB-month).
+
+5. **D1 Error Code 7500 (Daily Row Quota Exhausted):**
+   - **Trigger:** Total account activity exceeds 5,000,000 row reads/day or 100,000 row writes/day.
+   - **Behavior:** The Cloudflare D1 query engine refuses execution with D1 error code 7500 (`Quota exceeded`).
+   - **Recovery:** Quota counters reset automatically at 00:00 UTC daily.
 
 ---
 
-## 4. Conclusion & ROI
+## 4. The Outbound Email Architecture & Restrictions
+
+### Technical Constraints:
+1. **Cloudflare Email Routing (Inbound Only):**
+   - Cloudflare Email Routing is completely free for receiving emails at custom domain addresses (e.g. `curator@alfaazcollective.org`) and forwarding them to personal inboxes.
+   - It cannot send arbitrary outbound transactional emails.
+2. **Cloudflare Email Sending API (Paid Plan Requirement):**
+   - Sending outbound emails to **arbitrary external recipient addresses** (such as applicant confirmation notices, password reset tokens, or volunteer invitations) via Cloudflare's native Email Sending API strictly requires an active **Workers Paid Plan ($5/month)** or verified individual destination domain identity.
+
+### Zero-Cost Free-Tier Solutions Supported:
+The application implements an abstracted `EmailProvider` adapter (`backend/src/notifications/email.ts`):
+1. **Development & Staging:** `DevEmailProvider` captures all outbound email payloads into memory and terminal stdout without external network calls.
+2. **Free Production Tier:** `WebhookEmailProvider` dispatches transactional emails via a zero-cost external webhook:
+   - **Make.com Free Tier:** 1,000 operations / month.
+   - **Brevo (Sendinblue) Free Tier:** 300 emails / day (9,000 / month).
+   - **Resend Free Tier:** 3,000 emails / month (100 / day).
+3. **Turnkey Paid Tier (Optional):** If Alfaaz upgrades to Workers Paid ($5/month), `CloudflareEmailSendingProvider` can be activated instantly by provisioning `CLOUDFLARE_EMAIL_TOKEN` with zero code modifications.
+
+---
+
+## 5. Conclusion & ROI
 
 By migrating from Render and Vercel to Cloudflare-Native:
-- **Annual Cost Savings:** $324 - $450 USD / year in hosting fees.
-- **Performance:** Cold starts drop from 50+ seconds on Render free tier to **<5 milliseconds** globally.
-- **Reliability:** 100% edge SLA with zero third-party database connection pool timeouts.
+- **Annual Hosting Savings:** $324 - $450 USD / year eliminated.
+- **Edge Performance:** Cold starts drop from 50+ seconds on Render free tier to **<5 milliseconds** globally.
+- **High Availability:** 100% edge SLA with zero third-party database connection pool timeouts.

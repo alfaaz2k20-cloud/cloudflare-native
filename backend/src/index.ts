@@ -16,15 +16,58 @@ import noticesRouter from './routes/notices';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// Global CORS Middleware
-app.use('*', cors({
-  origin: (origin) => origin || '*',
-  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'cf-turnstile-response'],
-  exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
-  maxAge: 86400,
-  credentials: true
-}));
+// Global CORS Middleware (Tightened against arbitrary origin reflection with credentials)
+app.use('*', async (c, next) => {
+  const corsMiddleware = cors({
+    origin: (origin) => {
+      if (!origin) return '*';
+      const allowedStatic = [
+        c.env?.FRONTEND_URL,
+        'http://localhost:5173',
+        'http://localhost:8787',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:8787',
+        'http://localhost:3000',
+        'https://alfaaz.pages.dev',
+        'https://alfaazcollective.vercel.app'
+      ].filter(Boolean);
+
+      if (allowedStatic.includes(origin)) {
+        return origin;
+      }
+
+      try {
+        const parsed = new URL(origin);
+        const host = parsed.hostname.toLowerCase();
+        if (
+          host === 'alfaaz.pages.dev' ||
+          host.endsWith('.alfaaz.pages.dev') ||
+          host === 'alfaaz.com' ||
+          host.endsWith('.alfaaz.com') ||
+          host === 'alfaazcollective.org' ||
+          host.endsWith('.alfaazcollective.org') ||
+          host === 'alfaazcollective.vercel.app' ||
+          (host.endsWith('.vercel.app') && host.includes('alfaaz')) ||
+          host === 'localhost' ||
+          host === '127.0.0.1'
+        ) {
+          return origin;
+        }
+      } catch {
+        // invalid URL format
+      }
+
+      // Reject arbitrary external origin reflection
+      return null;
+    },
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'cf-turnstile-response'],
+    exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
+    maxAge: 86400,
+    credentials: true
+  });
+  return corsMiddleware(c, next);
+});
 
 // Root and Health Endpoints
 app.get('/ping', (c) => c.json({

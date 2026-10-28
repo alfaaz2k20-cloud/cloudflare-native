@@ -72,6 +72,7 @@ clubsRouter.get('/my-status', requireAuth, async (c) => {
   return c.json({
     status: row.status,
     club: row.club,
+    club_name: row.club,
     admin_note: row.admin_note
   });
 });

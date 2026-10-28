@@ -6,6 +6,8 @@ export interface Env {
 
   // Environment variables
   ENV?: string;
+  ENVIRONMENT?: string;
+  NODE_ENV?: string;
   FRONTEND_URL?: string;
   JWT_SECRET?: string;
   ADMIN_PASSWORD?: string;

@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { Env, JwtUserPayload } from '../types';
-import { hashPassword, verifyPassword, createToken, verifyToken } from '../auth/crypto';
+import { hashPassword, verifyPassword, createToken, verifyToken, getJwtSecret } from '../auth/crypto';
 import { requireAuth } from '../middleware/auth';
-import { rateLimiter } from '../middleware/rate_limit';
+import { rateLimiter, verifyTurnstile } from '../middleware/rate_limit';
 import { sendSystemEmail } from '../notifications/email';
 
 export const authRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
@@ -18,6 +18,13 @@ authRouter.post('/register', async (c) => {
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password;
   const fullName = (body.full_name || '').trim();
+
+  const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+  if (!turnstileValid) {
+    return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
+  }
 
   if (!email || !password) {
     return c.json({ detail: 'Email and password required' }, 400);
@@ -41,7 +48,7 @@ authRouter.post('/register', async (c) => {
     .bind(email, hashedPassword, fullName || null, 'PARTICIPANT')
     .run();
 
-  const secret = c.env.JWT_SECRET || 'dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars';
+  const secret = getJwtSecret(c.env);
   const token = await createToken(email, 'PARTICIPANT', secret);
 
   return c.json({
@@ -73,7 +80,7 @@ authRouter.post('/login', async (c) => {
     return c.json({ detail: 'Invalid credentials' }, 401);
   }
 
-  const secret = c.env.JWT_SECRET || 'dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars';
+  const secret = getJwtSecret(c.env);
   const token = await createToken(user.email, user.status, secret);
 
   return c.json({
@@ -86,6 +93,13 @@ authRouter.post('/forgot-password', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const email = (body.email || '').trim().toLowerCase();
 
+  const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+  if (!turnstileValid) {
+    return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
+  }
+
   const user = await c.env.DB
     .prepare('SELECT email FROM users WHERE email = ?')
     .bind(email)
@@ -95,7 +109,7 @@ authRouter.post('/forgot-password', async (c) => {
     return c.json({ message: 'If the email is registered, your reset link has been dispatched to your email.' });
   }
 
-  const secret = c.env.JWT_SECRET || 'dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars';
+  const secret = getJwtSecret(c.env);
   const resetToken = await createToken(user.email, 'reset', secret, 900); // 15 mins
   const frontendUrl = c.env.FRONTEND_URL || 'http://localhost:8787';
   const resetLink = `${frontendUrl}/reset.html?token=${resetToken}`;
@@ -124,25 +138,75 @@ authRouter.post('/reset-password', async (c) => {
     return c.json({ detail: 'Token and new password required' }, 400);
   }
 
-  const secret = c.env.JWT_SECRET || 'dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars';
+  const secret = getJwtSecret(c.env);
   try {
     const payload = await verifyToken(token, secret);
     if (!payload || payload.status !== 'reset') {
       return c.json({ detail: 'Invalid or expired reset link.' }, 400);
     }
 
+    // Compute SHA-256 token hash for replay protection
+    const tokenBuffer = new TextEncoder().encode(token);
+    const tokenHashBuffer = await crypto.subtle.digest('SHA-256', tokenBuffer);
+    const tokenHash = Array.from(new Uint8Array(tokenHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Check if token was already consumed in consumed_tokens table
+    try {
+      const consumed = await c.env.DB
+        .prepare('SELECT token_hash FROM consumed_tokens WHERE token_hash = ?')
+        .bind(tokenHash)
+        .first();
+
+      if (consumed) {
+        return c.json({ detail: 'Invalid or expired reset link.' }, 400);
+      }
+    } catch {
+      // Table may not exist yet in unmigrated environments; fallback to timestamp check
+    }
+
+    // Fetch user and check password_reset_at timestamp
+    const userRow = await c.env.DB
+      .prepare('SELECT email, password_reset_at FROM users WHERE email = ?')
+      .bind(payload.sub)
+      .first<{ email: string; password_reset_at: string | null }>();
+
+    if (!userRow) {
+      return c.json({ detail: 'Account not found.' }, 404);
+    }
+
+    if (userRow.password_reset_at) {
+      const resetTime = new Date(userRow.password_reset_at).getTime();
+      if (payload.iat && (payload.iat * 1000) <= resetTime) {
+        return c.json({ detail: 'Invalid or expired reset link.' }, 400);
+      }
+    }
+
     const hashedPassword = await hashPassword(newPassword);
+    const nowIso = new Date().toISOString();
     const res = await c.env.DB
-      .prepare('UPDATE users SET password = ? WHERE email = ?')
-      .bind(hashedPassword, payload.sub)
+      .prepare('UPDATE users SET password = ?, password_reset_at = ? WHERE email = ?')
+      .bind(hashedPassword, nowIso, payload.sub)
       .run();
 
     if (res.meta.changes === 0) {
       return c.json({ detail: 'Account not found.' }, 404);
     }
 
+    // Record token in consumed_tokens table
+    try {
+      await c.env.DB
+        .prepare('INSERT INTO consumed_tokens (token_hash, consumed_at, expires_at) VALUES (?, ?, ?)')
+        .bind(tokenHash, nowIso, payload.exp || (Math.floor(Date.now() / 1000) + 900))
+        .run();
+    } catch {
+      // Table insert is auxiliary; timestamp check already invalidates the token
+    }
+
     return c.json({ message: 'Password reset successfully.' });
   } catch (err: any) {
+    if (err?.message?.includes('FATAL SECURITY ERROR')) {
+      throw err;
+    }
     return c.json({ detail: 'Invalid or expired reset link.' }, 401);
   }
 });
