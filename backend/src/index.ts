@@ -85,27 +85,50 @@ app.get('/api/ping', (c) => c.json({
   timestamp: new Date().toISOString()
 }));
 
-// Legacy Vercel Navigation Rewrites (Matching vercel.json)
+// Legacy Vercel Navigation Rewrites & Host Canonicalization (Matching vercel.json)
 app.use('*', async (c, next) => {
+  const host = c.req.header('host')?.toLowerCase();
+  if (host === 'www.alfaazcollective.org') {
+    const url = new URL(c.req.url);
+    url.hostname = 'alfaazcollective.org';
+    url.protocol = 'https:';
+    return c.redirect(url.toString(), 301);
+  }
+
   const path = c.req.path.replace(/\/+$/, '') || '/';
   const method = c.req.method;
 
-  if (method === 'GET') {
+  if (method === 'GET' || method === 'HEAD') {
+    const url = new URL(c.req.url);
+    const search = url.search;
+
     if (path === '/recruit/sjt') {
-      return c.env?.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/recruit.html', c.req.url))) : c.redirect('/recruit.html');
+      const destUrl = new URL('/recruit.html' + search, c.req.url);
+      return c.env?.ASSETS
+        ? c.env.ASSETS.fetch(new Request(destUrl, { method, headers: c.req.raw.headers }))
+        : c.redirect('/recruit.html' + search);
     }
     if (path === '/recruit/admin') {
-      return c.env?.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/admin.html', c.req.url))) : c.redirect('/admin.html');
+      const destUrl = new URL('/admin.html' + search, c.req.url);
+      return c.env?.ASSETS
+        ? c.env.ASSETS.fetch(new Request(destUrl, { method, headers: c.req.raw.headers }))
+        : c.redirect('/admin.html' + search);
     }
     if (path === '/recruit/research') {
       const isJsonPreferred = c.req.header('accept')?.includes('application/json') && !c.req.header('accept')?.includes('text/html');
       const hasAuth = Boolean(c.req.header('authorization'));
       if (!hasAuth && !isJsonPreferred) {
-        return c.env?.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/research.html', c.req.url))) : c.redirect('/research.html');
+        const destUrl = new URL('/research.html' + search, c.req.url);
+        return c.env?.ASSETS
+          ? c.env.ASSETS.fetch(new Request(destUrl, { method, headers: c.req.raw.headers }))
+          : c.redirect('/research.html' + search);
       }
     }
     if (path === '/service-worker.js') {
-      return c.env?.ASSETS ? c.env.ASSETS.fetch(new Request(new URL('/sw.js', c.req.url))) : next();
+      const destUrl = new URL('/sw.js' + search, c.req.url);
+      return c.env?.ASSETS
+        ? c.env.ASSETS.fetch(new Request(destUrl, { method, headers: c.req.raw.headers }))
+        : next();
     }
   }
 

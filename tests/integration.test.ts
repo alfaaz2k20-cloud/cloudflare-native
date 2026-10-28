@@ -121,6 +121,59 @@ describe('Hono Worker Integration Endpoints', () => {
     expect(await resAsset.text()).toBe('MOCK_HTML_PAGE');
   });
 
+  it('HEAD navigation rewrites return proper headers without 404 or 401', async () => {
+    // 1. HEAD /recruit/sjt
+    const resSjt = await app.request('/recruit/sjt', { method: 'HEAD' });
+    expect([200, 302, 307]).toContain(resSjt.status);
+
+    // 2. HEAD /recruit/admin
+    const resAdmin = await app.request('/recruit/admin', { method: 'HEAD' });
+    expect([200, 302, 307]).toContain(resAdmin.status);
+
+    // 3. HEAD /recruit/research (must NOT fall through to 401 requireAdmin)
+    const resResearch = await app.request('/recruit/research', {
+      method: 'HEAD',
+      headers: { 'Accept': 'text/html' }
+    });
+    expect([200, 302, 307]).toContain(resResearch.status);
+    expect(resResearch.status).not.toBe(401);
+
+    // 4. HEAD with mock ASSETS binding
+    let capturedMethod = '';
+    const mockAssets = {
+      fetch: async (req: Request) => {
+        capturedMethod = req.method;
+        return new Response(null, { status: 200, headers: { 'content-type': 'text/html' } });
+      }
+    };
+    const resAssetHead = await app.request('/recruit/sjt', { method: 'HEAD' }, { ASSETS: mockAssets } as any);
+    expect(resAssetHead.status).toBe(200);
+    expect(capturedMethod).toBe('HEAD');
+  });
+
+  it('preserves query parameters during navigation rewrites', async () => {
+    let capturedUrl = '';
+    const mockAssets = {
+      fetch: async (req: Request) => {
+        capturedUrl = req.url;
+        return new Response('PAGE', { status: 200 });
+      }
+    };
+
+    await app.request('/recruit/sjt?campaign=fall2026&ref=ig', {}, { ASSETS: mockAssets } as any);
+    expect(capturedUrl).toContain('campaign=fall2026');
+    expect(capturedUrl).toContain('ref=ig');
+  });
+
+  it('redirects www.alfaazcollective.org to apex domain https://alfaazcollective.org', async () => {
+    const res = await app.request('http://www.alfaazcollective.org/recruit', {
+      headers: { 'Host': 'www.alfaazcollective.org' }
+    });
+
+    expect(res.status).toBe(301);
+    expect(res.headers.get('location')).toBe('https://alfaazcollective.org/recruit');
+  });
+
   it('GET /api/unknown-endpoint returns 404 with JSON error', async () => {
     const res = await app.request('/api/unknown-endpoint');
     expect(res.status).toBe(404);

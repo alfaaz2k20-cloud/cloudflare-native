@@ -136,12 +136,12 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  if (isApiRequest(url)) return;
-
   if (request.mode === 'navigate') {
     event.respondWith(networkFirstNavigation(request));
     return;
   }
+
+  if (isApiRequest(url)) return;
 
   // Candidate and admin code must update on the first visit after a deploy.
   if (isSameOrigin(url) && NETWORK_FIRST_DESTINATIONS.has(request.destination)) {
