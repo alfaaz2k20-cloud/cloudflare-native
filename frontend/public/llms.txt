@@ -1,0 +1,32 @@
+# Alfaaz Collective
+
+## Purpose
+Alfaaz Collective is a web platform for cultural programming, writing, exhibitions, and member participation. It combines a public-facing cultural homepage with authenticated workflows for events, submissions, exhibitions, and administration.
+
+## Public Surface
+- [Home](/): Public landing page with live notices, featured programming, and the Curator AI widget.
+- [Curated Archives](/blogs): Public journal and blog archive.
+- [Archive Entry](/post): Individual long-form article view.
+- [Exhibition Portal](/exhibition): Artist application portal for the currently active exhibition cycle.
+
+## Member Surface
+- [Login](/login): Account sign-in.
+- [Register](/register): Account creation.
+- [Dashboard](/dashboard): Member dashboard for profile details, event registrations, club applications, Curator chat, and exhibition status.
+- [Submit to Vault](/submit): Authenticated submission form for creative work and files.
+- [Reset Password](/reset): Password reset flow.
+
+## Admin Surface
+- [Admin Console](/admin): Management interface for events, exhibitions, club applications, user roles, and operational review flows.
+
+## Primary Entities
+- Alfaaz Collective: organization
+- Users: members, participants, admins
+- Events: public registrations and attendance workflows
+- Exhibitions: cycle-based artist applications and payment confirmation
+- Vault Submissions: authenticated creative file submissions
+- Blogs: published essays and archive entries
+
+## Notes
+- The public site is a Vite multi-page frontend.
+- The backend is a FastAPI service powering auth, dashboard actions, exhibition flows, blog content, and admin operations.

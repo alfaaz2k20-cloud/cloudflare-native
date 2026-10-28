@@ -1,0 +1,446 @@
+{
+  "sjt_version": "2026-09-rev",
+  "scenarios": [
+    {
+      "id": "S1",
+      "act": 1,
+      "act_title": {
+        "en": "The Exhibition",
+        "ur": "نمائش"
+      },
+      "setup": "The exhibition opens in 2 hours, but an artist's paintings haven't arrived. The curator is highly stressed managing lighting.",
+      "options": [
+        {
+          "id": "S1A",
+          "text": "Protect the curator's time by quietly taking over setup tasks, working double-speed.",
+          "keys": {
+            "empathy": 1,
+            "conscientiousness": 3,
+            "collaborative_spirit": 0,
+            "emotional_agility": 0,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 3
+          }
+        },
+        {
+          "id": "S1B",
+          "text": "Suggest immediately pivoting the floor plan to hide the missing art.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 0,
+            "collaborative_spirit": 0,
+            "emotional_agility": 3,
+            "curiosity": 0,
+            "creative_initiative": 3,
+            "motivation": 1
+          }
+        },
+        {
+          "id": "S1C",
+          "text": "Approach the curator and ask directly how you can best support them right now.",
+          "keys": {
+            "empathy": 3,
+            "conscientiousness": 0,
+            "collaborative_spirit": 3,
+            "emotional_agility": 1,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 0
+          }
+        },
+        {
+          "id": "S1D",
+          "text": "Take initiative to call members to track down the artist or backup art.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 1,
+            "collaborative_spirit": 2,
+            "emotional_agility": 0,
+            "curiosity": 2,
+            "creative_initiative": 1,
+            "motivation": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "act": 1,
+      "act_title": {
+        "en": "The Exhibition",
+        "ur": "نمائش"
+      },
+      "setup": "An artist, Faizan, is upset his art is near the noisy entrance and demands a quiet corner. Meher is currently in the quiet corner and is happy.",
+      "options": [
+        {
+          "id": "S2A",
+          "text": "Bring Faizan and Meher together to mediate a conversation.",
+          "keys": {
+            "empathy": 3,
+            "conscientiousness": 0,
+            "collaborative_spirit": 3,
+            "emotional_agility": 1,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 0
+          }
+        },
+        {
+          "id": "S2B",
+          "text": "Firmly but politely maintain the original floor plan to ensure fairness.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 3,
+            "collaborative_spirit": 0,
+            "emotional_agility": 2,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 1
+          }
+        },
+        {
+          "id": "S2C",
+          "text": "Scout the venue for an unconventional, unused space for Faizan.",
+          "keys": {
+            "empathy": 1,
+            "conscientiousness": 0,
+            "collaborative_spirit": 0,
+            "emotional_agility": 0,
+            "curiosity": 2,
+            "creative_initiative": 3,
+            "motivation": 0
+          }
+        },
+        {
+          "id": "S2D",
+          "text": "Offer to personally stand near Faizan's exhibit to manage crowd noise.",
+          "keys": {
+            "empathy": 2,
+            "conscientiousness": 1,
+            "collaborative_spirit": 0,
+            "emotional_agility": 0,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "act": 1,
+      "act_title": {
+        "en": "The Exhibition",
+        "ur": "نمائش"
+      },
+      "setup": "A school teacher arrives unannounced with 15 students while the space is still messy with cables.",
+      "options": [
+        {
+          "id": "S3A",
+          "text": "Gather the students in the lobby for an impromptu Q&A.",
+          "keys": {
+            "empathy": 1,
+            "conscientiousness": 0,
+            "collaborative_spirit": 0,
+            "emotional_agility": 3,
+            "curiosity": 0,
+            "creative_initiative": 3,
+            "motivation": 2
+          }
+        },
+        {
+          "id": "S3B",
+          "text": "Enforce the opening time, but take details to arrange a tour later.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 3,
+            "collaborative_spirit": 2,
+            "emotional_agility": 1,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 0
+          }
+        },
+        {
+          "id": "S3C",
+          "text": "Cordon a safe 'preview zone' and watch the students yourself.",
+          "keys": {
+            "empathy": 2,
+            "conscientiousness": 1,
+            "collaborative_spirit": 0,
+            "emotional_agility": 1,
+            "curiosity": 0,
+            "creative_initiative": 1,
+            "motivation": 3
+          }
+        },
+        {
+          "id": "S3D",
+          "text": "Show them one relevant artwork without disrupting the room.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 0,
+            "collaborative_spirit": 1,
+            "emotional_agility": 0,
+            "curiosity": 3,
+            "creative_initiative": 1,
+            "motivation": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "act": 2,
+      "act_title": {
+        "en": "The Circle",
+        "ur": "حلقہ"
+      },
+      "setup": "Zara, a new member, leans forward to speak but pulls back nervously.",
+      "options": [
+        {
+          "id": "S4A",
+          "text": "Wait for a pause and gently invite her to share.",
+          "keys": {
+            "empathy": 3,
+            "conscientiousness": 0,
+            "collaborative_spirit": 2,
+            "emotional_agility": 0,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 0
+          }
+        },
+        {
+          "id": "S4B",
+          "text": "Observe her interests and bring those topics up broadly.",
+          "keys": {
+            "empathy": 1,
+            "conscientiousness": 0,
+            "collaborative_spirit": 0,
+            "emotional_agility": 2,
+            "curiosity": 3,
+            "creative_initiative": 1,
+            "motivation": 0
+          }
+        },
+        {
+          "id": "S4C",
+          "text": "Approach her privately after the event to meet 1-on-1.",
+          "keys": {
+            "empathy": 3,
+            "conscientiousness": 0,
+            "collaborative_spirit": 0,
+            "emotional_agility": 0,
+            "curiosity": 1,
+            "creative_initiative": 0,
+            "motivation": 3
+          }
+        },
+        {
+          "id": "S4D",
+          "text": "Propose a round-robin structural rule for future meetings.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 3,
+            "collaborative_spirit": 1,
+            "emotional_agility": 0,
+            "curiosity": 0,
+            "creative_initiative": 2,
+            "motivation": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "act": 2,
+      "act_title": {
+        "en": "The Circle",
+        "ur": "حلقہ"
+      },
+      "setup": "An audience member angrily interrupts a poet reading a sensitive piece. The poet freezes.",
+      "options": [
+        {
+          "id": "S5A",
+          "text": "Reference guidelines on respect and transition to the next reader.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 3,
+            "collaborative_spirit": 0,
+            "emotional_agility": 3,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 1
+          }
+        },
+        {
+          "id": "S5B",
+          "text": "Go directly to the poet's side to ensure they feel safe.",
+          "keys": {
+            "empathy": 3,
+            "conscientiousness": 0,
+            "collaborative_spirit": 2,
+            "emotional_agility": 0,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 2
+          }
+        },
+        {
+          "id": "S5C",
+          "text": "Pause the event and invite the angry member to explain briefly.",
+          "keys": {
+            "empathy": 1,
+            "conscientiousness": 0,
+            "collaborative_spirit": 2,
+            "emotional_agility": 1,
+            "curiosity": 2,
+            "creative_initiative": 3,
+            "motivation": 0
+          }
+        },
+        {
+          "id": "S5D",
+          "text": "Ask the room to take one minute of silence to reflect.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 0,
+            "collaborative_spirit": 1,
+            "emotional_agility": 2,
+            "curiosity": 3,
+            "creative_initiative": 2,
+            "motivation": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "act": 3,
+      "act_title": {
+        "en": "The Outreach",
+        "ur": "رسائی"
+      },
+      "setup": "An 8-year-old boy refuses to paint. Your veteran co-volunteer whispers, 'Just leave him be.'",
+      "options": [
+        {
+          "id": "S6A",
+          "text": "Trust the co-volunteer, but keep a watchful eye from a distance.",
+          "keys": {
+            "empathy": 1,
+            "conscientiousness": 3,
+            "collaborative_spirit": 3,
+            "emotional_agility": 0,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 0
+          }
+        },
+        {
+          "id": "S6B",
+          "text": "Sit near him and doodle wordlessly as a low-pressure invitation.",
+          "keys": {
+            "empathy": 3,
+            "conscientiousness": 0,
+            "collaborative_spirit": 0,
+            "emotional_agility": 1,
+            "curiosity": 1,
+            "creative_initiative": 1,
+            "motivation": 2
+          }
+        },
+        {
+          "id": "S6C",
+          "text": "Build a 3D structure out of paint pots to spark his interest.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 0,
+            "collaborative_spirit": 0,
+            "emotional_agility": 0,
+            "curiosity": 2,
+            "creative_initiative": 3,
+            "motivation": 1
+          }
+        },
+        {
+          "id": "S6D",
+          "text": "Ask the full-time staff about the boy's usual interests.",
+          "keys": {
+            "empathy": 1,
+            "conscientiousness": 1,
+            "collaborative_spirit": 2,
+            "emotional_agility": 0,
+            "curiosity": 3,
+            "creative_initiative": 0,
+            "motivation": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "S7",
+      "act": 3,
+      "act_title": {
+        "en": "The Outreach",
+        "ur": "رسائی"
+      },
+      "setup": "You're burnt out, a friend is visiting town for one day, but you committed to setup.",
+      "options": [
+        {
+          "id": "S7A",
+          "text": "Honor the full commitment. Meet your friend only if it wraps up early.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 3,
+            "collaborative_spirit": 1,
+            "emotional_agility": 1,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 3
+          }
+        },
+        {
+          "id": "S7B",
+          "text": "Call the lead honestly, and swap to a harder shift next week.",
+          "keys": {
+            "empathy": 2,
+            "conscientiousness": 1,
+            "collaborative_spirit": 3,
+            "emotional_agility": 2,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 0
+          }
+        },
+        {
+          "id": "S7C",
+          "text": "Bring your friend along as a 'guest volunteer'.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 0,
+            "collaborative_spirit": 1,
+            "emotional_agility": 1,
+            "curiosity": 1,
+            "creative_initiative": 3,
+            "motivation": 2
+          }
+        },
+        {
+          "id": "S7D",
+          "text": "Do the hardest 2 hours, hand over your tasks smoothly, then leave.",
+          "keys": {
+            "empathy": 0,
+            "conscientiousness": 2,
+            "collaborative_spirit": 2,
+            "emotional_agility": 3,
+            "curiosity": 0,
+            "creative_initiative": 0,
+            "motivation": 1
+          }
+        }
+      ]
+    }
+  ]
+}

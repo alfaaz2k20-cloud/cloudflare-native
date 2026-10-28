@@ -1,0 +1,30 @@
+{
+  "empathy": {
+    "name": "Empathy",
+    "definition": "The capacity to recognize, interpret, and respond sensitively to the emotional and practical needs of others, particularly by reading subtle social and contextual cues."
+  },
+  "conscientiousness": {
+    "name": "Conscientiousness",
+    "definition": "The tendency to be reliable, methodical, and responsible, characterized by a willingness to verify information under uncertainty and follow through on commitments."
+  },
+  "collaborative_spirit": {
+    "name": "Collaborative Spirit",
+    "definition": "The willingness to share space, synchronize efforts, and adapt one's own pacing or goals to support an interdependent, collective outcome."
+  },
+  "emotional_agility": {
+    "name": "Emotional Agility",
+    "definition": "The ability to maintain composure, recover quickly from setbacks, and adapt constructively to ambiguous, sudden, or frustrating changes in the environment."
+  },
+  "curiosity": {
+    "name": "Curiosity",
+    "definition": "The intrinsic drive to seek out new information, explore alternative perspectives, and engage with the unknown, even when there is no immediate instrumental reward."
+  },
+  "creative_initiative": {
+    "name": "Creative Initiative",
+    "definition": "The readiness to experiment, iterate, and apply unconventional solutions when standard procedures, rules, or resources fail to solve a problem."
+  },
+  "motivation": {
+    "name": "Motivation",
+    "definition": "The willingness to sustain voluntary effort, persist through unglamorous or tedious tasks, and go beyond minimum requirements for the benefit of the collective."
+  }
+}

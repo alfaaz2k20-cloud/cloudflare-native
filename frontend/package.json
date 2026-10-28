@@ -1,0 +1,19 @@
+{
+  "name": "alfaaz-frontend",
+  "private": true,
+  "dependencies": {
+    "lucide": "^1.28.0",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.25",
+    "tailwindcss": "^4.3.3",
+    "vite": "^5.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#2d2722">
+  <meta name="application-name" content="Alfaaz">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Alfaaz">
+  <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <meta name="description" content="Explore curated essays, philosophical reflections, and gallery archives at Alfaaz Collective." />
+  <meta property="og:site_name" content="Alfaaz Collective" />
+  <meta property="og:title" content="Curated Archives | Alfaaz Collective" />
+  <meta property="og:description" content="Essays, philosophical notes, and artistic archives by The Curator and Alfaaz contributors." />
+  <meta property="og:image" content="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Curated Archives | Alfaaz Collective" />
+  <meta name="twitter:description" content="Essays and artistic archives by The Curator." />
+  <meta name="twitter:image" content="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg" />
+  <title>Curated Archives | Alfaaz Collective</title>
+  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <link rel="stylesheet" href="global.css">
+  <script type="module" src="global.js"></script>
+  <style>
+    main { max-width: 900px; margin: 8rem auto 4rem; padding: 0 2rem; min-height: 60vh; }
+    .page-title { font-family: var(--font-heading); font-size: clamp(3rem, 6vw, 4.5rem); font-weight: 400; text-transform: uppercase; letter-spacing: 1px; color: var(--text-primary); margin-bottom: 0.5rem; line-height: 1; }
+    .page-subtitle { font-family: var(--font-body); font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4rem; display: block; border-bottom: 1px solid var(--grid-border); padding-bottom: 2rem; }
+    .archive-grid { display: flex; flex-direction: column; gap: 1.5rem; }
+    .archive-card { background: var(--bg-secondary); padding: 3rem; position: relative; transition: box-shadow 0.4s var(--transition-smooth), transform 0.4s var(--transition-smooth); border: 1px solid var(--grid-border); text-decoration: none; display: block; cursor: pointer; box-shadow: var(--shadow-base); }
+    .archive-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-float); border-color: rgba(189, 111, 93, 0.3); }
+    .archive-meta { font-family: var(--font-body); font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold); margin-bottom: 1rem; display: block; }
+    .archive-title { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; color: var(--text-primary); line-height: 1.2; margin-bottom: 1rem; }
+    .archive-excerpt { font-family: var(--font-body); font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+    .loading-state { font-size: 11px; color: var(--text-secondary); text-align: center; padding: 4rem; text-transform: uppercase; letter-spacing: 2px; border: 1px dashed var(--grid-border); }
+    footer { text-align: center; padding: 3em 0; border-top: 1px solid var(--grid-border); font-size: 10px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+    <nav id="navbar" style="justify-content: space-between;">
+    <a href="index.html" class="logo">ALFAAZ</a>
+    <div class="nav-actions">
+      <a href="index.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">Return</a>
+    </div>
+  </nav>
+
+  <main>
+    <h1 class="page-title">Curated Archives</h1>
+    <span class="page-subtitle">Journal & Essays</span>
+    <div id="blogContainer" class="archive-grid"><div class="loading-state">Opening archives...</div></div>
+  </main>
+
+  <footer><p>Alfaaz Collective // The Curator</p></footer>
+
+  <script type="module" src="src/blogs.js"></script>
+</body>
+</html>

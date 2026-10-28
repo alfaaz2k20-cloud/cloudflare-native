@@ -1,0 +1,21 @@
+{
+  "version": "2026-10-v1",
+  "candidate_notice": {
+    "lines": [
+      "<strong>Estimated Total Time:</strong> ~11–13 minutes (judgment questions and short interactive activities).",
+      "<strong>Voluntary Nature:</strong> You may pause, skip tasks, or conclude at any time without penalty. Missing or skipped sections are recorded neutrally as insufficient data, never as a low score.",
+      "<strong>Simulated Partners:</strong> Some interactive tasks feature computer-controlled simulated characters. Their behavior is automated and scripted.",
+      "<strong>Data & Research Notice:</strong> This is a calibration-stage research instrument for unpaid volunteer recruitment, not a validated selection test. All raw telemetry is recorded under a pseudonymous session identifier."
+    ]
+  },
+  "age_confirmation": {
+    "label": "I confirm that I am 18 years of age or older."
+  },
+  "research_participation": {
+    "label": "I understand and agree to participate in this research session."
+  },
+  "notice_title": "Volunteer Exploratory Assessment Notice",
+  "notice_body": "Estimated Total Time: ~11–13 minutes (judgment questions and short interactive activities). You may pause, skip tasks, or conclude at any time without penalty. Missing or skipped sections are recorded neutrally as insufficient data, never as a low score. Some interactive tasks feature computer-controlled simulated characters with scripted behaviors. This is a calibration-stage research instrument for unpaid volunteer recruitment, not a validated selection test. All raw telemetry is recorded under a pseudonymous session identifier.",
+  "volunteer_terms": "Participation is entirely voluntary for unpaid contributor and community volunteer roles with Alfaaz Collective. You may withdraw or conclude your session at any time without prejudice.",
+  "data_usage_statement": "Your responses and telemetry are collected solely to understand creative and collaborative working styles for Alfaaz projects. Raw telemetry is pseudonymous and never sold, shared, or subjected to automated candidate rejection."
+}

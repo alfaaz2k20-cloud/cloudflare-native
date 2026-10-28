@@ -1,0 +1,20 @@
+{
+  "name": "Alfaaz Collective",
+  "tagline": "A bridge between art, literature, and existence",
+  "fonts": {
+    "heading": "'Alegreya', serif",
+    "body": "'Alegreya Sans', sans-serif",
+    "urdu": "'Noto Nastaliq Urdu', serif"
+  },
+  "palette": {
+    "bg_primary": "#f4f1ea",
+    "bg_secondary": "#ffffff",
+    "text_primary": "#2d312e",
+    "text_secondary": "#8b908d",
+    "accent_gold": "#bd6f5d",
+    "accent_green": "#7a8f7c",
+    "accent_red": "#c96b65"
+  },
+  "volunteer_projects": "Exhibitions & Curation, The Journal (Editorial & Writing), Artisan Workshops & Circles, Regional Archival Preservation, and Community Gatherings.",
+  "require_18_plus_confirmation": true
+}

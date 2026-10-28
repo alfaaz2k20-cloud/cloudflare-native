@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#2d2722">
+  <meta name="application-name" content="Alfaaz">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Alfaaz">
+  <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <meta name="description" content="Read curated reflections and notes from Alfaaz Collective archives." />
+  <meta property="og:site_name" content="Alfaaz Collective" />
+  <meta property="og:title" content="Article | Alfaaz Collective" />
+  <meta property="og:description" content="Read curated reflections and notes from Alfaaz Collective archives." />
+  <meta property="og:image" content="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Article | Alfaaz Collective" />
+  <meta name="twitter:description" content="Read curated reflections and notes from Alfaaz Collective archives." />
+  <meta name="twitter:image" content="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg" />
+  <title>Article | Alfaaz Collective</title>
+  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <link rel="stylesheet" href="global.css">
+  <script type="module" src="global.js"></script>
+  <style>
+    main { max-width: 800px; margin: 8rem auto 6rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); padding: 5rem 6rem; }
+    @media (max-width: 768px) { main { padding: 3rem 2rem; margin-top: 6rem; } }
+    .post-header { border-bottom: 1px solid var(--grid-border); padding-bottom: 2rem; margin-bottom: 3rem; text-align: center;}
+    .post-meta { font-size: 10px; font-weight: 600; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem; display: block; }
+    .post-title { font-family: var(--font-heading); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 400; color: var(--text-primary); line-height: 1.2; letter-spacing: 1px; }
+    .post-content { font-size: 1.15rem; line-height: 1.9; color: var(--text-secondary); font-weight: 300; }
+    .post-content h2 { font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin: 3rem 0 1rem; font-weight: 400; line-height: 1.3; }
+    .post-content p { margin-bottom: 1.8rem; }
+    .post-content blockquote { border-left: 2px solid var(--accent-gold); padding-left: 1.5rem; margin: 2.5rem 0; font-style: italic; color: var(--text-secondary); }
+
+    /* Reference Section Styling */
+    .post-content h3 { font-family: var(--font-heading); font-size: 1.8rem; color: var(--text-primary); margin: 3.5rem 0 1.2rem; border-top: 1px solid var(--grid-border); padding-top: 2rem; font-weight: 400; }
+    .post-content ul { list-style: none; margin-bottom: 2rem; padding: 0; }
+    .post-content ul li { font-size: 12px; color: var(--text-secondary); margin-bottom: 0.8rem; padding-left: 1.2rem; position: relative; line-height: 1.6; text-transform: none; letter-spacing: 0.5px; }
+    .post-content ul li::before { content: "—"; position: absolute; left: 0; color: var(--accent-gold); }
+
+    .loading-state { font-size: 11px; color: var(--text-secondary); text-align: center; padding: 4rem; text-transform: uppercase; letter-spacing: 2px; border: 1px dashed var(--grid-border); }
+    footer { text-align: center; padding: 3em 0; border-top: 1px solid var(--grid-border); font-size: 10px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+    <nav id="navbar" style="justify-content: space-between;">
+    <a href="index.html" class="logo">ALFAAZ</a>
+    <div class="nav-actions">
+      <a href="blogs.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">Back to Journal</a>
+    </div>
+  </nav>
+
+  <main id="articleTarget"><div class="loading-state">Loading essay...</div></main>
+
+  <footer><p>Alfaaz Collective</p></footer>
+
+  <script type="module" src="src/post.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+{
+  "version": "2.0",
+  "battery_name": "candidate_14_game_core",
+  "total_candidate_games": 14,
+  "total_research_bank_games": 7,
+  "total_sjt_scenarios": 7,
+  "estimated_duration_minutes": {
+    "target_min": 11,
+    "target_max": 13,
+    "design_ceiling": 14
+  },
+  "candidate_core_games": {
+    "empathy": ["F1", "F2"],
+    "conscientiousness": ["A1", "A2"],
+    "collaborative_spirit": ["C1", "C2"],
+    "emotional_agility": ["E1", "E2"],
+    "curiosity": ["Q1", "Q2"],
+    "creative_initiative": ["CR1", "CR3"],
+    "motivation": ["M1", "M2"]
+  },
+  "candidate_core_games_by_world": {
+    "W1": ["F1", "F2"],
+    "W2": ["A1", "A2"],
+    "W3": ["C1", "C2"],
+    "W4": ["E1", "E2"],
+    "W5": ["Q1", "Q2"],
+    "W6": ["CR1", "CR3"],
+    "W7": ["M1", "M2"]
+  },
+  "research_bank_games": {
+    "empathy": ["F3"],
+    "conscientiousness": ["A3"],
+    "collaborative_spirit": ["C3"],
+    "emotional_agility": ["E3"],
+    "curiosity": ["Q3"],
+    "creative_initiative": ["CR2"],
+    "motivation": ["M3"]
+  },
+  "research_bank_games_by_world": {
+    "W1": ["F3"],
+    "W2": ["A3"],
+    "W3": ["C3"],
+    "W4": ["E3"],
+    "W5": ["Q3"],
+    "W6": ["CR2"],
+    "W7": ["M3"]
+  }
+}

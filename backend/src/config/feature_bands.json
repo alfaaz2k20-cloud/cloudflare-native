@@ -1,0 +1,29 @@
+{
+  "calibration_status": "NOT_ESTABLISHED",
+  "calibration_timestamp": null,
+  "calibration_source": "none",
+  "note": "Empirical calibration pending normative sample. Arbitrary fixed thresholds prohibited.",
+  "bands": {
+    "F1": null,
+    "F2": null,
+    "F3": null,
+    "A1": null,
+    "A2": null,
+    "A3": null,
+    "C1": null,
+    "C2": null,
+    "C3": null,
+    "E1": null,
+    "E2": null,
+    "E3": null,
+    "Q1": null,
+    "Q2": null,
+    "Q3": null,
+    "CR1": null,
+    "CR2": null,
+    "CR3": null,
+    "M1": null,
+    "M2": null,
+    "M3": null
+  }
+}

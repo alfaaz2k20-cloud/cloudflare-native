@@ -1,0 +1,23 @@
+# Alfaaz Collective — Cloudflare Workers Development Variables Template
+# Copy this file to .dev.vars for local development. Never commit .dev.vars!
+
+# 1. Core Authentication & Security
+JWT_SECRET=dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars
+ADMIN_PASSWORD=curator2026!
+PHANTOM_SECRET_TOKEN=phantom-dev-token-change-in-prod
+
+# 2. Email Notification Options
+# Options: "dev" (safe console preview), "webhook" (Make.com relay), "cloudflare" (Cloudflare Email Sending)
+EMAIL_PROVIDER=dev
+MAKE_WEBHOOK_URL=
+CLOUDFLARE_EMAIL_TOKEN=
+CLOUDFLARE_EMAIL_SENDER=curator@alfaaz.com
+
+# 3. AI Integrations (Curator AI & Autonomous Essays)
+# If left empty, Curator AI automatically falls back to grounded offline archive mode
+GEMINI_API_KEY=
+GROQ_API_KEY=
+
+# 4. Turnstile Bot Protection (Optional in local dev)
+# Set to 1x0000000000000000000000000000000AA for Cloudflare always-pass testing key
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA

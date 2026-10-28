@@ -1,0 +1,292 @@
+{
+  "version": "2026-10-v2",
+  "minigames": {
+    "F1": {
+      "parameter": "empathy",
+      "min_observations": 3,
+      "ceiling_ms": 30000,
+      "features": {
+        "cue_response_latency_ms": {
+          "type": "duration_ms",
+          "direction": "lower_is_faster",
+          "exclude_in_a11y": ["screen_reader", "keyboard_navigation", "extended_time"]
+        },
+        "contextual_adjustment_accuracy": {
+          "type": "ratio",
+          "direction": "lower_error_is_higher_precision",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "F2": {
+      "parameter": "empathy",
+      "min_observations": 2,
+      "ceiling_ms": 30000,
+      "features": {
+        "clarification_vs_assumption_ratio": {
+          "type": "ratio",
+          "direction": "higher_is_more_verifying",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "F3": {
+      "parameter": "empathy",
+      "min_observations": 2,
+      "ceiling_ms": 35000,
+      "features": {
+        "post_shift_adaptation_latency_ms": {
+          "type": "duration_ms",
+          "direction": "lower_is_faster",
+          "exclude_in_a11y": ["screen_reader", "keyboard_navigation", "extended_time"]
+        }
+      }
+    },
+    "A1": {
+      "parameter": "conscientiousness",
+      "min_observations": 4,
+      "ceiling_ms": 35000,
+      "features": {
+        "classification_rule_adherence_rate": {
+          "type": "ratio",
+          "direction": "higher_is_more_accurate",
+          "exclude_in_a11y": []
+        },
+        "verification_duration_ratio": {
+          "type": "ratio",
+          "direction": "higher_is_more_deliberate",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "A2": {
+      "parameter": "conscientiousness",
+      "min_observations": 3,
+      "ceiling_ms": 35000,
+      "features": {
+        "exception_flagging_precision": {
+          "type": "ratio",
+          "direction": "higher_is_more_systematic",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "A3": {
+      "parameter": "conscientiousness",
+      "min_observations": 1,
+      "ceiling_ms": 35000,
+      "features": {
+        "error_detection_sensitivity": {
+          "type": "ratio",
+          "direction": "higher_is_more_sensitive",
+          "exclude_in_a11y": []
+        },
+        "false_alarm_rate": {
+          "type": "ratio",
+          "direction": "lower_is_more_precise",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "C1": {
+      "parameter": "collaborative_spirit",
+      "min_observations": 2,
+      "ceiling_ms": 30000,
+      "features": {
+        "need_sensitive_sharing_index": {
+          "type": "index",
+          "direction": "higher_is_more_need_sensitive",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "C2": {
+      "parameter": "collaborative_spirit",
+      "min_observations": 2,
+      "ceiling_ms": 30000,
+      "features": {
+        "coordination_collision_avoidance_rate": {
+          "type": "ratio",
+          "direction": "higher_is_more_coordinated",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "C3": {
+      "parameter": "collaborative_spirit",
+      "min_observations": 2,
+      "ceiling_ms": 35000,
+      "features": {
+        "constructive_repair_score": {
+          "type": "ratio",
+          "direction": "higher_is_more_constructive",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "E1": {
+      "parameter": "emotional_agility",
+      "min_observations": 12,
+      "ceiling_ms": 35000,
+      "features": {
+        "perseverative_error_count": {
+          "type": "count",
+          "direction": "lower_is_more_flexible",
+          "exclude_in_a11y": []
+        },
+        "trials_to_criterion_post_shift": {
+          "type": "count",
+          "direction": "lower_is_faster_adaptation",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "E2": {
+      "parameter": "emotional_agility",
+      "min_observations": 2,
+      "ceiling_ms": 30000,
+      "features": {
+        "cadence_stability_ratio": {
+          "type": "ratio",
+          "direction": "closer_to_one_is_more_stable",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "E3": {
+      "parameter": "emotional_agility",
+      "min_observations": 3,
+      "ceiling_ms": 35000,
+      "features": {
+        "strategy_shift_efficiency": {
+          "type": "ratio",
+          "direction": "higher_is_more_efficient",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "Q1": {
+      "parameter": "curiosity",
+      "min_observations": 1,
+      "ceiling_ms": 35000,
+      "features": {
+        "optional_alcove_exploration_rate": {
+          "type": "ratio",
+          "direction": "higher_is_more_exploratory",
+          "exclude_in_a11y": []
+        },
+        "epistemic_dwell_duration_ratio": {
+          "type": "ratio",
+          "direction": "higher_is_deeper_dwell",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "Q2": {
+      "parameter": "curiosity",
+      "min_observations": 2,
+      "ceiling_ms": 30000,
+      "features": {
+        "anomaly_investigation_depth": {
+          "type": "ratio",
+          "direction": "higher_is_deeper_inquiry",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "Q3": {
+      "parameter": "curiosity",
+      "min_observations": 2,
+      "ceiling_ms": 30000,
+      "features": {
+        "integrated_insight_utilization": {
+          "type": "ratio",
+          "direction": "higher_is_more_integrated",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "CR1": {
+      "parameter": "creative_initiative",
+      "min_observations": 1,
+      "ceiling_ms": 35000,
+      "features": {
+        "solution_uniqueness_index": {
+          "type": "index",
+          "direction": "higher_is_more_novel",
+          "exclude_in_a11y": []
+        },
+        "attempt_chain_progression": {
+          "type": "index",
+          "direction": "higher_is_more_varied_iteration",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "CR2": {
+      "parameter": "creative_initiative",
+      "min_observations": 1,
+      "ceiling_ms": 35000,
+      "features": {
+        "creative_pivot_latency_ms": {
+          "type": "duration_ms",
+          "direction": "lower_is_faster",
+          "exclude_in_a11y": ["screen_reader", "keyboard_navigation", "extended_time"]
+        }
+      }
+    },
+    "CR3": {
+      "parameter": "creative_initiative",
+      "min_observations": 2,
+      "ceiling_ms": 30000,
+      "features": {
+        "functional_fixedness_overcome_rate": {
+          "type": "ratio",
+          "direction": "higher_is_more_flexible_affordance",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "M1": {
+      "parameter": "motivation",
+      "min_observations": 3,
+      "ceiling_ms": 30000,
+      "features": {
+        "mandatory_cadence_consistency": {
+          "type": "ratio",
+          "direction": "lower_is_more_consistent",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "M2": {
+      "parameter": "motivation",
+      "min_observations": 1,
+      "ceiling_ms": 40000,
+      "features": {
+        "optional_units_completed": {
+          "type": "count",
+          "direction": "higher_is_more_persistent",
+          "exclude_in_a11y": []
+        },
+        "voluntary_duration_ms": {
+          "type": "duration_ms",
+          "direction": "higher_is_longer_voluntary_effort",
+          "exclude_in_a11y": []
+        }
+      }
+    },
+    "M3": {
+      "parameter": "motivation",
+      "min_observations": 1,
+      "ceiling_ms": 30000,
+      "features": {
+        "reduced_feedback_persistence_count": {
+          "type": "count",
+          "direction": "higher_is_more_sustained_under_low_salience",
+          "exclude_in_a11y": []
+        }
+      }
+    }
+  }
+}

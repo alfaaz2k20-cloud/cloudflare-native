@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ALFAAZ COLLECTIVE — Recruiter Research View</title>
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+
+  <script src="https://cdn.tailwindcss.com" defer></script>
+  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <link rel="stylesheet" href="global.css">
+  <script type="module" src="global.js"></script>
+
+  <style>
+    .research-banner {
+      background: #faf8f5;
+      border: 1px solid var(--accent-gold);
+      padding: 1rem 1.5rem;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: var(--text-primary);
+    }
+    .param-card {
+      background: #ffffff;
+      border: 1px solid var(--grid-border);
+      padding: 1.5rem;
+      transition: all 0.2s ease;
+    }
+    .badge-neutral {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: #f4f1ea;
+      color: var(--text-primary);
+      border: 1px solid var(--grid-border);
+    }
+    .sticky-th {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .sticky-col-rank {
+      position: sticky;
+      left: 0;
+      width: 48px;
+      min-width: 48px;
+      max-width: 48px;
+      z-index: 10;
+    }
+    .sticky-col-dim {
+      position: sticky;
+      left: 48px;
+      z-index: 10;
+    }
+    .sticky-th-corner {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+    .compact-table td, .compact-table th {
+      padding: 0.4rem 0.6rem !important;
+      font-size: 0.8rem !important;
+    }
+  </style>
+</head>
+<body class="selection:bg-amber-900 selection:text-white bg-[var(--bg-primary)] min-h-screen">
+  <!-- Minimalist Nav -->
+  <header class="py-3 px-4 sm:py-4 sm:px-8 border-b border-[var(--grid-border)] bg-[var(--bg-secondary)] flex flex-wrap justify-between items-center gap-2 sticky top-0 z-50">
+    <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <a href="admin.html" class="font-serif tracking-widest text-base sm:text-lg text-[var(--text-primary)]">ALFAAZ CURATORIAL REGISTRY</a>
+      <span class="text-[10px] sm:text-xs text-[var(--text-secondary)] uppercase tracking-widest">/ Recruiter Research View</span>
+    </div>
+    <div class="flex items-center gap-3 sm:gap-4">
+      <a href="admin.html" class="text-xs uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+        &larr; Admin Dashboard
+      </a>
+      <button id="logoutBtn" class="text-xs uppercase tracking-wider text-[var(--accent-gold)]">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto py-6 sm:py-8 px-4 space-y-6">
+    <!-- Mandatory Research Safeguard Banner -->
+    <div class="research-banner flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+      <div class="flex items-center gap-3">
+        <i data-lucide="shield-alert" class="w-5 h-5 text-[var(--accent-gold)] flex-shrink-0"></i>
+        <div>
+          <strong class="uppercase tracking-wider text-xs">Research Evidence View:</strong>
+          <span class="text-xs text-[var(--text-secondary)] ml-1">Not validated for automated selection or ranking. Human decision-making only.</span>
+        </div>
+      </div>
+      <span class="text-[10px] text-[var(--text-secondary)] tracking-widest uppercase">Spec v2 (2026-10)</span>
+    </div>
+
+    <!-- Main View Container -->
+    <div id="researchContent" class="space-y-6">
+      <div class="p-12 text-center text-[var(--text-secondary)] font-serif text-lg bg-white border border-[var(--grid-border)]">
+        Loading applicant sessions registry...
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="src/research.js"></script>
+</body>
+</html>

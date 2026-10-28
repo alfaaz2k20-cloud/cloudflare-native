@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script type="module" src="global.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#2d2722">
+  <meta name="application-name" content="Alfaaz">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Alfaaz">
+  <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <title>Submit to Storage — ALFAAZ</title>
+  <script src="https://cdn.tailwindcss.com" defer></script>
+  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <link rel="stylesheet" href="global.css">
+  
+  
+  <script type="module" src="src/submit.js"></script>
+  <style>
+    .vault-container { max-width: 600px; margin: 8rem auto; padding: 0 2rem; }
+    .panel-title { font-family: var(--font-heading); font-size: 2.5rem; font-weight: 400; letter-spacing: 1px; margin-bottom: 0.5rem; color: var(--text-primary); text-align: center;}
+    .panel-subtitle { font-size: 11px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2.5rem; text-align: center; }
+    .input-group { margin-bottom: 2rem; }
+    .auth-input, select, textarea { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); font-family: var(--font-body); font-size: 13px; padding: 0.8rem 0; transition: border-color 0.3s ease; border-radius: 0; }
+    .auth-input:focus, select:focus, textarea:focus { outline: none; border-bottom-color: var(--accent-gold); }
+    input[type="file"] { font-size: 11px; color: var(--text-secondary); padding: 0.5rem 0; width: 100%; }
+    input[type="file"]::file-selector-button { background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--grid-border); padding: 0.8rem 1.5rem; margin-right: 1rem; font-family: var(--font-body); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.3s; border-radius: 0; }
+    input[type="file"]::file-selector-button:hover { background: var(--text-primary); color: #fff; }
+    #status-msg { margin-top: 15px; font-size: 11px; text-align: center; letter-spacing: 1px; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+    <nav id="navbar" style="justify-content: space-between;">
+    <a href="index.html" class="logo">ALFAAZ</a>
+    <div class="nav-actions">
+      <a href="index.html" class="" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">Return</a>
+    </div>
+  </nav>
+
+  <div class="vault-container">
+    <div class="panel">
+      <h1 class="panel-title">The Storage</h1>
+      <p class="panel-subtitle">Submit your files securely to the Curator</p>
+      
+      <form id="submission-form">
+        <div class="input-group">
+          <label class="input-label">Submission Type</label>
+          <select id="sub-type">
+              <option value="Art Portfolio (PDF/IMG)">Art Portfolio (PDF/IMG)</option>
+              <option value="Project Proposal">Project Proposal</option>
+              <option value="Membership Form">Membership Form</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Title / Designation</label>
+          <input type="text" id="title" class="auth-input" required placeholder="e.g., The Autumn Collection">
+        </div>
+        <div class="input-group">
+          <label class="input-label">File (PDF or Image)</label>
+          <input type="file" id="file-upload" required>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Curator's Note (Optional context)</label>
+          <textarea id="note" rows="3" placeholder="Brief context..."></textarea>
+        </div>
+        <button type="submit" id="submit-btn" class="submit-btn" style="width: 100%;">Submit to Storage</button>
+      </form>
+      <div id="status-msg"></div>
+    </div>
+  </div>
+
+</body>
+</html>

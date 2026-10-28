@@ -1,0 +1,113 @@
+{
+  "model_id": "alfaaz_ridge_relative_v1",
+  "model_version": "1.0-ridge",
+  "feature_schema_version": "1.0",
+  "task_definition_version": "1.0",
+  "sjt_definition_version": "2026-09-rev",
+  "training_dataset_identifier": "uncalibrated_baseline",
+  "preprocessing_version": "1.0-standardized",
+  "training_date": "2026-10-03T20:00:00Z",
+  "validation_method": "5-fold-cross-validation",
+  "regularization_parameter": 1.0,
+  "description": "Ridge regression model: Game behavioral features -> SJT-aligned relative profile target. Version 1 experimental predictive relationship.",
+  "parameters": {
+    "empathy": {
+      "is_active": false,
+      "status": "UNTRAINED",
+      "assigned_games": ["F1", "F2", "F3"],
+      "intercept": 0.5,
+      "coefficients": {},
+      "feature_means": {},
+      "feature_sds": {},
+      "feature_directions": {
+        "cue_response_latency_ms": "NEGATIVE",
+        "clarification_vs_assumption_ratio": "POSITIVE",
+        "post_shift_adaptation_latency_ms": "NEGATIVE"
+      }
+    },
+    "conscientiousness": {
+      "is_active": false,
+      "status": "UNTRAINED",
+      "assigned_games": ["A1", "A2", "A3"],
+      "intercept": 0.5,
+      "coefficients": {},
+      "feature_means": {},
+      "feature_sds": {},
+      "feature_directions": {
+        "classification_rule_adherence_rate": "POSITIVE",
+        "verification_duration_ratio": "POSITIVE",
+        "exception_flagging_precision": "POSITIVE"
+      }
+    },
+    "collaborative_spirit": {
+      "is_active": false,
+      "status": "UNTRAINED",
+      "assigned_games": ["C1", "C2", "C3"],
+      "intercept": 0.5,
+      "coefficients": {},
+      "feature_means": {},
+      "feature_sds": {},
+      "feature_directions": {
+        "need_sensitive_sharing_index": "POSITIVE",
+        "coordination_collision_avoidance_rate": "POSITIVE",
+        "constructive_repair_score": "POSITIVE"
+      }
+    },
+    "emotional_agility": {
+      "is_active": false,
+      "status": "UNTRAINED",
+      "assigned_games": ["E1", "E2", "E3"],
+      "intercept": 0.5,
+      "coefficients": {},
+      "feature_means": {},
+      "feature_sds": {},
+      "feature_directions": {
+        "perseverative_error_count": "NEGATIVE",
+        "cadence_stability_ratio": "POSITIVE",
+        "strategy_shift_efficiency": "POSITIVE"
+      }
+    },
+    "curiosity": {
+      "is_active": false,
+      "status": "UNTRAINED",
+      "assigned_games": ["Q1", "Q2", "Q3"],
+      "intercept": 0.5,
+      "coefficients": {},
+      "feature_means": {},
+      "feature_sds": {},
+      "feature_directions": {
+        "optional_alcove_exploration_rate": "POSITIVE",
+        "anomaly_investigation_depth": "POSITIVE",
+        "integrated_insight_utilization": "POSITIVE"
+      }
+    },
+    "creative_initiative": {
+      "is_active": false,
+      "status": "UNTRAINED",
+      "assigned_games": ["CR1", "CR2", "CR3"],
+      "intercept": 0.5,
+      "coefficients": {},
+      "feature_means": {},
+      "feature_sds": {},
+      "feature_directions": {
+        "solution_uniqueness_index": "POSITIVE",
+        "creative_pivot_latency_ms": "NEGATIVE",
+        "functional_fixedness_overcome_rate": "POSITIVE"
+      }
+    },
+    "motivation": {
+      "is_active": false,
+      "status": "UNTRAINED",
+      "assigned_games": ["M1", "M2", "M3"],
+      "intercept": 0.5,
+      "coefficients": {},
+      "feature_means": {},
+      "feature_sds": {},
+      "feature_directions": {
+        "mandatory_cadence_consistency": "POSITIVE",
+        "optional_units_completed": "POSITIVE",
+        "reduced_feedback_persistence_count": "POSITIVE"
+      }
+    }
+  }
+}

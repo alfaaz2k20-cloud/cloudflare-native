@@ -1,0 +1,27 @@
+{
+  "name": "alfaaz-cloudflare-native",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Cloudflare-Native Full-Stack Parallel Implementation of Alfaaz Collective",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build:frontend": "cd frontend && npm install && npm run build",
+    "build:backend": "tsc --noEmit",
+    "build": "npm run build:frontend && npm run build:backend",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:seed:local": "wrangler d1 execute DB --local --file=database/seeds/0001_dev_seed.sql",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241101.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "wrangler": "^4.154.0"
+  }
+}
