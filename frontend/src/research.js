@@ -500,7 +500,7 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
             </thead>
             <tbody>
               ${tasks.map(t => {
-                const statusBg = t.status === 'RECORDED' ? 'background:#eaf5ea; color:#1e6624; border:1px solid #bce0bc;' : (t.status === 'NOT_DERIVED' ? 'background:#f0eeea; color:var(--text-secondary); border:1px solid var(--grid-border);' : 'background:#fdf2e9; color:#9c4221; border:1px solid #f0cdb8;');
+                const statusBg = (t.status === 'RECORDED' || t.status === 'USABLE') ? 'background:#eaf5ea; color:#1e6624; border:1px solid #bce0bc;' : (t.status === 'NOT_DERIVED' ? 'background:#f0eeea; color:var(--text-secondary); border:1px solid var(--grid-border);' : 'background:#fdf2e9; color:#9c4221; border:1px solid #f0cdb8;');
                 const dispText = t.status === 'NOT_DERIVED' ? '<span class="text-black italic">Unattempted &middot; Reserved in Research Bank</span>' : window.escapeHtml(t.display_text || '—');
                 return `
                 <tr class="border-b border-[var(--grid-border)]">

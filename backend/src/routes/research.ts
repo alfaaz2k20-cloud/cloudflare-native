@@ -154,10 +154,15 @@ researchRouter.get('/sessions/:session_id', async (c) => {
 
   const forceRecompute = c.req.query('recompute')?.toLowerCase() === 'true';
 
+  const eventsCountRow = await c.env.DB.prepare('SELECT COUNT(*) as count FROM telemetry_events WHERE session_id = ?').bind(sessionId).first<{ count: number }>();
+  const eventsCount = eventsCountRow?.count || 0;
+
   // Check existing evidence
   let evidenceList = (await c.env.DB.prepare('SELECT * FROM evidence WHERE session_id = ? AND is_superseded = 0').bind(sessionId).all<any>()).results || [];
 
-  if (evidenceList.length === 0 || forceRecompute) {
+  const needsRecompute = forceRecompute || evidenceList.length === 0 || (eventsCount > 0 && evidenceList.every((e: any) => e.game_raw === null));
+
+  if (needsRecompute) {
     try {
       await extractSessionFeatures(c.env.DB, sessionId);
       evidenceList = await integrateSessionEvidence(c.env.DB, sessionId, true);
@@ -172,8 +177,6 @@ researchRouter.get('/sessions/:session_id', async (c) => {
   const flags = (await c.env.DB.prepare('SELECT * FROM data_quality_flags WHERE session_id = ?').bind(sessionId).all<any>()).results || [];
   const features = (await c.env.DB.prepare('SELECT * FROM features WHERE session_id = ?').bind(sessionId).all<any>()).results || [];
   const gameScores = (await c.env.DB.prepare('SELECT * FROM game_scores WHERE session_id = ?').bind(sessionId).all<any>()).results || [];
-  const eventsCountRow = await c.env.DB.prepare('SELECT COUNT(*) as count FROM telemetry_events WHERE session_id = ?').bind(sessionId).first<{ count: number }>();
-  const eventsCount = eventsCountRow?.count || 0;
 
   const gameScoresById: Record<string, any> = {};
   for (const gs of gameScores) {

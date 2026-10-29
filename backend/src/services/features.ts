@@ -65,6 +65,30 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     M1: 'motivation', M2: 'motivation', M3: 'motivation'
   };
 
+  const GAME_SCORING_ACTIONS: Record<string, string[]> = {
+    F1: ['trial_submit', 'dialogue_selected'],
+    F2: ['trial_submit', 'inquiry_selected'],
+    F3: ['transition_completed', 'trial_submit'],
+    A1: ['item_sorted', 'document_filed'],
+    A2: ['decision_logged', 'exception_resolved'],
+    A3: ['item_inspected', 'record_flagged'],
+    C1: ['allocation_confirmed', 'resource_transferred'],
+    C2: ['placement_confirmed', 'placement_attempted'],
+    C3: ['repair_executed', 'breakdown_resolved'],
+    E1: ['tile_sorted', 'rule_shifted'],
+    E2: ['sequence_completed', 'action_selected'],
+    E3: ['adaptation_confirmed', 'condition_shifted'],
+    Q1: ['decision_submitted', 'alcove_explored'],
+    Q2: ['investigation_finalized', 'clue_inspected'],
+    Q3: ['dossier_retrieved', 'synthesis_decided'],
+    CR1: ['stage_completed', 'part_toggled'],
+    CR2: ['reframing_adjusted', 'constraint_shifted'],
+    CR3: ['strategy_adapted', 'tool_selected'],
+    M1: ['unit_completed', 'unit_action_performed'],
+    M2: ['continuation_choice_selected', 'unit_completed'],
+    M3: ['persistence_trial_completed', 'unit_verified']
+  };
+
   for (const [mg, evs] of Object.entries(mgEvents)) {
     const param = GAME_TO_PARAM[mg];
     if (!param) continue;
@@ -74,9 +98,10 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     const isUsable = obsCount >= bounds.min_obs;
 
     // Deterministic score derived from event actions
+    const targetActions = GAME_SCORING_ACTIONS[mg] || ['correct', 'select', 'share', 'flag', 'success', 'complete_trial', 'confirm'];
     let rawScore = 0;
     for (const ev of evs) {
-      if (['correct', 'select', 'share', 'flag', 'success', 'complete_trial', 'confirm'].includes(ev.action)) {
+      if (targetActions.includes(ev.action) || ['correct', 'success', 'confirm', 'complete'].includes(ev.action)) {
         rawScore += 1;
       }
     }

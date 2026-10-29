@@ -167,7 +167,11 @@ export async function integrateSessionEvidence(
 
   // 5. Integrate per parameter
   const integratedResults = [];
-  const nextVersion = 1;
+  const maxVerRow = await db
+    .prepare("SELECT MAX(version) as max_v FROM evidence WHERE session_id = ?")
+    .bind(sessionId)
+    .first<{ max_v: number }>();
+  const nextVersion = ((maxVerRow?.max_v) || 0) + 1;
 
   for (const param of Object.keys(PARAM_MINIGAMES)) {
     const sjt = sjtScores ? sjtScores[param] : null;
@@ -226,7 +230,7 @@ export async function integrateSessionEvidence(
       cross_method_delta: delta,
       profile_completeness: profileCompleteness,
       game_status: gameStatus,
-      game_band: null,
+      game_band: gameRelative !== null ? (gameRelative >= 0.66 ? 'HIGH' : (gameRelative >= 0.33 ? 'MODERATE' : 'LOW')) : null,
       consistency,
       relationship,
       confidence,

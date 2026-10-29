@@ -48,6 +48,37 @@ export async function getSessionTaskRecords(db: D1Database, sessionId: string): 
     const sc = scoresMap[g.game_id];
     const evCount = eventCountMap[g.game_id] || 0;
     const isCandidateCore = ["F1", "F2", "A1", "A2", "C1", "C2", "E1", "E2", "Q1", "Q2", "CR1", "CR3", "M1", "M2"].includes(g.game_id);
+    const hasEvents = evCount > 0;
+    const gateStatus = hasEvents ? "RECORDED" : "NOT_DERIVED";
+
+    const NEUTRAL_TAG = "neutral behavioral record, no good/bad direction";
+    let descText = "not derived yet";
+    if (hasEvents) {
+      switch (g.game_id) {
+        case "F1": descText = `completed ${evCount} cue attunement trials`; break;
+        case "F2": descText = `completed ${evCount} ambiguous cue inquiry trials; ${NEUTRAL_TAG}`; break;
+        case "F3": descText = `completed ${evCount} contextual interpretation transitions`; break;
+        case "A1": descText = `completed ${evCount} classification items`; break;
+        case "A2": descText = `handled ${evCount} exception decisions as defined`; break;
+        case "A3": descText = `inspected ${evCount} records; flagged discrepancies`; break;
+        case "C1": descText = `completed ${evCount} resource allocation rounds; ${NEUTRAL_TAG}`; break;
+        case "C2": descText = `completed ${evCount} canvas coordination rounds`; break;
+        case "C3": descText = `executed collaboration repair in ${evCount} breakdowns`; break;
+        case "E1": descText = `completed ${evCount} rule-shift sorting trials`; break;
+        case "E2": descText = `completed ${evCount} setback recovery sequences; ${NEUTRAL_TAG}`; break;
+        case "E3": descText = `completed ${evCount} environmental condition transitions`; break;
+        case "Q1": descText = `explored ${evCount} optional alcoves and decisions; ${NEUTRAL_TAG}`; break;
+        case "Q2": descText = `inspected ${evCount} optional investigative clues; ${NEUTRAL_TAG}`; break;
+        case "Q3": descText = `retrieved ${evCount} optional synthesis dossiers; ${NEUTRAL_TAG}`; break;
+        case "CR1": descText = `assembled compositions using ${evCount} distinct elements; ${NEUTRAL_TAG}`; break;
+        case "CR2": descText = `completed constraint shifts with ${evCount} adjustments; ${NEUTRAL_TAG}`; break;
+        case "CR3": descText = `tested ${evCount} tool affordances across problems; ${NEUTRAL_TAG}`; break;
+        case "M1": descText = `completed ${evCount} verification units; ${NEUTRAL_TAG}`; break;
+        case "M2": descText = `completed mandatory units and continued for ${evCount} optional units; ${NEUTRAL_TAG}`; break;
+        case "M3": descText = `completed persistence trials under reduced feedback; ${NEUTRAL_TAG}`; break;
+        default: descText = `completed ${evCount} behavioral observations`; break;
+      }
+    }
 
     return {
       game_id: g.game_id,
@@ -55,15 +86,19 @@ export async function getSessionTaskRecords(db: D1Database, sessionId: string): 
       world_name: g.world_name,
       game_name: g.game_name,
       battery_role: isCandidateCore ? "candidate_core" : "research_bank",
-      display_status: evCount > 0 ? (sc?.status || "USABLE") : "NOT_PRESENTED",
+      status: gateStatus,
+      display_status: gateStatus,
+      display_text: descText,
       opportunity_count: evCount,
+      opportunities_count: evCount,
       descriptive_counts: {
         raw: sc?.raw_score ?? null,
         relative: sc?.relative_score ?? null,
         band: sc?.band ?? null,
         observations: sc?.observation_count ?? evCount
       },
-      tag: g.is_neutral ? "neutral behavioral record, no good/bad direction" : null
+      tag: g.is_neutral ? NEUTRAL_TAG : null,
+      is_neutral_record: g.is_neutral
     };
   });
 }
