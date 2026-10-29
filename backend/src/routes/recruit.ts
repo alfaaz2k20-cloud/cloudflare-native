@@ -341,7 +341,7 @@ recruitRouter.post('/complete', async (c) => {
       await emailProvider.sendEmail(
         identity.email,
         'ALFAAZ — Assessment Dossier Cataloged',
-        `Greetings ${candidateName},\n\nYour interactive assessment session and task records have been successfully submitted and cataloged for the Alfaaz Collective Admissions Committee.\n\nOur team is currently reviewing your dossier alongside your situational evaluation. If selected for an interview, you will receive an invitation link to reserve an interview slot.\n\nThank you for your creative investment and time.\n\n— Alfaaz Admissions`
+        `Greetings ${candidateName},\n\nYour interactive assessment session and task records have been successfully submitted and cataloged for the Alfaaz Collective Admissions Committee.\n\nThank you for your creative investment and time.\n\n— Alfaaz Admissions`
       );
     }
   } catch (emailErr) {
@@ -462,13 +462,31 @@ recruitRouter.post('/schedule-interview', async (c) => {
     throw err;
   }
 
+  const emailProvider = getEmailProvider(c.env);
+
   if (candidateEmail) {
-    const emailProvider = getEmailProvider(c.env);
+    try {
+      await emailProvider.sendEmail(
+        candidateEmail,
+        'ALFAAZ — Interview Scheduled',
+        `Greetings ${candidateName},\n\nYour interview slot with Alfaaz Collective has been confirmed for:\n\n${slotDisplay}\n\nWe look forward to speaking with you.\n\n— Alfaaz Admissions`
+      );
+    } catch (err) {
+      console.warn('[RECRUIT] Candidate interview email failed:', err);
+    }
+  }
+
+  // Also dispatch an immediate alert to curator@alfaazcollective.org
+  try {
+    const curatorEmail = 'curator@alfaazcollective.org';
+    const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
     await emailProvider.sendEmail(
-      candidateEmail,
-      'ALFAAZ — Interview Scheduled',
-      `Greetings ${candidateName},\n\nYour interview slot with Alfaaz Collective has been confirmed for:\n\n${slotDisplay}\n\nWe look forward to speaking with you.\n\n— Alfaaz Admissions`
+      curatorEmail,
+      `ALFAAZ — New Candidate Interview Scheduled: ${candidateName}`,
+      `Admissions Notice,\n\nA candidate has scheduled an interview slot:\n\nCandidate: ${candidateName}\nEmail: ${candidateEmail || 'Not provided'}\nPhone: ${candidatePhone || 'Not provided'}\nSlot: ${slotDisplay}\nSession ID: ${sessionId}\nNotes: ${notes || 'None'}\n\nYou can review their completed assessment dossier and task metrics in the Admin Portal:\n${appUrl}/admin.html\n\n— Alfaaz Admissions`
     );
+  } catch (err) {
+    console.warn('[RECRUIT] Curator interview email alert failed:', err);
   }
 
   return c.json({
