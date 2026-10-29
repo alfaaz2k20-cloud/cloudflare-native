@@ -766,6 +766,8 @@ function renderConsent(app) {
  </label>
  </div>
 
+ <div id="recruitTurnstile" class="pt-2"></div>
+
  <div class="pt-8 flex justify-center sm:justify-end">
  <button type="submit" aria-disabled="true" class="interactive-option px-8 py-3 bg-[var(--text-primary)] text-white text-xs uppercase tracking-widest hover:bg-[var(--accent-gold)] opacity-40">
  Enter the Studio &rarr;
@@ -788,6 +790,14 @@ function renderConsent(app) {
  ageConfirm?.addEventListener('change', updateConsentSubmitState);
  consentAgree?.addEventListener('change', updateConsentSubmitState);
  updateConsentSubmitState();
+ if (window.turnstile && document.getElementById('recruitTurnstile')) {
+   try {
+     window.turnstile.render('#recruitTurnstile', {
+       sitekey: window.ALFAAZ_TURNSTILE_SITEKEY || '1x00000000000000000000AA',
+       theme: 'light'
+     });
+   } catch (_) {}
+ }
 
  document.getElementById('consentForm')?.addEventListener('submit', async (e) => {
  e.preventDefault();
@@ -802,10 +812,13 @@ function renderConsent(app) {
 
  try {
  const researchParticipationConsent = consentAgree.checked;
+ const turnstileToken = window.turnstile ? (window.turnstile.getResponse() || '') : (document.querySelector('[name="cf-turnstile-response"]')?.value || '');
  const res = await apiFetch('/recruit/consent', {
  method: 'POST',
  body: JSON.stringify({
- choices: { research_telemetry: researchParticipationConsent }
+ confirmed_18_plus: ageConfirm.checked,
+ choices: { research_telemetry: researchParticipationConsent },
+ turnstile_token: turnstileToken
  })
  });
  if (!res.ok) throw new Error(`Network error: ${res.status}`);
@@ -1775,7 +1788,9 @@ async function renderComplete(app) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       if (d.getDay() === 0) continue;
-      const iso = d.toISOString().split('T')[0];
+      // Build the ISO date from local components; toISOString() would shift the day for
+      // timezones ahead of UTC and book a different date than the label the candidate picked.
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
       const fullLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
       availableDays.push({

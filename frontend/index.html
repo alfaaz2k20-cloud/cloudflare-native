@@ -768,12 +768,16 @@
 
             if (res && res.ok) {
                 const data = await res.json();
-                console.log("✅ Full data received:", data);   // ← Check this in console
                 const cards = parseToCards(data);
                 renderCards(grid, cards);
+            } else if (document.getElementById('noticeLoading')) {
+                grid.innerHTML = `<div class="update-card fade-in visible"><p class="update-date">Alfaaz Collective</p><p class="update-text">Notices are temporarily unavailable. Please check back shortly.</p></div>`;
             }
         } catch (err) {
             console.error("Notices load failed:", err);
+            if (document.getElementById('noticeLoading')) {
+                grid.innerHTML = `<div class="update-card fade-in visible"><p class="update-date">Alfaaz Collective</p><p class="update-text">Notices are temporarily unavailable. Please check back shortly.</p></div>`;
+            }
         } finally {
             isUpdating = false;
         }
@@ -781,8 +785,10 @@
 
     // Init
     document.addEventListener('DOMContentLoaded', loadLiveNotices);
-    window.addEventListener('pageshow', loadLiveNotices);
-    setInterval(loadLiveNotices, 25000);
+    // Only refetch when the page is restored from the back/forward cache, not on every initial load.
+    window.addEventListener('pageshow', (event) => { if (event.persisted) loadLiveNotices(); });
+    setInterval(() => { if (!document.hidden) loadLiveNotices(); }, 25000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadLiveNotices(); });
 })();
     
     // VITRINE DESKTOP SLIDER

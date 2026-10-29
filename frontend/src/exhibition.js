@@ -145,7 +145,15 @@ document.addEventListener('DOMContentLoaded', () => {
  if (btn) { btn.textContent = "Submitting..."; btn.disabled = true; }
  if (msg) { msg.textContent = ''; msg.style.color = ''; }
 
- if (window.globalApiFetch) {
+ const restoreBtn = () => {
+ if (btn) { btn.textContent = 'Submit to Curator'; btn.disabled = false; }
+ };
+
+ try {
+ if (!window.globalApiFetch) {
+ throw new Error('Submission is unavailable right now.');
+ }
+
  const res = await window.globalApiFetch('/exhibitions/apply', {
  method: 'POST', body: JSON.stringify(payload)
  });
@@ -156,14 +164,22 @@ document.addEventListener('DOMContentLoaded', () => {
  msg.textContent = '✓ Portfolio submitted. Redirecting to dashboard...';
  }
  setTimeout(() => window.location.href = 'dashboard.html', 2000);
- } else {
+ return;
+ }
+
  const errorData = await res?.json().catch(() => ({}));
  if (msg) {
  msg.style.color = 'var(--accent-red)';
- msg.textContent = errorData.detail || 'Submission failed. Please try again.';
+ msg.textContent = errorData.detail || errorData.error || 'Submission failed. Please try again.';
  }
- if (btn) { btn.textContent = 'Submit to Curator'; btn.disabled = false; }
+ restoreBtn();
+ } catch (err) {
+ console.error('[Exhibition submit error]', err);
+ if (msg) {
+ msg.style.color = 'var(--accent-red)';
+ msg.textContent = 'Could not reach the server. Please check your connection and try again.';
  }
+ restoreBtn();
  }
  });
 

@@ -34,7 +34,12 @@ const PRECACHE_URLS = [
 
 const STATIC_DESTINATIONS = new Set(['font', 'image', 'manifest', 'script', 'style', 'worker']);
 const NETWORK_FIRST_DESTINATIONS = new Set(['script', 'style', 'worker']);
-const THIRD_PARTY_STATIC_HOSTS = new Set(['unpkg.com']);
+const THIRD_PARTY_STATIC_HOSTS = new Set([
+  'unpkg.com',
+  'cdn.tailwindcss.com',
+  'fonts.googleapis.com',
+  'fonts.gstatic.com'
+]);
 
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
@@ -103,12 +108,20 @@ async function networkFirstNavigation(request) {
   }
 }
 
+function isCacheableResponse(request, response) {
+  if (response.ok) return true;
+  // Cross-origin no-cors fetches resolve to opaque responses (status 0). Persist those only
+  // for allowlisted static CDNs; an opaque same-origin response means something went wrong.
+  const url = new URL(request.url);
+  return response.type === 'opaque' && !isSameOrigin(url) && THIRD_PARTY_STATIC_HOSTS.has(url.hostname);
+}
+
 async function networkFirstStatic(request) {
   const cache = await caches.open(RUNTIME_CACHE);
 
   try {
     const response = await fetch(request);
-    if (response.ok || response.type === 'opaque') {
+    if (isCacheableResponse(request, response)) {
       await cache.put(request, response.clone());
     }
     return response;
@@ -122,7 +135,7 @@ async function staleWhileRevalidate(request) {
   const cached = await cache.match(request);
   const network = fetch(request)
     .then((response) => {
-      if (response.ok || response.type === 'opaque') {
+      if (isCacheableResponse(request, response)) {
         cache.put(request, response.clone()).catch(() => {});
       }
       return response;

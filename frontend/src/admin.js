@@ -71,24 +71,80 @@ document.addEventListener('DOMContentLoaded', () => {
  <div><div class="data-label">Registered</div><div class="data-display">${capLabel}</div></div>
  <div><div class="data-label">Status</div><span class="badge ${isOpen ? 'badge-open' : 'badge-closed'}">${isOpen ? 'Open' : 'Closed'}</span></div>
  <div style="display:flex; flex-direction:column; gap:0.6rem;">
- <button class="action-btn ${isOpen ? '' : 'gold'}" style="padding: 0.6rem; font-size:9px;" onclick="toggleEvent(${e.id}, this)">${isOpen ? 'Close Registration' : 'Open Registration'}</button>
- <button class="action-btn gold" style="padding: 0.6rem; font-size:9px;" onclick="viewRegistrations(${e.id})">View List</button>
- <button class="action-btn" style="padding: 0.6rem; font-size:9px; border-color:var(--accent-red); color:var(--accent-red);" onclick="deleteEvent(${e.id}, '${safeName.replace(/'/g, "\\'")}', this)">Delete</button>
+ <button class="action-btn ${isOpen ? '' : 'gold'}" style="padding: 0.6rem; font-size:9px;" data-action="toggle-event" data-id="${e.id}">${isOpen ? 'Close Registration' : 'Open Registration'}</button>
+ <button class="action-btn gold" style="padding: 0.6rem; font-size:9px;" data-action="view-registrations" data-id="${e.id}">View List</button>
+ <button class="action-btn" style="padding: 0.6rem; font-size:9px; border-color:var(--accent-red); color:var(--accent-red);" data-action="delete-event" data-id="${e.id}" data-name="${safeName}">Delete</button>
  </div>`;
  container.appendChild(card);
  });
+
+ if (!container.dataset.actionsBound) {
+ container.dataset.actionsBound = '1';
+ container.addEventListener('click', (ev) => {
+ const btn = ev.target.closest('button[data-action]');
+ if (!btn || !container.contains(btn)) return;
+ const id = Number(btn.dataset.id);
+ if (!Number.isFinite(id)) return;
+ const action = btn.dataset.action;
+ if (action === 'toggle-event') window.toggleEvent(id, btn);
+ else if (action === 'view-registrations') window.viewRegistrations(id);
+ else if (action === 'delete-event') window.deleteEvent(id, btn.dataset.name || 'this event', btn);
+ });
+ }
+
  if(window.refreshGlobalEffects) window.refreshGlobalEffects();
  } catch (e) { container.innerHTML = '<div class="empty-state">Error loading events.</div>'; }
  };
 
  window.handleCreateEvent = async function() {
  const name = document.getElementById('ev-name').value.trim(), date = document.getElementById('ev-date').value.trim(), capacity = parseInt(document.getElementById('ev-capacity').value) || 0, desc = document.getElementById('ev-desc').value.trim(), msg = document.getElementById('ev-create-msg');
- if (!name) return; msg.textContent = 'Creating...';
+ if (!name) return;
+ if (msg) msg.textContent = 'Creating...';
+ try {
  const res = await window.globalApiFetch('/admin/events/create', { method: 'POST', body: JSON.stringify({ name, description: desc, event_date: date, capacity }) });
- if (res && res.ok) { msg.textContent = '✓ Created.'; window.loadEvents(); }
+ if (res && res.ok) {
+ if (msg) msg.textContent = '✓ Created.';
+ window.loadEvents();
+ } else {
+ const err = await res?.json().catch(() => ({}));
+ if (msg) msg.textContent = err.error || err.detail || 'Could not create the event.';
+ }
+ } catch (err) {
+ console.error('[Create event error]', err);
+ if (msg) msg.textContent = 'Could not reach the server. Please try again.';
+ }
  };
- window.toggleEvent = async function(id, btn) { btn.textContent = '...'; const res = await window.globalApiFetch(`/admin/events/${id}/toggle`, { method: 'PATCH' }); if (res && res.ok) window.loadEvents(); };
- window.deleteEvent = async function(id, name, btn) { if (!confirm(`Delete ${name}?`)) return; btn.textContent = '...'; const res = await window.globalApiFetch(`/admin/events/${id}`, { method: 'DELETE' }); if (res && res.ok) window.loadEvents(); };
+ window.toggleEvent = async function(id, btn) {
+ const original = btn ? btn.textContent : '';
+ if (btn) btn.textContent = '...';
+ try {
+ const res = await window.globalApiFetch(`/admin/events/${id}/toggle`, { method: 'PATCH' });
+ if (res && res.ok) { window.loadEvents(); return; }
+ const err = await res?.json().catch(() => ({}));
+ if (btn) btn.textContent = original;
+ alert(err.error || err.detail || 'Could not update registration status.');
+ } catch (err) {
+ console.error('[Toggle event error]', err);
+ if (btn) btn.textContent = original;
+ alert('Could not reach the server. Please try again.');
+ }
+ };
+ window.deleteEvent = async function(id, name, btn) {
+ if (!confirm(`Delete ${name}?`)) return;
+ const original = btn ? btn.textContent : '';
+ if (btn) btn.textContent = '...';
+ try {
+ const res = await window.globalApiFetch(`/admin/events/${id}`, { method: 'DELETE' });
+ if (res && res.ok) { window.loadEvents(); return; }
+ const err = await res?.json().catch(() => ({}));
+ if (btn) btn.textContent = original;
+ alert(err.error || err.detail || 'Could not delete the event.');
+ } catch (err) {
+ console.error('[Delete event error]', err);
+ if (btn) btn.textContent = original;
+ alert('Could not reach the server. Please try again.');
+ }
+ };
 
  window.viewRegistrations = async function(id) {
  const event = allEvents.find(e => e.id === id); document.getElementById('modalTitle').textContent = event.name; document.getElementById('modalBody').innerHTML = 'Loading...'; document.getElementById('regModal').classList.add('open');
@@ -121,11 +177,22 @@ document.addEventListener('DOMContentLoaded', () => {
  if(!container) return;
  container.innerHTML = '';
 
+ if (!container.dataset.actionsBound) {
+ container.dataset.actionsBound = '1';
+ container.addEventListener('click', (ev) => {
+ const btn = ev.target.closest('button[data-action="activate-exhibition"]');
+ if (!btn || !container.contains(btn)) return;
+ const id = Number(btn.dataset.id);
+ if (!Number.isFinite(id)) return;
+ window.activateExhibition(id, btn.dataset.title || 'this exhibition');
+ });
+ }
+
  const liveEx = exhibitions.find(e => e.is_active);
  if (liveEx) {
- statusText.innerHTML = `Currently Live: <strong style="color: var(--accent-green);">${window.escapeHtml(liveEx.title)}</strong>`;
+ if (statusText) statusText.innerHTML = `Currently Live: <strong style="color: var(--accent-green);">${window.escapeHtml(liveEx.title)}</strong>`;
  } else {
- statusText.innerHTML = `<strong style="color: var(--accent-red);">CLOSED</strong> (No active exhibition)`;
+ if (statusText) statusText.innerHTML = `<strong style="color: var(--accent-red);">CLOSED</strong> (No active exhibition)`;
  }
 
  if (exhibitions.length === 0) {
@@ -145,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
  const safeDateText = window.escapeHtml(ex.date_text);
  const actionBtn = ex.is_active
  ? `<button disabled style="font-family: var(--font-body); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 0.5rem 1rem; background: transparent; border: 1px solid var(--grid-border); color: var(--text-secondary); cursor: not-allowed;">Currently Active</button>`
- : `<button onclick="activateExhibition(${ex.id}, '${safeTitle.replace(/'/g, "\\'")}')" class="action-btn gold" style="padding: 0.5rem 1rem; font-size: 10px;">Set as Live</button>`;
+ : `<button data-action="activate-exhibition" data-id="${ex.id}" data-title="${safeTitle}" class="action-btn gold" style="padding: 0.5rem 1rem; font-size: 10px;">Set as Live</button>`;
 
  card.innerHTML = `
  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
