@@ -1,8 +1,0 @@
-{
-  "sjt_keys_fingerprint": "0a1f21197968a9179eec6123b6b19beb8822902c5fdbb820aeb587a3a195e1b6",
-  "parameters_canonical_sha256": "f9026b9c50ad4a7c65b3108b2b3321b8c4daece85a1402274d9f342374cf0397",
-  "parameters_lf_sha256": "1262f85b33c6bd64b3331d214363813e218e9fb52efa856cd6342bd6818c70e6",
-  "parameters_crlf_sha256": "ed4eb65e958a37d45b539470dfe5dc125932651cbc404e68f56fac31bb5bc64e",
-  "sjt_reference_lf_sha256": "c098b401d37cc30b515139d307fef632047c048584e19771c0e014ef027e391d",
-  "sjt_reference_crlf_sha256": "be71fb2f4f0473034dccc5b9affac76ca93a553b50c54c155470ce1b50835890"
-}

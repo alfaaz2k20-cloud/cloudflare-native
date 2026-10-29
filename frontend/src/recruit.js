@@ -993,32 +993,40 @@ function applyAccessibility(modes = []) {
 
 function renderAccessibility(app) {
  const modes = state.accessibilityModes || [];
+ const hasAccommodations = modes.length > 0;
  app.innerHTML = `
  <div class="space-y-6">
  <div class="border-b border-[var(--grid-border)] pb-3 text-center">
- <span class="act-badge">Preferences · رہنمائی</span>
- <h2 class="text-2xl text-[var(--text-primary)]">Interaction & Accessibility</h2>
+ <span class="act-badge">Preferences · ترجیحات</span>
+ <h2 class="text-2xl text-[var(--text-primary)]">Display & Comfort Preferences</h2>
  <p class="text-xs text-black mt-2 max-w-lg mx-auto leading-relaxed">
- This section is here to make the assessment easier and more comfortable to use. Alfaaz Recruit measures thoughtful engagement, not visual conformity or motor speed. These options adjust the visual environment and presentation to suit your eyes, screen, and device.
+ Make your screen comfortable before beginning. You can adjust the visual display, reading style, or motion settings to best match your eyes and device. These options only adjust how items appear on your screen—they never affect your assessment or evaluation. Choose any adjustments you'd like, or select &ldquo;No adjustments needed&rdquo; to continue with standard settings.
  </p>
  </div>
 
  <div class="space-y-3 pt-2">
- <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer">
+ <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer hover:bg-white transition-colors">
+ <input type="checkbox" id="a11y_none" class="mt-1 accent-[#bd6f5d]" ${!hasAccommodations ? 'checked' : ''}>
+ <div>
+ <div class="text-sm font-medium text-[var(--text-primary)]">No adjustments needed (Standard Display)</div>
+ <div class="text-xs text-black mt-0.5">I do not require visual, reading, or motion adjustments. Continue with standard studio settings.</div>
+ </div>
+ </label>
+ <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer hover:bg-white transition-colors">
  <input type="checkbox" id="a11y_contrast" class="mt-1 accent-[#bd6f5d]" ${modes.includes('high_contrast') ? 'checked' : ''}>
  <div>
  <div class="text-sm font-medium text-[var(--text-primary)]">High Contrast Display</div>
  <div class="text-xs text-black mt-0.5">Increases text contrast, element borders, and background separation for clearer visibility.</div>
  </div>
  </label>
- <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer">
+ <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer hover:bg-white transition-colors">
  <input type="checkbox" id="a11y_dyslexia" class="mt-1 accent-[#bd6f5d]" ${modes.includes('dyslexia_font') ? 'checked' : ''}>
  <div>
  <div class="text-sm font-medium text-[var(--text-primary)]">Dyslexia-Friendly Typography</div>
  <div class="text-xs text-black mt-0.5">Applies a high-legibility sans-serif typeface with enhanced letter and line spacing.</div>
  </div>
  </label>
- <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer">
+ <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer hover:bg-white transition-colors">
  <input type="checkbox" id="a11y_motion" class="mt-1 accent-[#bd6f5d]" ${modes.includes('reduced_motion') ? 'checked' : ''}>
  <div>
  <div class="text-sm font-medium text-[var(--text-primary)]">Reduced Motion</div>
@@ -1028,13 +1036,45 @@ function renderAccessibility(app) {
  </div>
 
  <div class="pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
- <span class="text-xs text-black italic">Accessibility settings do not lower your result or count against you in any way. Settings change interaction and presentation conditions, not candidate evaluation or suitability.</span>
+ <span class="text-xs text-black italic">Preferences are strictly for your comfort and never lower your result or count against you in any way.</span>
  <button id="saveA11yBtn" class="min-h-[44px] px-8 py-2.5 bg-[var(--text-primary)] text-white text-xs uppercase tracking-widest hover:bg-[var(--accent-gold)] shadow-sm rounded-xs">
  Continue &rarr;
  </button>
  </div>
  </div>
  `;
+
+ const noneCb = document.getElementById('a11y_none');
+ const contrastCb = document.getElementById('a11y_contrast');
+ const dyslexiaCb = document.getElementById('a11y_dyslexia');
+ const motionCb = document.getElementById('a11y_motion');
+
+ if (noneCb) {
+ noneCb.addEventListener('change', () => {
+ if (noneCb.checked) {
+ if (contrastCb) contrastCb.checked = false;
+ if (dyslexiaCb) dyslexiaCb.checked = false;
+ if (motionCb) motionCb.checked = false;
+ } else {
+ if (!contrastCb?.checked && !dyslexiaCb?.checked && !motionCb?.checked) {
+ noneCb.checked = true;
+ }
+ }
+ });
+ }
+
+ const onAdjustmentChange = () => {
+ const anyChecked = Boolean(contrastCb?.checked || dyslexiaCb?.checked || motionCb?.checked);
+ if (anyChecked) {
+ if (noneCb) noneCb.checked = false;
+ } else {
+ if (noneCb) noneCb.checked = true;
+ }
+ };
+
+ contrastCb?.addEventListener('change', onAdjustmentChange);
+ dyslexiaCb?.addEventListener('change', onAdjustmentChange);
+ motionCb?.addEventListener('change', onAdjustmentChange);
 
  document.getElementById('saveA11yBtn')?.addEventListener('click', async (e) => {
  const btn = e.currentTarget;
@@ -1043,9 +1083,13 @@ function renderAccessibility(app) {
  btn.textContent = 'Saving...';
 
  const selectedModes = [];
- if (document.getElementById('a11y_contrast')?.checked) selectedModes.push('high_contrast');
- if (document.getElementById('a11y_dyslexia')?.checked) selectedModes.push('dyslexia_font');
- if (document.getElementById('a11y_motion')?.checked) selectedModes.push('reduced_motion');
+ if (noneCb?.checked) {
+ // Standard settings: no adjustments requested
+ } else {
+ if (contrastCb?.checked) selectedModes.push('high_contrast');
+ if (dyslexiaCb?.checked) selectedModes.push('dyslexia_font');
+ if (motionCb?.checked) selectedModes.push('reduced_motion');
+ }
 
  state.accessibilityModes = selectedModes;
  applyAccessibility(selectedModes);

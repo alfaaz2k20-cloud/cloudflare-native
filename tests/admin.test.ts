@@ -15,7 +15,6 @@ describe('Admin Security & Control Subsystem (Real Route Integration)', () => {
       VAULT_BUCKET: mockR2 as any,
       CACHE_KV: mockKv as any,
       JWT_SECRET: jwtSecret,
-      ADMIN_PASSWORD: 'curator2026!',
       EMAIL_PROVIDER: 'dev' as const
     };
   }

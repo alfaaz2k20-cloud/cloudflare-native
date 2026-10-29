@@ -15,7 +15,6 @@ describe('Community Events & Collective Circles Subsystem (Real Route Integratio
       VAULT_BUCKET: mockR2 as any,
       CACHE_KV: mockKv as any,
       JWT_SECRET: jwtSecret,
-      ADMIN_PASSWORD: 'curator2026!',
       EMAIL_PROVIDER: 'dev' as const
     };
   }

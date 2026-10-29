@@ -3,7 +3,6 @@
 
 # 1. Core Authentication & Security
 JWT_SECRET=dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars
-ADMIN_PASSWORD=curator2026!
 PHANTOM_SECRET_TOKEN=phantom-dev-token-change-in-prod
 
 # 2. Email Notification Options

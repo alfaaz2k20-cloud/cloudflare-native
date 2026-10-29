@@ -89,6 +89,102 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     M3: ['persistence_trial_completed', 'unit_verified']
   };
 
+  // Ground truth target maps matching alfaaz-project task definitions
+  const F1_EXPECTED: Record<string, string> = {
+    F1_T1: 'accommodate',
+    F1_T2: 'maintain_objective',
+    F1_T3: 'accommodate',
+    F1_T4: 'clarify',
+    F1_T5: 'maintain_objective'
+  };
+  const F1_EXPECTED_ACTIONS: Record<string, string> = {
+    F1_T1: 'attenuate_reverb',
+    F1_T2: 'maintain_baseline',
+    F1_T3: 'boost_intelligibility',
+    F1_T4: 'clarify_channel',
+    F1_T5: 'maintain_baseline'
+  };
+
+  const F2_EXPECTED: Record<string, string> = {
+    F2_T1: 'act',
+    F2_T2: 'clarify',
+    F2_T3: 'maintain'
+  };
+  const F2_EXPECTED_ACTIONS: Record<string, string> = {
+    F2_T1: 'support_cue',
+    F2_T2: 'clarify_intent',
+    F2_T3: 'maintain_cadence'
+  };
+
+  const A1_EXPECTED: Record<string, string> = {
+    DOC_01: '19th_century',
+    DOC_02: 'poetry',
+    DOC_03: '20th_century',
+    DOC_04: 'kashmiri'
+  };
+
+  const C2_COORDINATED_SLOTS: Record<string, Set<string>> = {
+    C2_R1: new Set(['SLOT_NORTH_RIGHT', 'SLOT_BOTTOM_CENTER']),
+    C2_R2: new Set(['SLOT_PERIMETER_EAST', 'SLOT_PERIMETER_WEST']),
+    C2_R3: new Set(['SLOT_UPPER_GALLERY', 'SLOT_MID_SIDE'])
+  };
+
+  const E1_TARGET_CONTAINERS: Record<string, string> = {
+    E1_T1: 'container_1',
+    E1_T2: 'container_2',
+    E1_T3: 'container_1',
+    E1_T4: 'container_2',
+    E1_T5: 'container_2',
+    E1_T6: 'container_1',
+    E1_T7: 'container_1',
+    E1_T8: 'container_2'
+  };
+
+  const E2_TARGET_ACTIONS: Record<string, string> = {
+    E2_S1: 'clear_workspace',
+    E2_S2: 'standard_sequence',
+    E2_S3: 'stabilize_reference'
+  };
+
+  const CR1_VALID_SOLUTIONS: Record<string, Set<string>[]> = {
+    CR1_S1: [
+      new Set(['M_SPLIT_BAMBOO', 'M_WAXED_CORD']),
+      new Set(['M_BRASS_ROD']),
+      new Set(['M_CARVED_PINE', 'M_CERAMIC_WEIGHT'])
+    ],
+    CR1_S2: [
+      new Set(['M_LEATHER_STRAP', 'M_NOTCHED_PEG']),
+      new Set(['M_COPPER_WIRE']),
+      new Set(['M_LEATHER_STRAP', 'M_STONE_COUNTER'])
+    ]
+  };
+
+  const CR3_TARGETS: Record<string, { tools: Set<string>; methods: Set<string> }> = {
+    CR3_T1: {
+      tools: new Set(['bone_folder', 'bamboo_wedge']),
+      methods: new Set(['firm_edge_pass', 'flat_face_rub'])
+    },
+    CR3_T2: {
+      tools: new Set(['horsehair_brush', 'sponge_block']),
+      methods: new Set(['textured_flick', 'mottled_dab'])
+    },
+    CR3_T3: {
+      tools: new Set(['agate_stone', 'polished_wood', 'copper_burnisher']),
+      methods: new Set(['friction_free_rub', 'planar_press'])
+    }
+  };
+
+  const parseEvData = (ev: any): Record<string, any> => {
+    if (ev.data_json) {
+      try {
+        return typeof ev.data_json === 'string' ? JSON.parse(ev.data_json) : ev.data_json;
+      } catch {
+        return {};
+      }
+    }
+    return ev.data || {};
+  };
+
   for (const [mg, evs] of Object.entries(mgEvents)) {
     const param = GAME_TO_PARAM[mg];
     if (!param) continue;
@@ -97,9 +193,60 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     const obsCount = evs.length;
     const isUsable = obsCount >= bounds.min_obs;
 
-    // Deterministic score derived from event actions
+    // Ground-truth performance scoring ported from alfaaz-project game_scoring_engine
     let rawScore = 0;
-    if (mg === 'A2') {
+    if (mg === 'F1') {
+      const submits: Record<string, string> = {};
+      for (const ev of evs) {
+        if (['trial_submit', 'dialogue_selected'].includes(ev.action)) {
+          const d = parseEvData(ev);
+          const sId = d.stimulus_id || (d.trial_index !== undefined ? `F1_T${Number(d.trial_index) + 1}` : null);
+          const choice = d.action_id || d.choice_id || d.choice;
+          if (sId && choice) submits[sId] = String(choice);
+        }
+      }
+      if (Object.keys(submits).length > 0) {
+        for (const [sId, choice] of Object.entries(submits)) {
+          if (F1_EXPECTED[sId] === choice || F1_EXPECTED_ACTIONS[sId] === choice) rawScore++;
+        }
+      } else {
+        rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
+      }
+    } else if (mg === 'F2') {
+      const submits: Record<string, string> = {};
+      for (const ev of evs) {
+        if (['trial_submit', 'inquiry_selected'].includes(ev.action)) {
+          const d = parseEvData(ev);
+          const sId = d.stimulus_id || (d.trial_index !== undefined ? `F2_T${Number(d.trial_index) + 1}` : null);
+          const choice = d.action_id || d.choice_id || d.choice;
+          if (sId && choice) submits[sId] = String(choice);
+        }
+      }
+      if (Object.keys(submits).length > 0) {
+        for (const [sId, choice] of Object.entries(submits)) {
+          if (F2_EXPECTED[sId] === choice || F2_EXPECTED_ACTIONS[sId] === choice) rawScore++;
+        }
+      } else {
+        rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
+      }
+    } else if (mg === 'A1') {
+      const sorted: Record<string, string> = {};
+      for (const ev of evs) {
+        if (['item_sorted', 'document_filed'].includes(ev.action)) {
+          const d = parseEvData(ev);
+          const sId = d.stimulus_id || d.item_id || (d.trial_index !== undefined ? `DOC_0${Number(d.trial_index) + 1}` : null);
+          const folder = d.target_folder || d.folder_id || d.choice;
+          if (sId && folder) sorted[sId] = String(folder);
+        }
+      }
+      if (Object.keys(sorted).length > 0) {
+        for (const [sId, folder] of Object.entries(sorted)) {
+          if (A1_EXPECTED[sId] === folder) rawScore++;
+        }
+      } else {
+        rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
+      }
+    } else if (mg === 'A2') {
       // A2 measures exception_flagging_precision: true_positives / (true_positives + false_positives)
       // Ground truth: EXC_01, EXC_03, EXC_04 are genuine exceptions; EXC_02 is clean control.
       let genuineEvaluated = 0;
@@ -108,14 +255,9 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
       let generalPositives = 0;
 
       for (const ev of evs) {
-        let data: any = {};
-        if (ev.data_json) {
-          try {
-            data = typeof ev.data_json === 'string' ? JSON.parse(ev.data_json) : ev.data_json;
-          } catch {}
-        }
-        const stimId = data.stimulus_id || (ev.trial !== null && ev.trial !== undefined ? `EXC_0${Number(ev.trial) + 1}` : null);
-        const actId = data.action_id || ev.action || '';
+        const d = parseEvData(ev);
+        const stimId = d.stimulus_id || (ev.trial !== null && ev.trial !== undefined ? `EXC_0${Number(ev.trial) + 1}` : null);
+        const actId = d.action_id || ev.action || '';
 
         if (stimId === 'EXC_01' || stimId === 'EXC_03' || stimId === 'EXC_04') {
           genuineEvaluated++;
@@ -143,6 +285,185 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
       } else {
         rawScore = 0;
       }
+    } else if (mg === 'C1') {
+      const baselines: Record<string, { user: number; partner: number }> = {
+        C1_R1: { user: 4, partner: 1 },
+        C1_R2: { user: 3, partner: 3 },
+        C1_R3: { user: 1, partner: 4 }
+      };
+      const transfers: Record<string, number> = { C1_R1: 0, C1_R2: 0, C1_R3: 0 };
+      const confirmed: Record<string, boolean> = {};
+
+      for (const ev of evs) {
+        const d = parseEvData(ev);
+        const sId = d.stimulus_id || (d.trial_index !== undefined ? `C1_R${Number(d.trial_index) + 1}` : null);
+        if (!sId || !(sId in baselines)) continue;
+
+        if (['resource_transferred', 'tile_transferred', 'allocation_adjusted'].includes(ev.action)) {
+          if (d.delta !== undefined) {
+            transfers[sId] = Math.max(0, transfers[sId] + Number(d.delta));
+          } else if (d.allocated_amount !== undefined) {
+            transfers[sId] = Math.max(0, Number(d.allocated_amount));
+          }
+        } else if (['allocation_confirmed', 'round_submit'].includes(ev.action)) {
+          confirmed[sId] = true;
+        }
+      }
+
+      if (Object.keys(confirmed).length > 0) {
+        if (confirmed['C1_R1'] && transfers['C1_R1'] >= 2) rawScore++;
+        if (confirmed['C1_R2'] && (transfers['C1_R2'] === 0 || transfers['C1_R2'] === 1)) rawScore++;
+        if (confirmed['C1_R3'] && transfers['C1_R3'] === 0) rawScore++;
+      } else {
+        rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
+      }
+    } else if (mg === 'C2') {
+      const placements: Record<string, string> = {};
+      for (const ev of evs) {
+        if (['placement_confirmed', 'placement_attempted'].includes(ev.action)) {
+          const d = parseEvData(ev);
+          const sId = d.stimulus_id || (d.trial_index !== undefined ? `C2_R${Number(d.trial_index) + 1}` : null);
+          const slot = d.chosen_slot || d.slot_id;
+          if (sId && slot) placements[sId] = String(slot);
+        }
+      }
+      if (Object.keys(placements).length > 0) {
+        for (const [sId, slot] of Object.entries(placements)) {
+          if (C2_COORDINATED_SLOTS[sId]?.has(slot)) rawScore++;
+        }
+      } else {
+        rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
+      }
+    } else if (mg === 'E1') {
+      const sorted: Record<string, string> = {};
+      for (const ev of evs) {
+        if (ev.action === 'tile_sorted') {
+          const d = parseEvData(ev);
+          const sId = d.stimulus_id || (d.trial_index !== undefined ? `E1_T${Number(d.trial_index) + 1}` : null);
+          const choice = d.choice;
+          if (sId && choice) sorted[sId] = String(choice);
+        }
+      }
+      if (Object.keys(sorted).length > 0) {
+        for (const [sId, choice] of Object.entries(sorted)) {
+          if (E1_TARGET_CONTAINERS[sId] === choice) rawScore++;
+        }
+      } else {
+        rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
+      }
+    } else if (mg === 'E2') {
+      const sequences: Record<string, string> = {};
+      for (const ev of evs) {
+        if (['sequence_completed', 'action_selected'].includes(ev.action)) {
+          const d = parseEvData(ev);
+          const sId = d.stimulus_id || (d.trial_index !== undefined ? `E2_S${Number(d.trial_index) + 1}` : null);
+          const act = d.chosen_action || d.action_id;
+          if (sId && act) sequences[sId] = String(act);
+        }
+      }
+      if (Object.keys(sequences).length > 0) {
+        for (const [sId, act] of Object.entries(sequences)) {
+          if (E2_TARGET_ACTIONS[sId] === act) rawScore++;
+        }
+      } else {
+        rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
+      }
+    } else if (mg === 'Q1') {
+      const viewed = new Set<string>();
+      for (const ev of evs) {
+        if (['optional_resource_viewed', 'alcove_explored', 'alcove_inspected'].includes(ev.action)) {
+          const d = parseEvData(ev);
+          const resId = d.resource_id || d.alcove_id || `${d.stimulus_id}_res`;
+          if (resId) viewed.add(String(resId));
+        }
+      }
+      rawScore = viewed.size;
+    } else if (mg === 'Q2') {
+      const cluesByRelic: Record<string, Set<string>> = {};
+      for (const ev of evs) {
+        if (ev.action === 'clue_inspected') {
+          const d = parseEvData(ev);
+          const sId = d.stimulus_id || (d.trial_index !== undefined ? `Q2_T${Number(d.trial_index) + 1}` : 'relic_1');
+          if (!cluesByRelic[sId]) cluesByRelic[sId] = new Set();
+          if (d.clue_id) cluesByRelic[sId].add(String(d.clue_id));
+        }
+      }
+      rawScore = Object.values(cluesByRelic).filter(s => s.size > 0).length;
+    } else if (mg === 'CR1') {
+      const completions: Record<string, Set<string>> = {};
+      for (const ev of evs) {
+        if (['stage_completed', 'structure_tested', 'assembly_tested'].includes(ev.action)) {
+          const d = parseEvData(ev);
+          const sId = d.stage_id || d.stimulus_id || (d.trial_index !== undefined ? `CR1_S${Number(d.trial_index) + 1}` : null);
+          if (sId) {
+            const partsList = d.final_parts || d.parts || (d.element_id ? [d.element_id] : []);
+            completions[sId] = new Set(partsList.map((p: any) => String(p)));
+          }
+        }
+      }
+      if (Object.keys(completions).length > 0) {
+        for (const [sId, parts] of Object.entries(completions)) {
+          const validOptions = CR1_VALID_SOLUTIONS[sId] || [];
+          const isValid = validOptions.length > 0
+            ? validOptions.some(opt => {
+                for (const elem of opt) {
+                  if (!parts.has(elem)) return false;
+                }
+                return true;
+              })
+            : true;
+          if (isValid) rawScore++;
+        }
+      } else {
+        rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
+      }
+    } else if (mg === 'CR3') {
+      const adaptations: Record<string, { tool?: string; method?: string }> = {};
+      for (const ev of evs) {
+        if (['strategy_adapted', 'action_applied', 'tool_selected'].includes(ev.action)) {
+          const d = parseEvData(ev);
+          const sId = d.stimulus_id || (d.trial_index !== undefined ? `CR3_T${Number(d.trial_index) + 1}` : null);
+          if (sId) {
+            const tool = d.final_tool_id || d.tool_id;
+            const method = d.final_method || d.action_method;
+            adaptations[sId] = {
+              tool: tool ? String(tool) : undefined,
+              method: method ? String(method) : undefined
+            };
+          }
+        }
+      }
+      if (Object.keys(adaptations).length > 0) {
+        for (const [sId, { tool, method }] of Object.entries(adaptations)) {
+          const target = CR3_TARGETS[sId];
+          if (target && tool && target.tools.has(tool) && (!method || target.methods.has(method))) {
+            rawScore++;
+          }
+        }
+      } else {
+        rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
+      }
+    } else if (mg === 'M1') {
+      const completed = new Set<string>();
+      for (const ev of evs) {
+        if (['unit_completed', 'unit_action_performed'].includes(ev.action)) {
+          const d = parseEvData(ev);
+          const sId = d.stimulus_id || (d.unit_index !== undefined ? `M1_U${d.unit_index}` : `U_${completed.size}`);
+          completed.add(String(sId));
+        }
+      }
+      rawScore = completed.size;
+    } else if (mg === 'M2') {
+      let optCompleted = 0;
+      for (const ev of evs) {
+        if (ev.action === 'unit_completed') {
+          const d = parseEvData(ev);
+          if (d.is_mandatory === false) {
+            optCompleted++;
+          }
+        }
+      }
+      rawScore = optCompleted;
     } else {
       const targetActions = GAME_SCORING_ACTIONS[mg] || ['correct', 'select', 'share', 'flag', 'success', 'complete_trial', 'confirm'];
       for (const ev of evs) {

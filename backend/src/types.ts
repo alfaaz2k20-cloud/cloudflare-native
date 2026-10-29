@@ -10,7 +10,6 @@ export interface Env {
   NODE_ENV?: string;
   FRONTEND_URL?: string;
   JWT_SECRET?: string;
-  ADMIN_PASSWORD?: string;
   PHANTOM_SECRET_TOKEN?: string;
   TURNSTILE_SECRET_KEY?: string;
 
