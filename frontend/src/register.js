@@ -10,6 +10,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
  if (!form) return;
 
+ // Propagate redirect parameter to the login link
+ const initialParams = new URLSearchParams(window.location.search);
+ const initialRedirect = initialParams.get('redirect');
+ if (initialRedirect) {
+  const loginLink = document.querySelector('.toggle-auth a');
+  if (loginLink && loginLink.getAttribute('href')?.startsWith('login.html')) {
+   loginLink.setAttribute('href', `login.html?redirect=${encodeURIComponent(initialRedirect)}`);
+  }
+ }
+
  // Strength Meter Logic
  function getStrength(pw) {
  let score = 0;
@@ -117,7 +127,15 @@ document.addEventListener('DOMContentLoaded', () => {
  localStorage.setItem('alfaaz_token', data.token);
 
  setTimeout(() => {
- window.location.href = 'dashboard.html';
+ const params = new URLSearchParams(window.location.search);
+  let redirect = params.get('redirect');
+  if (redirect) {
+   const isSafeRelative = /^\/[^/\\]/.test(redirect) || /^[a-zA-Z0-9_-]+\.html(\?.*)?$/.test(redirect);
+   if (!isSafeRelative) {
+    redirect = null;
+   }
+  }
+  window.location.href = redirect || 'dashboard.html';
  }, 1000);
  } else {
  submitBtn.textContent = "Create Account";

@@ -508,7 +508,22 @@
           mobileLoginLink.href = 'dashboard.html';
         }
         if (joinClubBtn) { joinClubBtn.textContent = 'Apply for a Club'; joinClubBtn.href = 'dashboard.html'; }
+      } else {
+        if (joinClubBtn) {
+          joinClubBtn.textContent = 'Join a Club';
+          joinClubBtn.href = 'login.html?redirect=dashboard.html';
+        }
       }
+
+      // Make individual club cards clickable to dashboard/login
+      document.querySelectorAll('.club-card').forEach(card => {
+        card.style.cursor = 'pointer';
+        card.setAttribute('role', 'link');
+        card.setAttribute('tabindex', '0');
+        const targetUrl = isLoggedIn ? 'dashboard.html' : 'login.html?redirect=dashboard.html';
+        card.addEventListener('click', () => { window.location.href = targetUrl; });
+        card.addEventListener('keydown', (e) => { if (e.key === 'Enter') window.location.href = targetUrl; });
+      });
     })();
 
     // CURATOR AI
@@ -636,9 +651,29 @@
             const safeLabel = esc(c.linkLabel || 'Read More');
             const safeTagColor = (c.tagColor && /^#[0-9a-fA-F]{3,8}$|^var\(--[a-zA-Z0-9_-]+\)$/.test(c.tagColor)) ? c.tagColor : 'var(--text-secondary)';
             let safeLink = '';
-            if (c.link && !c.disabled && (c.link.startsWith('/') || c.link.startsWith('#') || c.link.startsWith('http://') || c.link.startsWith('https://'))) {
-                safeLink = esc(c.link);
+            if (c.link && !c.disabled) {
+                const rawLink = String(c.link).trim();
+                if (!rawLink.startsWith('javascript:') && !rawLink.startsWith('data:')) {
+                    safeLink = esc(rawLink);
+                }
             }
+
+            if (safeLink) {
+                div.style.cursor = 'pointer';
+                div.setAttribute('role', 'link');
+                div.setAttribute('tabindex', '0');
+                div.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'A') {
+                        window.location.href = safeLink;
+                    }
+                });
+                div.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        window.location.href = safeLink;
+                    }
+                });
+            }
+
             div.innerHTML = `
                 <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;">
                     <span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border:1px solid ${safeTagColor};color:${safeTagColor};border-radius:2px;">${safeTag}</span>
@@ -664,48 +699,48 @@
             tagColor: 'var(--accent-green)',
             date: ex.date_text || 'TBD',
             title: ex.title || 'Upcoming Cycle',
-            body: ex.about_text ? ex.about_text.substring(0, 140) + '...' : 'Applications opening soon.',
-            link: 'exhibition.html',
-            linkLabel: 'Apply Now →'
+            body: ex.about_text ? (ex.about_text.substring(0, 140) + '...') : 'Applications opening soon.',
+            link: isLoggedIn ? 'exhibition.html' : 'login.html?redirect=exhibition.html',
+            linkLabel: isLoggedIn ? 'Apply Now →' : 'Login to Apply →'
         });
     }
 
     // 2. Standard Events
     if (data && data.events && Array.isArray(data.events)) {
         data.events.forEach(e => {
-            const spots = e.spots_left !== undefined && e.spots_left !== null ? `${e.spots_left} spots remaining` : 'Open';
+            const spots = (e.spots_left !== undefined && e.spots_left !== null) ? `${e.spots_left} spots remaining` : 'Open';
             const capText = e.full ? 'At capacity' : spots;
             cards.push({
                 tag: 'EVENT',
-                tagColor: 'var(--text-secondary)', // Using existing variable
+                tagColor: 'var(--text-secondary)',
                 date: e.event_date || 'TBD',
                 title: e.name,
                 body: (e.description ? e.description + ' — ' : '') + capText + '.',
-                link: e.full ? null : (isLoggedIn ? 'dashboard.html' : 'login.html'),
+                link: e.full ? null : (isLoggedIn ? 'dashboard.html' : 'login.html?redirect=dashboard.html'),
                 linkLabel: e.full ? null : (isLoggedIn ? 'Register →' : 'Login to Register →')
             });
         });
     }
 
-// 3. Latest Blog Check
+    // 3. Latest Blog Check
     if (data && data.latest_blog) {
         const b = data.latest_blog;
-        
-        // Format the date to match your aesthetic (e.g., "May 1, 2026")
         let formattedDate = 'Recently';
         if (b.created_at) {
             const dateObj = new Date(b.created_at);
-            formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            if (!isNaN(dateObj.getTime())) {
+                formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            }
         }
 
         cards.push({
             tag: 'JOURNAL',
-            tagColor: 'var(--text-primary)', // Using standard text color to look editorial
+            tagColor: 'var(--accent-gold)',
             date: formattedDate,
             title: b.title,
-            body: b.excerpt ? b.excerpt.substring(0, 140) + '...' : 'New entry from the Curator.',
+            body: b.excerpt ? (b.excerpt.substring(0, 140) + '...') : 'New entry from the Curator.',
             link: `post.html?id=${b.id}`,
-            linkLabel: 'Read Entry →'
+            linkLabel: 'Read Journal Entry →'
         });
     }
 

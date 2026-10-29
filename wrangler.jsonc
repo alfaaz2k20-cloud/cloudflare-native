@@ -37,10 +37,14 @@
 			"id": "a199adbc0269462b9227f908a80025e2"
 		}
 	],
+	"triggers": {
+		"crons": [
+			"0 10 * * SUN"
+		]
+	},
 	"vars": {
 		"ENV": "production",
 		"FRONTEND_URL": "https://alfaazcollective.org",
-		"JWT_SECRET": "Alfaaz-Production-Master-Secret-Key-2026-!SecureJWT#",
-		"EMAIL_PROVIDER": "dev"
+		"EMAIL_PROVIDER": "webhook"
 	}
 }

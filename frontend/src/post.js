@@ -33,7 +33,13 @@ document.addEventListener('DOMContentLoaded', () => {
  
  try {
  // Using globalApiFetch for consistency
- const res = await window.globalApiFetch(`/blogs/${articleId}`);
+ let res = await window.globalApiFetch(`/api/blogs/${articleId}`);
+  if (!res || !res.ok) {
+    res = await window.globalApiFetch(`/api/blog?id=${articleId}`);
+  }
+  if (!res || !res.ok) {
+    res = await window.globalApiFetch(`/blogs/${articleId}`);
+  }
  if (!res || !res.ok) throw new Error("Article not found or server error.");
  
  const article = await res.json();

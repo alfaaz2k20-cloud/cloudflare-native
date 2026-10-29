@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
  const userData = localStorage.getItem('alfaaz_user');
  const token = localStorage.getItem('alfaaz_token');
  if (!userData || !token) {
- window.location.href = 'login.html';
+ window.location.href = 'login.html?redirect=dashboard.html';
  return;
  }
  let user;

@@ -1,0 +1,19 @@
+name: The Phantom Weekly Writer
+
+# Runs every Sunday at 10:00 AM UTC
+on:
+  schedule:
+    - cron: '0 10 * * 0'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  wake_the_phantom:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cloudflare Curator API
+        run: |
+          curl -v -X POST "https://alfaazcollective.org/blogs/generate" \
+               -H "Authorization: Bearer ${{ secrets.PHANTOM_SECRET_TOKEN }}" \
+               -H "Content-Type: application/json" \
+               -d "{}" \
+               --max-time 180

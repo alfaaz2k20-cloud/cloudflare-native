@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { cors } from 'hono/cors';
 import { Env, Variables } from './types';
+import { generateCuratorEssay } from './services/curator';
 
 import authRouter from './routes/auth';
 import eventsRouter from './routes/events';
@@ -201,5 +202,30 @@ app.onError((err, c) => {
     detail: isProd ? 'An unexpected error occurred.' : (err.message || 'An unexpected error occurred.')
   }, 500);
 });
+
+// Cloudflare Cron Trigger Handler for Phantom Weekly Writer
+(app as any).scheduled = async (event: ScheduledEvent, env: Env, ctx: ExecutionContext) => {
+  ctx.waitUntil((async () => {
+    try {
+      console.log('[CRON] Phantom Weekly Writer triggered by Cloudflare Cron Trigger.');
+      const generated = await generateCuratorEssay(env);
+      const title = generated.title || 'Untitled Reflection';
+      const excerpt = generated.excerpt || '';
+      const content = generated.content || '';
+
+      await env.DB.prepare(`
+        INSERT INTO blogs (title, excerpt, content, is_published)
+        VALUES (?, ?, ?, 1)
+      `).bind(title, excerpt, content).run();
+
+      if (env.CACHE_KV) {
+        await env.CACHE_KV.delete('notices_feed');
+      }
+      console.log('[CRON] Published weekly blog:', title);
+    } catch (err) {
+      console.error('[CRON ERROR] Phantom Writer cron execution failed:', err);
+    }
+  })());
+};
 
 export default app;

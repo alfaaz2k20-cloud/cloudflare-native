@@ -6,7 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
  
  try {
  // Using the globalApiFetch consolidated in global.js
- const res = await window.globalApiFetch('/blogs/');
+ let res = await window.globalApiFetch('/api/blogs');
+  if (!res || !res.ok) {
+    res = await window.globalApiFetch('/blogs');
+  }
  if (!res || !res.ok) throw new Error(`Failed to fetch: ${res?.status}`);
  
  const blogs = await res.json();

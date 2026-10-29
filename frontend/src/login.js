@@ -10,6 +10,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
  if (!form) return;
 
+ // Propagate redirect parameter to the registration link
+ const initialParams = new URLSearchParams(window.location.search);
+ const initialRedirect = initialParams.get('redirect');
+ if (initialRedirect) {
+  const regLink = document.querySelector('.toggle-auth a');
+  if (regLink && regLink.getAttribute('href')?.startsWith('register.html')) {
+   regLink.setAttribute('href', `register.html?redirect=${encodeURIComponent(initialRedirect)}`);
+  }
+ }
+
  // Toggle Password Visibility
  togglePw?.addEventListener('click', () => {
  const isHidden = pwInput.type === 'password';
