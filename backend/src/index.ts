@@ -17,11 +17,24 @@ import noticesRouter from './routes/notices';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// Global CORS Middleware (Tightened against arbitrary origin reflection with credentials)
+// 1. Host Canonicalization (301 Permanent Redirect www.alfaazcollective.org -> apex)
+app.use('*', async (c, next) => {
+  const host = c.req.header('host')?.toLowerCase().split(':')[0];
+  if (host === 'www.alfaazcollective.org') {
+    const url = new URL(c.req.url);
+    url.hostname = 'alfaazcollective.org';
+    url.protocol = 'https:';
+    url.port = '';
+    return c.redirect(url.toString(), 301);
+  }
+  await next();
+});
+
+// 2. Global CORS Middleware (Tightened against arbitrary origin reflection with credentials)
 app.use('*', async (c, next) => {
   const corsMiddleware = cors({
     origin: (origin) => {
-      if (!origin) return '*';
+      if (!origin) return null;
       const allowedStatic = [
         c.env?.FRONTEND_URL,
         'http://localhost:5173',
@@ -48,7 +61,6 @@ app.use('*', async (c, next) => {
           host === 'alfaazcollective.org' ||
           host.endsWith('.alfaazcollective.org') ||
           host === 'alfaazcollective.vercel.app' ||
-          (host.endsWith('.vercel.app') && host.includes('alfaaz')) ||
           host === 'localhost' ||
           host === '127.0.0.1'
         ) {
@@ -85,16 +97,8 @@ app.get('/api/ping', (c) => c.json({
   timestamp: new Date().toISOString()
 }));
 
-// Legacy Vercel Navigation Rewrites & Host Canonicalization (Matching vercel.json)
+// Legacy Vercel Navigation Rewrites (Matching vercel.json)
 app.use('*', async (c, next) => {
-  const host = c.req.header('host')?.toLowerCase();
-  if (host === 'www.alfaazcollective.org') {
-    const url = new URL(c.req.url);
-    url.hostname = 'alfaazcollective.org';
-    url.protocol = 'https:';
-    return c.redirect(url.toString(), 301);
-  }
-
   const path = c.req.path.replace(/\/+$/, '') || '/';
   const method = c.req.method;
 
@@ -191,9 +195,10 @@ app.onError((err, c) => {
     return err.getResponse();
   }
   console.error('[FATAL SERVER ERROR]', err);
+  const isProd = c.env?.ENV === 'production' || c.env?.ENVIRONMENT === 'production';
   return c.json({
     error: 'Internal Server Error',
-    detail: err.message || 'An unexpected error occurred.'
+    detail: isProd ? 'An unexpected error occurred.' : (err.message || 'An unexpected error occurred.')
   }, 500);
 });
 

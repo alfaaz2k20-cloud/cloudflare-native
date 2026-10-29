@@ -17,6 +17,10 @@
 		{
 			"pattern": "alfaazcollective.org",
 			"custom_domain": true
+		},
+		{
+			"pattern": "www.alfaazcollective.org",
+			"custom_domain": true
 		}
 	],
 	"d1_databases": [

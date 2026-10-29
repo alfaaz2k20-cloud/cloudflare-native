@@ -2,8 +2,7 @@
   "name": "alfaaz-frontend",
   "private": true,
   "dependencies": {
-    "lucide": "^1.28.0",
-    "pg": "^8.20.0"
+    "lucide": "^1.28.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.5.4",

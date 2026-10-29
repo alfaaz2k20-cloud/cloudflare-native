@@ -181,4 +181,61 @@ describe('Hono Worker Integration Endpoints', () => {
     const data: any = await res.json();
     expect(data.error).toContain('Endpoint not found');
   });
+
+  it('does not emit wildcard Access-Control-Allow-Origin when Origin header is omitted', async () => {
+    const res = await app.request('/api/events');
+    expect(res.headers.get('access-control-allow-origin')).toBeNull();
+  });
+
+  it('sanitizes internal error details in production environment to prevent information disclosure', async () => {
+    const throwingDb = {
+      prepare: () => {
+        throw new Error('SENSITIVE_SQLITE_SYNTAX_ERROR: table sqlite_master corrupt at line 42');
+      }
+    };
+
+    // Test in production environment
+    const prodRes = await app.request('/blogs/1', {}, { DB: throwingDb, ENV: 'production' } as any);
+    expect(prodRes.status).toBe(500);
+    const prodData: any = await prodRes.json();
+    expect(prodData.error).toBe('Internal Server Error');
+    expect(prodData.detail).toBe('An unexpected error occurred.');
+    expect(prodData.detail).not.toContain('SENSITIVE_SQLITE_SYNTAX_ERROR');
+
+    // Test in development environment (allows detailed error for debugging)
+    const devRes = await app.request('/blogs/1', {}, { DB: throwingDb, ENV: 'development' } as any);
+    expect(devRes.status).toBe(500);
+    const devData: any = await devRes.json();
+    expect(devData.detail).toContain('SENSITIVE_SQLITE_SYNTAX_ERROR');
+  });
+
+  it('strictly rejects arbitrary third-party vercel.app domains from CORS origin reflection', async () => {
+    const maliciousOrigins = [
+      'https://evil-alfaaz.vercel.app',
+      'https://my-alfaaz-phishing.vercel.app',
+      'https://attacker.vercel.app',
+      'https://malicious.com'
+    ];
+
+    for (const origin of maliciousOrigins) {
+      const res = await app.request('/api/events', {
+        method: 'OPTIONS',
+        headers: {
+          'Origin': origin,
+          'Access-Control-Request-Method': 'GET'
+        }
+      });
+      expect(res.headers.get('access-control-allow-origin')).toBeNull();
+    }
+  });
+
+  it('redirects www.alfaazcollective.org with port to apex domain https://alfaazcollective.org without port', async () => {
+    const res = await app.request('http://www.alfaazcollective.org:443/recruit?ref=test', {
+      headers: { 'Host': 'www.alfaazcollective.org:443' }
+    });
+
+    expect(res.status).toBe(301);
+    expect(res.headers.get('location')).toBe('https://alfaazcollective.org/recruit?ref=test');
+  });
 });
+

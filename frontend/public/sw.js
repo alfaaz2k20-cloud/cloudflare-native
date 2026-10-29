@@ -41,7 +41,6 @@ function isSameOrigin(url) {
 }
 
 function isApiRequest(url) {
-  if (url.hostname.includes('onrender.com')) return true;
   return isSameOrigin(url) && (
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/auth/') ||
@@ -53,7 +52,10 @@ function isApiRequest(url) {
     url.pathname.startsWith('/research/') ||
     url.pathname.startsWith('/admin/') ||
     url.pathname.startsWith('/vault/') ||
-    url.pathname.startsWith('/phantom/')
+    url.pathname.startsWith('/phantom/') ||
+    url.pathname.startsWith('/blogs') ||
+    url.pathname.startsWith('/notices') ||
+    url.pathname === '/ping'
   );
 }
 
