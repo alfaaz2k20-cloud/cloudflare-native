@@ -11,6 +11,7 @@
     "build": "npm run build:frontend && npm run build:backend",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:hardening": "node scripts/verify_challenger_2.mjs",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:seed:local": "wrangler d1 execute DB --local --file=database/seeds/0001_dev_seed.sql",
     "bootstrap:admin": "node scripts/bootstrap-admin.js",

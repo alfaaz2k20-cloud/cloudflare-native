@@ -29,4 +29,4 @@ Alfaaz Collective is a web platform for cultural programming, writing, exhibitio
 
 ## Notes
 - The public site is a Vite multi-page frontend.
-- The backend is a FastAPI service powering auth, dashboard actions, exhibition flows, blog content, and admin operations.
+- The backend is a Hono application running on a single Cloudflare Worker, with D1 (SQLite) for data, KV for the notices cache, and R2/Cloudinary for uploads. It powers auth, dashboard actions, exhibition flows, recruitment assessment, blog content, and admin operations.

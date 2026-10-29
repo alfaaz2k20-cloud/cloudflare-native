@@ -1,9 +1,8 @@
 name: The Phantom Weekly Writer
 
-# Runs every Sunday at 10:00 AM UTC
+# Authoritative Sunday publication is executed directly by the Cloudflare Worker cron trigger (wrangler.jsonc).
+# This workflow is retained for manual on-demand triggers via GitHub Actions UI.
 on:
-  schedule:
-    - cron: '0 10 * * 0'
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI
 
 jobs:
