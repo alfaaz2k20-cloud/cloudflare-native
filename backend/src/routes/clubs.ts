@@ -65,10 +65,17 @@ clubsRouter.post('/apply', requireAuth, async (c) => {
     return c.json({ detail: 'Pending application exists.' }, 400);
   }
 
-  await c.env.DB
-    .prepare("INSERT INTO club_applications (user_email, club_name, note, status) VALUES (?, ?, ?, 'PENDING')")
-    .bind(user.email, clubName, note)
-    .run();
+  try {
+    await c.env.DB
+      .prepare("INSERT INTO club_applications (user_email, club_name, note, status) VALUES (?, ?, ?, 'PENDING')")
+      .bind(user.email, clubName, note)
+      .run();
+  } catch (err: any) {
+    if (err.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
+      return c.json({ detail: 'Pending application exists.' }, 400);
+    }
+    throw err;
+  }
 
   try {
     const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';

@@ -98,11 +98,57 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     const isUsable = obsCount >= bounds.min_obs;
 
     // Deterministic score derived from event actions
-    const targetActions = GAME_SCORING_ACTIONS[mg] || ['correct', 'select', 'share', 'flag', 'success', 'complete_trial', 'confirm'];
     let rawScore = 0;
-    for (const ev of evs) {
-      if (targetActions.includes(ev.action) || ['correct', 'success', 'confirm', 'complete'].includes(ev.action)) {
-        rawScore += 1;
+    if (mg === 'A2') {
+      // A2 measures exception_flagging_precision: true_positives / (true_positives + false_positives)
+      // Ground truth: EXC_01, EXC_03, EXC_04 are genuine exceptions; EXC_02 is clean control.
+      let genuineEvaluated = 0;
+      let truePositives = 0;
+      let falsePositives = 0;
+      let generalPositives = 0;
+
+      for (const ev of evs) {
+        let data: any = {};
+        if (ev.data_json) {
+          try {
+            data = typeof ev.data_json === 'string' ? JSON.parse(ev.data_json) : ev.data_json;
+          } catch {}
+        }
+        const stimId = data.stimulus_id || (ev.trial !== null && ev.trial !== undefined ? `EXC_0${Number(ev.trial) + 1}` : null);
+        const actId = data.action_id || ev.action || '';
+
+        if (stimId === 'EXC_01' || stimId === 'EXC_03' || stimId === 'EXC_04') {
+          genuineEvaluated++;
+          if (actId === 'flag_exception' || actId === 'defer_review' || actId === 'exception_resolved' || ['correct', 'success'].includes(ev.action)) {
+            truePositives++;
+          }
+        } else if (stimId === 'EXC_02') {
+          // Clean control - should NOT be flagged as an exception
+          if (actId === 'flag_exception' || actId === 'defer_review') {
+            falsePositives++;
+          }
+        } else {
+          // Synthetic / general event fallback
+          if (['correct', 'success', 'confirm', 'complete', 'flag_exception'].includes(ev.action) || ['correct', 'success'].includes(actId)) {
+            generalPositives++;
+          }
+        }
+      }
+
+      if (genuineEvaluated >= 3) {
+        const totalFlagged = truePositives + falsePositives;
+        rawScore = totalFlagged > 0 ? Number((truePositives / totalFlagged).toFixed(4)) : 0;
+      } else if (obsCount >= bounds.min_obs) {
+        rawScore = Number((generalPositives / obsCount).toFixed(4));
+      } else {
+        rawScore = 0;
+      }
+    } else {
+      const targetActions = GAME_SCORING_ACTIONS[mg] || ['correct', 'select', 'share', 'flag', 'success', 'complete_trial', 'confirm'];
+      for (const ev of evs) {
+        if (targetActions.includes(ev.action) || ['correct', 'success', 'confirm', 'complete'].includes(ev.action)) {
+          rawScore += 1;
+        }
       }
     }
     // Clamp to bounds

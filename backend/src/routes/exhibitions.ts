@@ -34,13 +34,18 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
 
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
-  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
   if (!turnstileValid) {
     return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
   }
 
   if (!body.over_19 || !body.agreed_to_screening) {
     return c.json({ detail: 'You must agree to the terms to proceed.' }, 400);
+  }
+
+  const age = Number(body.age);
+  if (!Number.isInteger(age) || age < 1 || age > 120) {
+    return c.json({ detail: 'A valid age is required.' }, 400);
   }
 
   const activeCycle = await c.env.DB
@@ -60,21 +65,28 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     return c.json({ detail: 'You have already submitted an application for this exhibition cycle.' }, 400);
   }
 
-  await c.env.DB
-    .prepare(`
-      INSERT INTO exhibition_applications (
-        user_email, exhibition_cycle, full_name, age, address, whatsapp,
-        genre, medium, portfolio_url, over_19, agreed_to_screening, applicant_note,
-        status, registration_status, agreed_to_tnc
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, 'PENDING', 'NONE', 0)
-    `)
-    .bind(
-      user.email, activeCycle.title, String(body.full_name || '').trim(),
-      Number(body.age || 20), String(body.address || '').trim(), String(body.whatsapp || '').trim(),
-      String(body.genre || '').trim(), String(body.medium || '').trim(), String(body.portfolio_url || '').trim(),
-      body.applicant_note ? String(body.applicant_note).trim() : null
-    )
-    .run();
+  try {
+    await c.env.DB
+      .prepare(`
+        INSERT INTO exhibition_applications (
+          user_email, exhibition_cycle, full_name, age, address, whatsapp,
+          genre, medium, portfolio_url, over_19, agreed_to_screening, applicant_note,
+          status, registration_status, agreed_to_tnc
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, 'PENDING', 'NONE', 0)
+      `)
+      .bind(
+        user.email, activeCycle.title, String(body.full_name || '').trim(),
+        age, String(body.address || '').trim(), String(body.whatsapp || '').trim(),
+        String(body.genre || '').trim(), String(body.medium || '').trim(), String(body.portfolio_url || '').trim(),
+        body.applicant_note ? String(body.applicant_note).trim() : null
+      )
+      .run();
+  } catch (err: any) {
+    if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
+      return c.json({ detail: 'You have already submitted an application for this exhibition cycle.' }, 400);
+    }
+    throw err;
+  }
 
   try {
     await sendSystemEmail(

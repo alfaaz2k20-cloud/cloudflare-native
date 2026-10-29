@@ -43,15 +43,15 @@ recruitRouter.post('/consent', async (c) => {
 
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
-  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
   if (!turnstileValid) {
     return c.json({ error: 'Turnstile verification failed. Please complete the security challenge.', detail: 'Turnstile verification failed.' }, 403);
   }
 
-  const confirmed18Plus = body.confirmed_18_plus !== undefined ? Boolean(body.confirmed_18_plus) : true;
+  const confirmed18Plus = body.confirmed_18_plus === true;
   const choices = body.choices || {};
 
-  if (!confirmed18Plus || choices.research_telemetry === false) {
+  if (!confirmed18Plus || choices.research_telemetry !== true) {
     return c.json({ error: 'Affirmative consent is required', detail: 'Affirmative consent is required' }, 400);
   }
 
@@ -76,8 +76,8 @@ recruitRouter.post('/consent', async (c) => {
     ),
     c.env.DB.prepare(`
       INSERT INTO consent_records (session_id, consent_text_version, choices_json, confirmed_18_plus)
-      VALUES (?, '2026-10-v2', ?, 1)
-    `).bind(sessionId, JSON.stringify(choices)),
+      VALUES (?, '2026-10-v2', ?, ?)
+    `).bind(sessionId, JSON.stringify(choices), confirmed18Plus ? 1 : 0),
     c.env.DB.prepare(`
       INSERT INTO task_assignments (session_id, world_order_id, world_sequence_json, seeds_json)
       VALUES (?, ?, ?, ?)
@@ -415,11 +415,37 @@ recruitRouter.post('/schedule-interview', async (c) => {
   const sessionId = (body.session_id || '').trim();
   const slotDate = (body.slot_date || '').trim();
   const slotTime = (body.slot_time || '').trim();
-  const slotDisplay = (body.slot_display || `${slotDate} ${slotTime}`).trim();
-  const notes = body.notes || null;
+  const slotDisplay = (body.slot_display || `${slotDate} ${slotTime}`).trim().slice(0, 200);
+  const rawNotes = body.notes;
+  const notes = rawNotes ? String(rawNotes).trim().slice(0, 1500) : null;
 
   if (!sessionId || !slotDate || !slotTime) {
     return c.json({ error: 'session_id, slot_date, and slot_time are required', detail: 'session_id, slot_date, and slot_time are required' }, 400);
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(slotDate)) {
+    return c.json({ error: 'slot_date must use YYYY-MM-DD format', detail: 'slot_date must use YYYY-MM-DD format' }, 400);
+  }
+  const slotDay = new Date(`${slotDate}T00:00:00Z`);
+  if (Number.isNaN(slotDay.getTime()) || slotDay.toISOString().slice(0, 10) !== slotDate) {
+    return c.json({ error: 'slot_date is not a valid calendar date', detail: 'slot_date is not a valid calendar date' }, 400);
+  }
+  const startOfTodayUtc = new Date();
+  startOfTodayUtc.setUTCHours(0, 0, 0, 0);
+  if (slotDay.getTime() < startOfTodayUtc.getTime()) {
+    return c.json({ error: 'slot_date cannot be in the past', detail: 'slot_date cannot be in the past' }, 400);
+  }
+
+  const settingsRow = await c.env.DB.prepare('SELECT slots_json FROM interview_settings WHERE id = 1').first<{ slots_json: string }>();
+  let allowedTimes = ["11:00 AM", "03:00 PM", "05:30 PM", "07:00 PM"];
+  if (settingsRow?.slots_json) {
+    try {
+      const parsed = JSON.parse(settingsRow.slots_json);
+      if (Array.isArray(parsed) && parsed.length > 0) allowedTimes = parsed;
+    } catch {}
+  }
+  if (!allowedTimes.includes(slotTime)) {
+    return c.json({ error: 'slot_time is not an offered interview time', detail: 'slot_time is not an offered interview time' }, 400);
   }
 
   await requireConsentedSession(c.env.DB, sessionId);
@@ -429,9 +455,11 @@ recruitRouter.post('/schedule-interview', async (c) => {
     full_name: string; email: string; phone_or_contact: string | null;
   }>();
 
-  const candidateName = body.candidate_name || (identity ? identity.full_name : 'Candidate');
-  const candidateEmail = body.candidate_email || (identity ? identity.email : '');
-  const candidatePhone = body.candidate_phone || (identity ? identity.phone_or_contact : null);
+  // Prefer the identity captured during the consented session over client-supplied values,
+  // so a booking confirmation cannot be redirected to an arbitrary address.
+  const candidateName = (identity?.full_name || body.candidate_name || 'Candidate').toString().trim().slice(0, 120);
+  const candidateEmail = (identity?.email || body.candidate_email || '').toString().trim().slice(0, 254);
+  const candidatePhone = (identity?.phone_or_contact || body.candidate_phone || null);
 
   // Check collision: if already booked
   const existing = await c.env.DB.prepare("SELECT id FROM interview_bookings WHERE slot_date = ? AND slot_time = ? AND status = 'SCHEDULED'").bind(slotDate, slotTime).first();

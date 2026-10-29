@@ -148,8 +148,8 @@ export class CloudflareEmailSendingProvider implements EmailProvider {
 }
 
 export function getEmailProvider(env: Env): EmailProvider {
-  const mode = env.EMAIL_PROVIDER || 'dev';
-  if (mode === 'webhook' && env.MAKE_WEBHOOK_URL) {
+  const mode = env.EMAIL_PROVIDER;
+  if ((mode === 'webhook' || (!mode && env.MAKE_WEBHOOK_URL)) && env.MAKE_WEBHOOK_URL) {
     return new WebhookEmailProvider(env.MAKE_WEBHOOK_URL);
   }
   if (mode === 'cloudflare' && env.CLOUDFLARE_EMAIL_TOKEN) {

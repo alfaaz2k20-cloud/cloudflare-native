@@ -79,10 +79,17 @@ eventsRouter.post('/register', requireAuth, rateLimiter({ limit: 10, windowMs: 6
     return c.json({ detail: 'Event full.' }, 400);
   }
 
-  await c.env.DB
-    .prepare('INSERT INTO event_registrations (event_id, user_email, whatsapp_number) VALUES (?, ?, ?)')
-    .bind(eventId, user.email, whatsappNumber)
-    .run();
+  try {
+    await c.env.DB
+      .prepare('INSERT INTO event_registrations (event_id, user_email, whatsapp_number) VALUES (?, ?, ?)')
+      .bind(eventId, user.email, whatsappNumber)
+      .run();
+  } catch (err: any) {
+    if (err.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
+      return c.json({ detail: 'Already registered.' }, 400);
+    }
+    throw err;
+  }
 
   try {
     const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
