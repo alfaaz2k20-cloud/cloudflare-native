@@ -230,8 +230,8 @@ The Cloudflare Worker registers all API routes dual-mounted at the root level an
 
 #### Finding SEC-01: Plaintext `JWT_SECRET` Exposed in `wrangler.jsonc` Configuration
 - **Affected Component**: `wrangler.jsonc` (lines 36–41), `backend/src/auth/crypto.ts`.
-- **Observable Problem**: The production JWT signing secret (`Alfaaz-Production-Master-Secret-Key-2026-!SecureJWT#`) was placed in plaintext under `"vars"` in `wrangler.jsonc`.
-- **Evidence**: `wrangler.jsonc` line 39: `"JWT_SECRET": "Alfaaz-Production-Master-Secret-Key-2026-!SecureJWT#"`.
+- **Observable Problem**: The production JWT signing secret was previously placed in plaintext under `"vars"` in `wrangler.jsonc`.
+- **Evidence**: `wrangler.jsonc` previously contained `"JWT_SECRET": "<redacted — rotated 2026-10-29>"`.
 - **Root Cause**: Developer placed sensitive cryptographic keys in non-secret environment variables rather than using Cloudflare's encrypted Worker Secrets store.
 - **Impact**: Any individual with read access to the source code repository possesses the cryptographic master key and can forge arbitrary JWT tokens with `ADMIN` status, completely bypassing authentication.
 - **Remediation**: The secret must be removed from `wrangler.jsonc` `"vars"` and provisioned via `npx wrangler secret put JWT_SECRET`. (See Section K).

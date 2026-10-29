@@ -7,7 +7,7 @@ const vaultRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 function isValidUrl(val: string): boolean {
   if (!val) return false;
   const s = val.trim();
-  if (s.startsWith('/vault/file/') || s.startsWith('data:')) return true;
+  if (s.startsWith('/vault/file/')) return true;
   try {
     const parsed = new URL(s);
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';
@@ -43,8 +43,7 @@ vaultRouter.post('/submit', requireAuth, async (c) => {
         });
         file_url = `/vault/file/${encodeURIComponent(key)}`;
       } else {
-        // Fallback: If no R2 bucket bound in dev, encode or use a mock URL
-        file_url = `https://mock-storage.alfaaz.local/${(file as File).name}`;
+        return c.json({ error: 'Direct file upload requires R2 VAULT_BUCKET to be configured. Please submit with a Cloudinary file_url instead.', detail: 'STORAGE_UNCONFIGURED' }, 503);
       }
     } else {
       file_url = (formData.get('file_url') as string) || '';
@@ -84,10 +83,28 @@ vaultRouter.post('/submit', requireAuth, async (c) => {
 
 // GET /vault/file/:key - Serve uploaded file from Cloudflare R2
 vaultRouter.get('/file/:key{.*}', requireAuth, async (c) => {
+  const user = c.get('user');
   const rawKey = c.req.param('key') || '';
   const key = decodeURIComponent(rawKey);
   if (!c.env.VAULT_BUCKET) {
     return c.text('R2 storage bucket not configured in this environment.', 503);
+  }
+
+  if (user.status !== 'ADMIN') {
+    const owned = await c.env.DB.prepare(
+      'SELECT file_url FROM submissions WHERE LOWER(author_email) = LOWER(?)'
+    ).bind(user.email).all<{ file_url: string }>();
+
+    const encodedPath = `/vault/file/${encodeURIComponent(key)}`;
+    const decodedPath = `/vault/file/${key}`;
+    const isOwner = (owned.results || []).some(row => {
+      const stored = row.file_url || '';
+      return stored === encodedPath || stored === decodedPath || decodeURIComponent(stored) === decodedPath;
+    });
+
+    if (!isOwner) {
+      return c.text('File not found in storage vault.', 404);
+    }
   }
 
   const object = await c.env.VAULT_BUCKET.get(key);
@@ -99,6 +116,12 @@ vaultRouter.get('/file/:key{.*}', requireAuth, async (c) => {
   object.writeHttpMetadata(headers);
   headers.set('etag', object.httpEtag);
   headers.set('cache-control', 'private, no-transform');
+  headers.set('X-Content-Type-Options', 'nosniff');
+
+  const contentType = (object.httpMetadata?.contentType || '').toLowerCase();
+  if (contentType === 'text/html' || contentType === 'image/svg+xml') {
+    headers.set('Content-Disposition', 'attachment');
+  }
 
   return new Response(object.body, { headers });
 });

@@ -45,15 +45,20 @@ export function slidingWindowRateLimit(options: { windowSeconds: number; maxRequ
 export async function verifyTurnstile(
   token: string | undefined,
   secretKey: string | undefined,
-  remoteIp?: string
+  remoteIp?: string,
+  env?: string
 ): Promise<boolean> {
-  // If secret key is omitted or dummy development key, allow in development
-  if (!secretKey || secretKey.startsWith('1x0000000000000000000000000000000AA')) {
+  // Cloudflare always-pass dummy development key
+  if (secretKey && secretKey.startsWith('1x0000000000000000000000000000000AA')) {
     return true;
   }
-  // If token is omitted by forms that have not yet rendered a Turnstile challenge widget, do not block legitimate users
-  if (!token) {
+  // In development / test environment without a secret key, allow bypass
+  if (!secretKey && env !== 'production') {
     return true;
+  }
+  // In production (or whenever a secretKey is provisioned), fail closed if secretKey or token is missing
+  if (!secretKey || !token) {
+    return false;
   }
 
   try {

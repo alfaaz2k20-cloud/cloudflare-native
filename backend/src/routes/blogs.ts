@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Env, Variables } from '../types';
 import { generateCuratorEssay } from '../services/curator';
+import { timingSafeEqual } from '../auth/crypto';
 
 const blogsRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -48,13 +49,13 @@ blogsRouter.post('/generate', async (c) => {
   const expectedToken = c.env.PHANTOM_SECRET_TOKEN;
   if (!expectedToken) {
     console.error('[CURATOR ERROR] PHANTOM_SECRET_TOKEN not configured in environment.');
-    return c.json({ error: 'PHANTOM_SECRET_TOKEN not configured.' }, 500);
+    return c.json({ error: 'Autonomous generation is unavailable.' }, 503);
   }
 
   const authHeader = c.req.header('authorization') || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
 
-  if (!token || token !== expectedToken) {
+  if (!token || !timingSafeEqual(token, expectedToken)) {
     return c.json({ error: 'Unauthorized Curator Access' }, 403);
   }
 
@@ -84,7 +85,7 @@ blogsRouter.post('/generate', async (c) => {
     return c.json({ status: 'SUCCESS', message: 'Autonomous research published.' });
   } catch (err: any) {
     console.error('[CURATOR CRITICAL] Generation failed:', err);
-    return c.json({ error: `The Curator failed to generate the article: ${err.message}` }, 500);
+    return c.json({ error: 'The Curator failed to generate the article.' }, 500);
   }
 });
 

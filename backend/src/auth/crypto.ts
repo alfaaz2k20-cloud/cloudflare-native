@@ -130,6 +130,15 @@ export async function verifyPassword(password: string, storedHash: string): Prom
   return diff === 0;
 }
 
+export function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 export async function createToken(
   firstArg: string | { email: string; status: string },
   secondArg?: string,
@@ -191,6 +200,12 @@ export async function verifyToken(token: string, secret: string): Promise<any> {
   const data = `${encodedHeader}.${encodedPayload}`;
 
   try {
+    // Explicitly verify header algorithm and type to prevent algorithm confusion attacks
+    const header = JSON.parse(base64UrlDecode(encodedHeader));
+    if (header.alg !== 'HS256' || (header.typ && header.typ.toUpperCase() !== 'JWT')) {
+      return null;
+    }
+
     const key = await crypto.subtle.importKey(
       'raw',
       new TextEncoder().encode(secret),
@@ -199,8 +214,12 @@ export async function verifyToken(token: string, secret: string): Promise<any> {
       ['verify']
     );
 
-    // Decode signature
-    const binary = atob(encodedSignature.replace(/-/g, '+').replace(/_/g, '/'));
+    // Decode signature with robust padding handling
+    let base64Sig = encodedSignature.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64Sig.length % 4) {
+      base64Sig += '=';
+    }
+    const binary = atob(base64Sig);
     const sigBytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
       sigBytes[i] = binary.charCodeAt(i);

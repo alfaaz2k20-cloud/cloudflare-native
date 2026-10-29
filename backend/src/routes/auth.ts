@@ -21,13 +21,16 @@ authRouter.post('/register', async (c) => {
 
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
-  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
   if (!turnstileValid) {
     return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
   }
 
   if (!email || !password) {
     return c.json({ detail: 'Email and password required' }, 400);
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+    return c.json({ detail: 'A valid email address is required.' }, 400);
   }
   if (fullName.length > 80) {
     return c.json({ detail: 'Name must be under 80 characters.' }, 400);
@@ -43,10 +46,17 @@ authRouter.post('/register', async (c) => {
   }
 
   const hashedPassword = await hashPassword(password);
-  await c.env.DB
-    .prepare('INSERT INTO users (email, password, full_name, status) VALUES (?, ?, ?, ?)')
-    .bind(email, hashedPassword, fullName || null, 'PARTICIPANT')
-    .run();
+  try {
+    await c.env.DB
+      .prepare('INSERT INTO users (email, password, full_name, status) VALUES (?, ?, ?, ?)')
+      .bind(email, hashedPassword, fullName || null, 'PARTICIPANT')
+      .run();
+  } catch (err: any) {
+    if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
+      return c.json({ detail: 'User already registered.' }, 400);
+    }
+    throw err;
+  }
 
   const secret = getJwtSecret(c.env);
   const token = await createToken(email, 'PARTICIPANT', secret);
@@ -107,7 +117,7 @@ authRouter.post('/forgot-password', async (c) => {
 
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
-  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip);
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
   if (!turnstileValid) {
     return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
   }

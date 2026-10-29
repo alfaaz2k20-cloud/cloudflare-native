@@ -161,7 +161,7 @@ export async function askCuratorAi(
       }));
       contents.push({ role: 'user', parts: [{ text: cleanQ.slice(0, 800) }] });
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
       const res = await fetch(url, {
         method: 'POST',
         headers: {
@@ -248,7 +248,7 @@ OUTPUT REQUIREMENTS:
 
   if (env.GEMINI_API_KEY) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`, {
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent', {
         method: 'POST',
         headers: {
           'x-goog-api-key': env.GEMINI_API_KEY,

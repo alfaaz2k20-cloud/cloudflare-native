@@ -16,6 +16,10 @@ export async function requireAuth(c: Context<{ Bindings: Env; Variables: { user:
     if (!payload || !payload.email) {
       return c.json({ detail: 'Invalid or expired token' }, 401);
     }
+    // Password-reset tokens are single-purpose credentials and must never authenticate a session.
+    if (payload.status === 'reset') {
+      return c.json({ detail: 'Invalid or expired token' }, 401);
+    }
     c.set('user', payload as JwtUserPayload);
     await next();
   } catch (err: any) {
