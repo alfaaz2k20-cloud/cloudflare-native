@@ -328,6 +328,26 @@ recruitRouter.post('/complete', async (c) => {
     console.error(`[COMPLETE SESSION] Evidence integration background error for ${sessionId}:`, err);
   }
 
+  // Dispatch assessment completion receipt if candidate email was recorded
+  try {
+    const identity = await c.env.DB
+      .prepare('SELECT full_name, email FROM applicant_identities WHERE session_id = ?')
+      .bind(sessionId)
+      .first<{ full_name: string; email: string }>();
+
+    if (identity?.email) {
+      const candidateName = identity.full_name || 'Candidate';
+      const emailProvider = getEmailProvider(c.env);
+      await emailProvider.sendEmail(
+        identity.email,
+        'ALFAAZ — Assessment Dossier Cataloged',
+        `Greetings ${candidateName},\n\nYour interactive assessment session and task records have been successfully submitted and cataloged for the Alfaaz Collective Admissions Committee.\n\nOur team is currently reviewing your dossier alongside your situational evaluation. If selected for an interview, you will receive an invitation link to reserve an interview slot.\n\nThank you for your creative investment and time.\n\n— Alfaaz Admissions`
+      );
+    }
+  } catch (emailErr) {
+    console.warn('[EMAIL WARNING] Assessment completion email failed:', emailErr);
+  }
+
   return c.json({
     status: 'SUCCESS',
     session_status: 'COMPLETE',

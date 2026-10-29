@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Env, JwtUserPayload } from '../types';
 import { requireAuth } from '../middleware/auth';
+import { sendSystemEmail } from '../notifications/email';
 
 export const clubsRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
 
@@ -39,6 +40,19 @@ clubsRouter.post('/apply', requireAuth, async (c) => {
       .prepare("UPDATE club_applications SET status = 'PENDING', note = ?, admin_note = NULL WHERE id = ?")
       .bind(note, existingClub.id)
       .run();
+
+    try {
+      const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+      await sendSystemEmail(
+        c.env,
+        user.email,
+        `ALFAAZ — Circle Application Received: ${clubName}`,
+        `Greetings,\n\nWe have received your application to join the ${clubName} circle at Alfaaz Collective.\n\nOur curators review collective circle applications on a rolling cycle. You can check your application status on your dashboard at:\n${appUrl}/dashboard.html\n\n— Alfaaz Collective`
+      );
+    } catch (emailErr) {
+      console.warn('[EMAIL WARNING] Club application email failed:', emailErr);
+    }
+
     return c.json({ status: 'PENDING' });
   }
 
@@ -55,6 +69,18 @@ clubsRouter.post('/apply', requireAuth, async (c) => {
     .prepare("INSERT INTO club_applications (user_email, club_name, note, status) VALUES (?, ?, ?, 'PENDING')")
     .bind(user.email, clubName, note)
     .run();
+
+  try {
+    const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+    await sendSystemEmail(
+      c.env,
+      user.email,
+      `ALFAAZ — Circle Application Received: ${clubName}`,
+      `Greetings,\n\nWe have received your application to join the ${clubName} circle at Alfaaz Collective.\n\nOur curators review collective circle applications on a rolling cycle. You can check your application status on your dashboard at:\n${appUrl}/dashboard.html\n\n— Alfaaz Collective`
+    );
+  } catch (emailErr) {
+    console.warn('[EMAIL WARNING] Club application email failed:', emailErr);
+  }
 
   return c.json({ status: 'PENDING' });
 });

@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { Env, JwtUserPayload } from '../types';
 import { requireAuth } from '../middleware/auth';
 import { rateLimiter } from '../middleware/rate_limit';
+import { sendSystemEmail } from '../notifications/email';
 
 export const eventsRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
 
@@ -51,9 +52,9 @@ eventsRouter.post('/register', requireAuth, rateLimiter({ limit: 10, windowMs: 6
   }
 
   const event = await c.env.DB
-    .prepare('SELECT id, registration_open, capacity FROM events WHERE id = ?')
+    .prepare('SELECT id, name, event_date, registration_open, capacity FROM events WHERE id = ?')
     .bind(eventId)
-    .first<{ id: number; registration_open: number; capacity: number }>();
+    .first<{ id: number; name: string; event_date: string; registration_open: number; capacity: number }>();
 
   if (!event || event.registration_open !== 1) {
     return c.json({ detail: 'Registration closed.' }, 400);
@@ -82,6 +83,18 @@ eventsRouter.post('/register', requireAuth, rateLimiter({ limit: 10, windowMs: 6
     .prepare('INSERT INTO event_registrations (event_id, user_email, whatsapp_number) VALUES (?, ?, ?)')
     .bind(eventId, user.email, whatsappNumber)
     .run();
+
+  try {
+    const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+    await sendSystemEmail(
+      c.env,
+      user.email,
+      `ALFAAZ — RSVP Confirmed: ${event.name}`,
+      `Greetings,\n\nYour registration for the following Alfaaz Collective event is confirmed:\n\nEvent: ${event.name}\nDate: ${event.event_date || 'TBD'}\n\nYou can view your active RSVPs anytime on your dashboard:\n${appUrl}/dashboard.html\n\n— Alfaaz Events`
+    );
+  } catch (emailErr) {
+    console.warn('[EMAIL WARNING] Event registration email failed:', emailErr);
+  }
 
   return c.json({ status: 'SUCCESS' });
 });

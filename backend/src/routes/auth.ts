@@ -51,6 +51,18 @@ authRouter.post('/register', async (c) => {
   const secret = getJwtSecret(c.env);
   const token = await createToken(email, 'PARTICIPANT', secret);
 
+  try {
+    const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+    await sendSystemEmail(
+      c.env,
+      email,
+      'Welcome to Alfaaz Collective',
+      `Greetings${fullName ? ' ' + fullName : ''},\n\nYour account at Alfaaz Collective has been registered successfully.\n\nYou can access your portfolio, events, and collective circles at:\n${appUrl}/dashboard.html\n\n— Alfaaz Collective`
+    );
+  } catch (emailErr) {
+    console.warn('[EMAIL WARNING] Welcome email dispatch failed:', emailErr);
+  }
+
   return c.json({
     user: { email, status: 'PARTICIPANT' },
     token
@@ -200,6 +212,17 @@ authRouter.post('/reset-password', async (c) => {
         .run();
     } catch {
       // Table insert is auxiliary; timestamp check already invalidates the token
+    }
+
+    try {
+      await sendSystemEmail(
+        c.env,
+        payload.sub,
+        'ALFAAZ — Security Alert: Password Updated',
+        `Greetings,\n\nYour password for Alfaaz Collective was successfully updated.\n\nIf you initiated this change, no further action is required.\nIf you did not make this change, please contact us immediately at curator@alfaazcollective.org.\n\n— Alfaaz Security`
+      );
+    } catch (emailErr) {
+      console.warn('[EMAIL WARNING] Password reset security alert failed:', emailErr);
     }
 
     return c.json({ message: 'Password reset successfully.' });
