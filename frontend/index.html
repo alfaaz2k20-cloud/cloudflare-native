@@ -23,6 +23,7 @@
   <meta name="twitter:image" content="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg" />
   <title>ALFAAZ COLLECTIVE — Art & Culture</title>
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <link rel="preload" as="image" href="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg">
   
   <script src="https://cdn.tailwindcss.com" defer></script>
   <script src="https://unpkg.com/lucide@latest" defer></script>
@@ -178,7 +179,7 @@
 
   <!-- RAPID PHOTO PRELOADER -->
   <div id="loader">
-    <div id="flash-container"><img id="flash-image" src="" alt="Alfaaz Collective Archive"></div>
+    <div id="flash-container"><img id="flash-image" src="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg" alt="Alfaaz Collective Archive"></div>
     <div class="preloader-status" id="preloaderStatus">ALFAAZ COLLECTIVE</div>
   </div>
 
@@ -418,7 +419,6 @@
     // PRELOADER & HERO REVEAL
     const preloader = document.getElementById('loader'), flashImg = document.getElementById('flash-image');
     const apiBaseUrl = (window.ALFAAZ_API_URL !== undefined && window.ALFAAZ_API_URL !== null) ? window.ALFAAZ_API_URL : '';
-    const hasSeenIntro = sessionStorage.getItem('alfaaz_intro_seen');
 
     function revealHero() {
       const heroTitle = document.querySelector('.hero-title'), heroSubtitle = document.querySelector('.hero-subtitle');
@@ -426,63 +426,75 @@
       if (heroSubtitle) setTimeout(() => heroSubtitle.classList.add('visible'), 400);
     }
 
-    if (hasSeenIntro) {
-      if (preloader) {
-        preloader.style.display = 'none';
-      }
-      revealHero();
-      fetch(`${apiBaseUrl}/ping`).catch(() => {});
-    } else {
-      const flashImages = [
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652934/photo_2026-05-01_21-31-20_yt717r.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-02-06_gc5mdw.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-02-27_pjxbcp.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-20-54_mn1dkc.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-31-31_me900g.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652934/photo_2026-05-01_21-41-19_m1u2rq.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-03-15_st7awx.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-24-56_iggk1n.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-24-49_w17lpe.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-05-00_xs313m.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-24-34_vspkzd.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-01-14_ac2gyf.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652936/photo_2026-05-01_21-21-08_wnmv0b.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-03-59_snoeqr.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652831/photo_2026-05-01_21-41-21_abvman.jpg",
-        "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg"
-      ];
-      
-      flashImg.src = flashImages[0];
-      let loadedCount = 0; const preloadedImages = [];
-      flashImages.forEach(src => { const img = new Image(); img.src = src; img.onload = () => loadedCount++; preloadedImages.push(img); });
-      
-      let imgIndex = 0, delay = 35;
-      function flashNext() {
-        if (imgIndex < flashImages.length) {
-          if (preloadedImages[imgIndex].complete) flashImg.src = preloadedImages[imgIndex].src;
-          imgIndex++; delay += 10; setTimeout(flashNext, delay);
-        } else {
-          sessionStorage.setItem('alfaaz_intro_seen', '1');
-          preloader.classList.add('fade-out');
-          revealHero();
-        }
-      }
+    const flashImages = [
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652934/photo_2026-05-01_21-31-20_yt717r.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-02-06_gc5mdw.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-02-27_pjxbcp.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-20-54_mn1dkc.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-31-31_me900g.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652934/photo_2026-05-01_21-41-19_m1u2rq.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-03-15_st7awx.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-24-56_iggk1n.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-24-49_w17lpe.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-05-00_xs313m.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652935/photo_2026-05-01_21-24-34_vspkzd.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-01-14_ac2gyf.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652936/photo_2026-05-01_21-21-08_wnmv0b.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-03-59_snoeqr.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652831/photo_2026-05-01_21-41-21_abvman.jpg",
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg"
+    ];
 
-      let sequenceStarted = false;
-      const checkInterval = setInterval(() => { 
-          if (loadedCount >= flashImages.length / 2) { 
-              clearInterval(checkInterval); 
-              if (!sequenceStarted) { 
-                  sequenceStarted = true; 
-                  // Pre-warm backend immediately
-                  fetch(`${apiBaseUrl}/ping`).catch(() => {});
-                  flashNext(); 
-              } 
-          } 
-      }, 50);
-      setTimeout(() => { clearInterval(checkInterval); if (!sequenceStarted) { sequenceStarted = true; flashNext(); } }, 1500);
+    if (flashImg && flashImages.length > 0) {
+      flashImg.src = flashImages[0];
     }
+
+    let loadedCount = 0;
+    const preloadedImages = [];
+    flashImages.forEach(src => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => loadedCount++;
+      preloadedImages.push(img);
+    });
+
+    let imgIndex = 0, delay = 45;
+    function flashNext() {
+      if (imgIndex < flashImages.length) {
+        if (flashImg) {
+          flashImg.src = flashImages[imgIndex];
+        }
+        imgIndex++;
+        delay += 8;
+        setTimeout(flashNext, delay);
+      } else {
+        if (preloader) {
+          preloader.classList.add('fade-out');
+        }
+        revealHero();
+      }
+    }
+
+    let sequenceStarted = false;
+    function startSequence() {
+      if (sequenceStarted) return;
+      sequenceStarted = true;
+      fetch(`${apiBaseUrl}/ping`).catch(() => {});
+      flashNext();
+    }
+
+    const checkInterval = setInterval(() => {
+      if (loadedCount >= Math.min(3, flashImages.length)) {
+        clearInterval(checkInterval);
+        startSequence();
+      }
+    }, 40);
+
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      startSequence();
+    }, 600);
 
     // SCROLL ANIMATIONS
     const fadeElements = document.querySelectorAll('.fade-in');
