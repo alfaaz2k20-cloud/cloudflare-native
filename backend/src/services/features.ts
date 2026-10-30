@@ -479,7 +479,10 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     const span = bounds.max - bounds.min;
     const num = rawScore - bounds.min;
     const relativeScore = span > 0 ? Number((num / span).toFixed(6)) : 0;
-    const band = relativeScore >= 0.66 ? 'HIGH' : (relativeScore >= 0.33 ? 'MODERATE' : 'LOW');
+    // Exact thirds banding matching SJT integer arithmetic
+    const band = span > 0
+      ? (3 * num >= 2 * span - 1e-5 ? 'HIGH' : (3 * num >= span - 1e-5 ? 'MODERATE' : 'LOW'))
+      : 'UNAVAILABLE';
     const status = isUsable ? 'USABLE' : 'INSUFFICIENT';
 
     scoreInserts.push(

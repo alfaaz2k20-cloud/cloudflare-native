@@ -230,7 +230,9 @@ export async function integrateSessionEvidence(
       cross_method_delta: delta,
       profile_completeness: profileCompleteness,
       game_status: gameStatus,
-      game_band: gameRelative !== null ? (gameRelative >= 0.66 ? 'HIGH' : (gameRelative >= 0.33 ? 'MODERATE' : 'LOW')) : null,
+      game_band: gameRelative !== null
+        ? (3 * gameRelative >= 2 - 1e-5 ? 'HIGH' : (3 * gameRelative >= 1 - 1e-5 ? 'MODERATE' : 'LOW'))
+        : null,
       consistency,
       relationship,
       confidence,

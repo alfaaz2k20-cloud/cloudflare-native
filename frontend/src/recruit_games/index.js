@@ -246,13 +246,25 @@ export function bindTutorialCard(app, onStart) {
  }
 }
 
+export function createPrng(seed = 0) {
+  let s = (typeof seed === 'number' ? seed : 123456789) >>> 0;
+  return function() {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 export function runMiniGame(context) {
   scrollToTop();
- const { appContainer, worldCode, worldIndex, miniGameIndex, gameId, onMiniGameComplete } = context;
+ const { appContainer, worldCode, worldIndex, miniGameIndex, gameId, onMiniGameComplete, seeds } = context;
  const meta = WORLD_METADATA[worldCode] || { name: 'Alfaaz Workshop', name_ur: '', subtitle: '' };
 
  const resolvedGameId = gameId || (CANDIDATE_CORE_GAMES[worldCode] && CANDIDATE_CORE_GAMES[worldCode][miniGameIndex]) || null;
- const extendedContext = { ...context, gameId: resolvedGameId };
+ const gameSeed = seeds && resolvedGameId && typeof seeds[resolvedGameId] === 'number' ? seeds[resolvedGameId] : 42;
+ const prng = createPrng(gameSeed);
+ const extendedContext = { ...context, gameId: resolvedGameId, prng, gameSeed };
 
  // Clean, Poetic Header Shell with English on Left, Urdu on Right
  const renderHeader = (mgTitle, mgDesc) => `
@@ -296,4 +308,3 @@ export function runMiniGame(context) {
  break;
  }
 }
-
