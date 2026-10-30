@@ -59,6 +59,13 @@ export class DevEmailProvider implements EmailProvider {
   }
 }
 
+function maskEmail(email: string): string {
+  if (!email || !email.includes('@')) return '***';
+  const [user, domain] = email.split('@');
+  const visible = user.length > 2 ? `${user[0]}***${user[user.length - 1]}` : `${user[0]}***`;
+  return `${visible}@${domain}`;
+}
+
 export class WebhookEmailProvider implements EmailProvider {
   constructor(private webhookUrl: string) {}
 
@@ -79,7 +86,7 @@ export class WebhookEmailProvider implements EmailProvider {
       });
 
       if (res.ok) {
-        console.log(`[EMAIL WEBHOOK SENT] To: ${message.to} | Subject: "${message.subject}"`);
+        console.log(`[EMAIL WEBHOOK SENT] To: ${maskEmail(message.to)} | Subject: "${message.subject}"`);
         return { success: true, provider: 'webhook' };
       } else {
         const errText = await res.text();

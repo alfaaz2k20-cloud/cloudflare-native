@@ -264,7 +264,7 @@ for (const p of params) {
 console.log('  ✓ All 7 constructs strictly satisfy [min <= raw <= max], [0 <= relative <= 1], and valid integer thirds band.');
 
 // 2.3 Exhaustive combination stress testing:
-// Number of combinations: scenarios have 3 or 4 options each. 3^7 = 2187 combinations.
+// Number of combinations: scenarios have 4 options each. 4^7 = 16,384 combinations.
 let totalCombos = 0;
 function testAllCombos(index, current) {
   if (index === scenarios.length) {

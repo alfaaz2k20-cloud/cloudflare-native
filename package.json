@@ -4,6 +4,9 @@
   "private": true,
   "description": "Cloudflare-Native Full-Stack Parallel Implementation of Alfaaz Collective",
   "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "build:frontend": "cd frontend && npm install && npm run build",

@@ -18,7 +18,30 @@ import noticesRouter from './routes/notices';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// 1. Host Canonicalization (301 Permanent Redirect www.alfaazcollective.org -> apex)
+// 1. Security Headers Middleware (CSP, Clickjacking & MIME-type protection)
+app.use('*', async (c, next) => {
+  await next();
+  c.res.headers.set('X-Content-Type-Options', 'nosniff');
+  c.res.headers.set('X-Frame-Options', 'DENY');
+  c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://challenges.cloudflare.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com",
+    "connect-src 'self' https://challenges.cloudflare.com https://api.cloudinary.com https://res.cloudinary.com",
+    "frame-src 'self' https://challenges.cloudflare.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ');
+  c.res.headers.set('Content-Security-Policy', csp);
+});
+
+// 2. Host Canonicalization (301 Permanent Redirect www.alfaazcollective.org -> apex)
 app.use('*', async (c, next) => {
   const host = c.req.header('host')?.toLowerCase().split(':')[0];
   if (host === 'www.alfaazcollective.org') {
@@ -31,7 +54,7 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// 2. Global CORS Middleware (Tightened against arbitrary origin reflection with credentials)
+// 3. Global CORS Middleware (Tightened against arbitrary origin reflection with credentials)
 app.use('*', async (c, next) => {
   const corsMiddleware = cors({
     origin: (origin) => {

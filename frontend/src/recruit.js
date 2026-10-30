@@ -709,6 +709,19 @@ export function renderScreen() {
  renderComplete(app);
  break;
  }
+  const screenTitles = {
+    consent: 'Prologue: Consent and Compliance',
+    identity: 'Step 1 of 4: Candidate Information',
+    accessibility: 'Step 2 of 4: Accessibility Preferences',
+    warmup: 'Step 3 of 4: Interface Warmup',
+    sjt_briefing: 'Part 1 Briefing: Situational Judgment Assessment',
+    sjt: 'Part 1 in progress: Situational Judgment Assessment',
+    gba_briefing: 'Part 2 Briefing: Interactive Behavioral Tasks',
+    games: 'Part 2 in progress: Interactive Behavioral Tasks',
+    paused: 'Assessment Paused',
+    complete: 'Assessment Complete'
+  };
+  announceToScreenReader(screenTitles[state.screen] || 'Assessment section loaded');
   focusMainHeading();
 }
 

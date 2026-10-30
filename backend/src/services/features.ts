@@ -48,9 +48,11 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     }
   }
 
-  // Clear previous features
-  await db.prepare("DELETE FROM features WHERE session_id = ?").bind(sessionId).run();
-  await db.prepare("DELETE FROM game_scores WHERE session_id = ?").bind(sessionId).run();
+  // Defer clearing previous features into the final atomic batch to protect against mid-flight failure
+  const deleteStmts: D1PreparedStatement[] = [
+    db.prepare("DELETE FROM features WHERE session_id = ?").bind(sessionId),
+    db.prepare("DELETE FROM game_scores WHERE session_id = ?").bind(sessionId)
+  ];
 
   const featureInserts: D1PreparedStatement[] = [];
   const scoreInserts: D1PreparedStatement[] = [];
@@ -505,6 +507,6 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     );
   }
 
-  if (featureInserts.length > 0) await db.batch(featureInserts);
-  if (scoreInserts.length > 0) await db.batch(scoreInserts);
+  const allStmts = [...deleteStmts, ...scoreInserts, ...featureInserts];
+  if (allStmts.length > 0) await db.batch(allStmts);
 }

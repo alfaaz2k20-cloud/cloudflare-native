@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { generateMinigameSeeds, LATIN_SQUARE_14 } from '../backend/src/services/world_order';
 import { ingestTelemetryBatch } from '../backend/src/services/telemetry';
+import { computeCrossMethodDelta, determineRelationship, determineConfidence } from '../backend/src/services/evidence';
 
 describe('Telemetry & Evidence Engine', () => {
   describe('Latin Square & Deterministic HMAC Seeds', () => {
@@ -86,50 +87,47 @@ describe('Telemetry & Evidence Engine', () => {
     });
   });
 
-  describe('Evidence Synthesis Logic (Cross-Method Delta)', () => {
-    const BAND_MAP: Record<string, number> = { 'LOW': 0, 'MODERATE': 1, 'HIGH': 2 };
-
-    function computeRelationshipAndConfidence(sjtBand: string, gameBand: string) {
-      const sVal = BAND_MAP[sjtBand] ?? 1;
-      const gVal = BAND_MAP[gameBand] ?? 1;
-      const delta = Math.abs(sVal - gVal);
-
-      let relationship = 'CONCORDANT';
-      let confidence = 'HIGH';
-
-      if (delta === 0) {
-        relationship = 'CONCORDANT';
-        confidence = 'HIGH';
-      } else if (delta === 1) {
-        relationship = 'SHIFT_ADJACENT';
-        confidence = 'MODERATE';
-      } else {
-        relationship = 'DIVERGENT';
-        confidence = 'LOW';
-      }
-
-      return { delta, relationship, confidence };
-    }
-
-    it('assigns CONCORDANT and HIGH confidence when bands match', () => {
-      const { delta, relationship, confidence } = computeRelationshipAndConfidence('HIGH', 'HIGH');
-      expect(delta).toBe(0);
-      expect(relationship).toBe('CONCORDANT');
-      expect(confidence).toBe('HIGH');
+  describe('Evidence Synthesis Logic (Cross-Method Delta & Confidence)', () => {
+    it('computes cross-method delta correctly and returns null on missing values', () => {
+      expect(computeCrossMethodDelta(0.85, 0.70)).toBe(0.15);
+      expect(computeCrossMethodDelta(0.50, 0.50)).toBe(0.0);
+      expect(computeCrossMethodDelta(null, 0.75)).toBeNull();
+      expect(computeCrossMethodDelta(0.75, null)).toBeNull();
+      expect(computeCrossMethodDelta(null, null)).toBeNull();
     });
 
-    it('assigns SHIFT_ADJACENT and MODERATE confidence when bands differ by 1 step', () => {
-      const { delta, relationship, confidence } = computeRelationshipAndConfidence('HIGH', 'MODERATE');
-      expect(delta).toBe(1);
-      expect(relationship).toBe('SHIFT_ADJACENT');
-      expect(confidence).toBe('MODERATE');
+    it('evaluates construct relationship categories according to psychometric delta thresholds', () => {
+      expect(determineRelationship(0.10, true, 'USABLE')).toBe('ALIGNED');
+      expect(determineRelationship(0.15, true, 'USABLE')).toBe('ALIGNED');
+      expect(determineRelationship(0.25, true, 'USABLE')).toBe('PARTLY_ALIGNED');
+      expect(determineRelationship(0.30, true, 'USABLE')).toBe('PARTLY_ALIGNED');
+      expect(determineRelationship(0.35, true, 'USABLE')).toBe('DIFFERENT');
+      expect(determineRelationship(0.10, false, 'USABLE')).toBe('NOT_AVAILABLE');
+      expect(determineRelationship(0.10, true, 'INSUFFICIENT')).toBe('NOT_ENOUGH_EVIDENCE');
+      expect(determineRelationship(null, true, 'USABLE')).toBe('NOT_AVAILABLE');
     });
 
-    it('assigns DIVERGENT and LOW confidence when bands differ by 2 steps', () => {
-      const { delta, relationship, confidence } = computeRelationshipAndConfidence('HIGH', 'LOW');
-      expect(delta).toBe(2);
-      expect(relationship).toBe('DIVERGENT');
-      expect(confidence).toBe('LOW');
+    it('enforces confidence gates based on critical quality flags, usable game count and consistency', () => {
+      // Critical quality flag forces LIMITED confidence immediately
+      expect(determineConfidence(true, 3, 'CONSISTENT', 0.10, true)).toBe('LIMITED');
+
+      // Fewer than 2 usable games forces LIMITED
+      expect(determineConfidence(true, 1, 'CONSISTENT', 0.10, false)).toBe('LIMITED');
+
+      // Missing SJT forces LIMITED
+      expect(determineConfidence(false, 3, 'CONSISTENT', 0.10, false)).toBe('LIMITED');
+
+      // 3 usable games + CONSISTENT + low delta (<= 0.15) yields SUBSTANTIAL
+      expect(determineConfidence(true, 3, 'CONSISTENT', 0.10, false)).toBe('SUBSTANTIAL');
+
+      // 3 usable games + CONSISTENT + moderate delta (0.15 < delta <= 0.30) yields MODERATE
+      expect(determineConfidence(true, 3, 'CONSISTENT', 0.25, false)).toBe('MODERATE');
+
+      // 2 usable games + low delta yields MODERATE (needs >= 3 usable for SUBSTANTIAL)
+      expect(determineConfidence(true, 2, 'CONSISTENT', 0.10, false)).toBe('MODERATE');
+
+      // High delta (> 0.30) forces LIMITED
+      expect(determineConfidence(true, 3, 'CONSISTENT', 0.35, false)).toBe('LIMITED');
     });
   });
 });

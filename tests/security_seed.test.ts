@@ -102,4 +102,42 @@ describe('Production Seed Safety Static Security Guard', () => {
     expect(parsed.email).toBe('custom@alfaaz.com');
     expect(parsed.name).toBe('Test Lead');
   });
+
+  it('scans docs/ and source trees for plaintext high-entropy secrets and unredacted API keys', () => {
+    // AGENTS.md Invariant 1: Security test suites must scan docs/** in addition to source code for high-entropy literals
+    const targetDirs = ['docs', 'backend/src', 'frontend/src'].map(d => path.join(projectRoot, d));
+    const allFiles: string[] = [];
+    for (const d of targetDirs) {
+      scanDirectory(d, allFiles);
+    }
+
+    const secretPatterns = [
+      /AIzaSy[0-9A-Za-z_-]{33}/, // Google API key
+      /gsk_[0-9A-Za-z]{48}/ // Groq API key
+    ];
+
+    const violations: { file: string; line: number; match: string }[] = [];
+
+    for (const file of allFiles) {
+      const content = fs.readFileSync(file, 'utf8');
+      const lines = content.split('\n');
+      lines.forEach((line, index) => {
+        // Skip lines that have been explicitly redacted or template examples
+        if (line.includes('<redacted') || line.includes('dev-insecure')) return;
+
+        for (const pattern of secretPatterns) {
+          const match = line.match(pattern);
+          if (match) {
+            violations.push({
+              file: path.relative(projectRoot, file),
+              line: index + 1,
+              match: match[0].slice(0, 8) + '...'
+            });
+          }
+        }
+      });
+    }
+
+    expect(violations).toEqual([]);
+  });
 });

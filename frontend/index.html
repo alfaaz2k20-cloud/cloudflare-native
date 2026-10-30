@@ -412,7 +412,7 @@
     <div id="phantomMiniBox" class="curator-widget-box">
       <div class="curator-widget-header">
         <h3 class="curator-widget-title">Curator AI</h3>
-        <button class="curator-widget-close" onclick="togglePhantomMini()" aria-label="Close Chat">&times;</button>
+        <button class="curator-widget-close" onclick="togglePhantomMini()" aria-label="Close Chat" aria-expanded="false" aria-controls="phantomMiniBox">&times;</button>
       </div>
       <div id="phantomMiniOutput" class="curator-widget-output">
         <div style="font-style: italic;">Ask Curator AI a question about our art, literature, or programming...</div>
@@ -424,7 +424,7 @@
         </button>
       </div>
     </div>
-    <button id="phantomMiniTrigger" class="curator-trigger-button" onclick="togglePhantomMini()">[ Consult Curator ]</button>
+    <button id="phantomMiniTrigger" class="curator-trigger-button" onclick="togglePhantomMini()" aria-expanded="false" aria-controls="phantomMiniBox">[ Consult Curator ]</button>
   </div>
 
   <script type="module">
@@ -535,6 +535,7 @@
         pTrig.textContent = '[ Close Chat ]'; 
         pTrig.style.background = 'var(--accent-gold)'; 
         pTrig.style.color = '#fff'; 
+        pTrig.setAttribute('aria-expanded', 'true'); 
         setTimeout(() => pIn.focus(), 150); 
       } else { 
         pBox.style.opacity = '0'; 
@@ -543,6 +544,7 @@
         pTrig.textContent = '[ Consult Curator ]'; 
         pTrig.style.background = 'var(--bg-secondary)'; 
         pTrig.style.color = 'var(--text-primary)'; 
+        pTrig.setAttribute('aria-expanded', 'false'); 
       }
     }
     window.togglePhantomMini = togglePhantomMini;

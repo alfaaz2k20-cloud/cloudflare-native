@@ -10,9 +10,11 @@ const memoryStore = new Map<string, { count: number; expiresAt: number }>();
 
 export function rateLimiter(config: RateLimitConfig) {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
-    const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
+    const rawIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
     const now = Date.now();
-    const key = `${c.req.path}:${ip}`;
+    // Normalize path to prevent route-alias double-budgeting (/api/xyz vs /xyz)
+    const normalizedPath = c.req.path.replace(/^\/api(?=\/|$)/, '') || '/';
+    const key = `${normalizedPath}:${rawIp}`;
 
     const record = memoryStore.get(key);
     if (!record || now > record.expiresAt) {

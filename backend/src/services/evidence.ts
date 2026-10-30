@@ -149,12 +149,12 @@ export async function integrateSessionEvidence(
   const criticalFlags = new Set(["seq_conflict", "events_cap_reached"]);
   const hasCriticalFlag = (flagRows.results || []).some(f => criticalFlags.has(f.flag));
 
-  // 4. Supersede old evidence records if forceRecompute
+  // 4. Supersede old evidence records if forceRecompute (deferred to final atomic batch)
+  const batchStmts: D1PreparedStatement[] = [];
   if (forceRecompute) {
-    await db
-      .prepare("UPDATE evidence SET is_superseded = 1, superseded_at = CURRENT_TIMESTAMP WHERE session_id = ? AND is_superseded = 0")
-      .bind(sessionId)
-      .run();
+    batchStmts.push(
+      db.prepare("UPDATE evidence SET is_superseded = 1, superseded_at = CURRENT_TIMESTAMP WHERE session_id = ? AND is_superseded = 0").bind(sessionId)
+    );
   } else {
     const existing = await db
       .prepare("SELECT * FROM evidence WHERE session_id = ? AND is_superseded = 0")
@@ -238,9 +238,9 @@ export async function integrateSessionEvidence(
       data_quality_flags_json: JSON.stringify(flagRows.results?.map(f => f.flag) || [])
     };
 
-    // Insert into D1
-    await db
-      .prepare(`
+    // Queue insert statement into batch
+    batchStmts.push(
+      db.prepare(`
         INSERT INTO evidence (
           session_id, parameter, version, is_superseded, spec_version, sjt_version,
           scoring_version, feature_version, sjt_raw, sjt_min, sjt_max, sjt_span,
@@ -263,9 +263,13 @@ export async function integrateSessionEvidence(
         evidenceRecord.consistency, evidenceRecord.relationship, evidenceRecord.confidence,
         evidenceRecord.observed_behavior_summary, evidenceRecord.data_quality_flags_json
       )
-      .run();
+    );
 
     integratedResults.push(evidenceRecord);
+  }
+
+  if (batchStmts.length > 0) {
+    await db.batch(batchStmts);
   }
 
   return integratedResults;
