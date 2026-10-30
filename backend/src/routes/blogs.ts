@@ -72,6 +72,15 @@ blogsRouter.post('/generate', async (c) => {
     const excerpt = generated.excerpt || '';
     const content = generated.content || '';
 
+    // Idempotency: skip duplicate publication if identical title exists
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM blogs WHERE title = ? LIMIT 1'
+    ).bind(title).first();
+
+    if (existing) {
+      return c.json({ status: 'SKIPPED', message: 'Article with identical title already published.' });
+    }
+
     await c.env.DB.prepare(`
       INSERT INTO blogs (title, excerpt, content, is_published)
       VALUES (?, ?, ?, 1)

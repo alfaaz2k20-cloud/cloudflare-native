@@ -236,6 +236,16 @@ app.onError((err, c) => {
       const excerpt = generated.excerpt || '';
       const content = generated.content || '';
 
+      // Idempotency: skip insertion if identical title already published
+      const existing = await env.DB.prepare(
+        'SELECT id FROM blogs WHERE title = ? LIMIT 1'
+      ).bind(title).first();
+
+      if (existing) {
+        console.log('[CRON] Article already published with title:', title, '— skipping duplicate insertion.');
+        return;
+      }
+
       await env.DB.prepare(`
         INSERT INTO blogs (title, excerpt, content, is_published)
         VALUES (?, ?, ?, 1)
