@@ -87,12 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
  if (newPwInput?.value === cf) {
  if (matchIndicator) {
  matchIndicator.textContent = '✓ Passwords Match';
- matchIndicator.style.color = 'var(--accent-green)';
+ matchIndicator.style.color = 'var(--accent-green-text)';
  }
  } else {
  if (matchIndicator) {
  matchIndicator.textContent = '✗ Mismatch Detected';
- matchIndicator.style.color = 'var(--accent-red)';
+ matchIndicator.style.color = 'var(--accent-red-text)';
  }
  }
  }
@@ -143,12 +143,23 @@ document.addEventListener('DOMContentLoaded', () => {
  } else {
  submitBtn.textContent = "Update Password";
  submitBtn.disabled = false;
- alert("Error: " + (data.detail || "Unknown error."));
+ const msg = data.detail || "Unknown error.";
+ if (matchIndicator) {
+  matchIndicator.textContent = '✗ ' + msg;
+  matchIndicator.style.color = 'var(--accent-red-text)';
+ } else {
+  alert("Error: " + msg);
+ }
  }
  } catch (error) {
  submitBtn.textContent = "Update Password";
  submitBtn.disabled = false;
- alert("Cannot reach the server.");
+ if (matchIndicator) {
+  matchIndicator.textContent = '✗ Cannot reach the server. Please check connection.';
+  matchIndicator.style.color = 'var(--accent-red-text)';
+ } else {
+  alert("Cannot reach the server.");
+ }
  }
  });
 });

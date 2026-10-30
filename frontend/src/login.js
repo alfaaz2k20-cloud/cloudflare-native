@@ -81,12 +81,28 @@ document.addEventListener('DOMContentLoaded', () => {
  card.style.borderColor = 'var(--accent-red)';
  setTimeout(() => card.style.borderColor = 'var(--grid-border)', 1200);
  }
- alert("Access Denied: " + (data.detail || "Invalid credentials."));
+ const hint = document.getElementById('forgotHint');
+ if (hint) {
+  hint.textContent = '✗ ' + (data.detail || 'Invalid credentials.');
+  hint.style.color = 'var(--accent-red-text)';
+  hint.classList.add('visible');
+  setTimeout(() => { hint.classList.remove('visible'); hint.style.color = ''; }, 4000);
+ } else {
+  alert("Access Denied: " + (data.detail || "Invalid credentials."));
+ }
  }
  } catch (error) {
  submitBtn.textContent = "Log In";
  submitBtn.disabled = false;
- alert("Cannot reach the server.");
+ const hint = document.getElementById('forgotHint');
+ if (hint) {
+  hint.textContent = '✗ Cannot reach the server. Please check connection.';
+  hint.style.color = 'var(--accent-red-text)';
+  hint.classList.add('visible');
+  setTimeout(() => { hint.classList.remove('visible'); hint.style.color = ''; }, 4000);
+ } else {
+  alert("Cannot reach the server.");
+ }
  }
  });
 

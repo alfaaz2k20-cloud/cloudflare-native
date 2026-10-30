@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
  <div style="display:flex; flex-direction:column; gap:0.6rem;">
  <button class="action-btn ${isOpen ? '' : 'gold'}" style="padding: 0.6rem; font-size:9px;" data-action="toggle-event" data-id="${e.id}">${isOpen ? 'Close Registration' : 'Open Registration'}</button>
  <button class="action-btn gold" style="padding: 0.6rem; font-size:9px;" data-action="view-registrations" data-id="${e.id}">View List</button>
- <button class="action-btn" style="padding: 0.6rem; font-size:9px; border-color:var(--accent-red); color:var(--accent-red);" data-action="delete-event" data-id="${e.id}" data-name="${safeName}">Delete</button>
+ <button class="action-btn" style="padding: 0.6rem; font-size:9px; border-color:var(--accent-red); color:var(--accent-red-text);" data-action="delete-event" data-id="${e.id}" data-name="${safeName}">Delete</button>
  </div>`;
  container.appendChild(card);
  });
@@ -151,11 +151,11 @@ document.addEventListener('DOMContentLoaded', () => {
  const res = await window.globalApiFetch(`/admin/events/${id}/registrations`);
  if(!res) return;
  const data = await res.json();
- let html = `<div style="font-size:12px; margin-bottom:1.5rem; color:var(--accent-gold); font-weight:600; letter-spacing: 1px; text-transform: uppercase;">Total Approved: ${data.registrations.length}</div>`;
+ let html = `<div style="font-size:12px; margin-bottom:1.5rem; color:var(--accent-gold-text); font-weight:600; letter-spacing: 1px; text-transform: uppercase;">Total Approved: ${data.registrations.length}</div>`;
  data.registrations.forEach((r, i) => {
  const safeEmail = window.escapeHtml(r.email);
  const safeWa = r.whatsapp ? 'WA: ' + window.escapeHtml(r.whatsapp) : 'No WA provided';
- html += `<div style="padding:1rem 0; border-bottom:1px solid var(--grid-border); font-size:13px; display:flex; justify-content:space-between; align-items: center;"><span><strong style="color: var(--accent-gold); margin-right: 10px;">${i+1}.</strong> ${safeEmail}</span><span style="color:var(--text-primary); font-size: 11px; background: var(--bg-primary); padding: 4px 10px; border-radius: 2px;">${safeWa}</span></div>`;
+ html += `<div style="padding:1rem 0; border-bottom:1px solid var(--grid-border); font-size:13px; display:flex; justify-content:space-between; align-items: center;"><span><strong style="color: var(--accent-gold-text); margin-right: 10px;">${i+1}.</strong> ${safeEmail}</span><span style="color:var(--text-primary); font-size: 11px; background: var(--bg-primary); padding: 4px 10px; border-radius: 2px;">${safeWa}</span></div>`;
  });
  document.getElementById('modalBody').innerHTML = html || '<div class="empty-state">No registrations.</div>';
  };
@@ -190,9 +190,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
  const liveEx = exhibitions.find(e => e.is_active);
  if (liveEx) {
- if (statusText) statusText.innerHTML = `Currently Live: <strong style="color: var(--accent-green);">${window.escapeHtml(liveEx.title)}</strong>`;
+ if (statusText) statusText.innerHTML = `Currently Live: <strong style="color: var(--accent-green-text);">${window.escapeHtml(liveEx.title)}</strong>`;
  } else {
- if (statusText) statusText.innerHTML = `<strong style="color: var(--accent-red);">CLOSED</strong> (No active exhibition)`;
+ if (statusText) statusText.innerHTML = `<strong style="color: var(--accent-red-text);">CLOSED</strong> (No active exhibition)`;
  }
 
  if (exhibitions.length === 0) {
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
  if (!payload.title || !payload.date_text || !payload.venue) {
  msg.textContent = "Title, Dates, and Venue are required.";
- msg.style.color = "var(--accent-red)";
+ msg.style.color = "var(--accent-red-text)";
  return;
  }
 
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
  if (res && res.ok) {
  msg.textContent = "✓ Exhibition Created!";
- msg.style.color = "var(--accent-green)";
+ msg.style.color = "var(--accent-green-text)";
  document.querySelectorAll('#newExTitle, #newExDate, #newExVenue, #newExDesc, #newExTnc, #newExFee, #newExQr, #newExPayInst').forEach(el => el.value = '');
  await window.loadExhibitionManager();
  } else {
@@ -349,14 +349,14 @@ document.addEventListener('DOMContentLoaded', () => {
  if (a.status === 'PENDING') {
  actionBtns += `
  <button class="action-btn" style="padding:0.6rem;font-size:9px;" onclick="reviewExhibition(${Number(a.id)},'APPROVED',this)">Approve</button>
- <button class="action-btn" style="padding:0.6rem;font-size:9px;border-color:var(--accent-red);color:var(--accent-red);" onclick="reviewExhibition(${Number(a.id)},'REJECTED',this)">Reject</button>`;
+ <button class="action-btn" style="padding:0.6rem;font-size:9px;border-color:var(--accent-red);color:var(--accent-red-text);" onclick="reviewExhibition(${Number(a.id)},'REJECTED',this)">Reject</button>`;
  } else if (a.status === 'REJECTED') {
  actionBtns += `<button class="action-btn" style="padding:0.6rem;font-size:9px;" onclick="revertExhibition(${Number(a.id)},this)">Undo Rejection</button>`;
  }
  if (a.payment_proof_url) {
  const safePayment = window.safeHttpUrl ? window.safeHttpUrl(a.payment_proof_url) : (a.payment_proof_url && (a.payment_proof_url.startsWith('http://') || a.payment_proof_url.startsWith('https://')) ? a.payment_proof_url : null);
  if (safePayment) {
- actionBtns += `<a href="${window.escapeHtml(safePayment)}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.6rem;font-size:9px;border-color:var(--accent-green);color:var(--accent-green);text-align:center;margin-top:0.5rem;">View Payment Receipt</a>`;
+ actionBtns += `<a href="${window.escapeHtml(safePayment)}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.6rem;font-size:9px;border-color:var(--accent-green);color:var(--accent-green-text);text-align:center;margin-top:0.5rem;">View Payment Receipt</a>`;
  }
  }
  if (a.registration_status === 'SUBMITTED') {
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
  }
 
  const cycleName = window.escapeHtml(a.exhibition_cycle ? a.exhibition_cycle : 'LEGACY ARCHIVE');
- const cycleTag = `<div style="font-size:10px; margin-top:6px; color:var(--accent-gold); letter-spacing:1.5px; text-transform:uppercase; font-weight:600;">CYCLE: ${cycleName}</div>`;
+ const cycleTag = `<div style="font-size:10px; margin-top:6px; color:var(--accent-gold-text); letter-spacing:1.5px; text-transform:uppercase; font-weight:600;">CYCLE: ${cycleName}</div>`;
 
  const safeFullName = window.escapeHtml(a.full_name);
  const safeUserEmail = window.escapeHtml(a.user_email);
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
  <div><div class="data-label">Club</div><div class="data-display">${safeClub}</div></div>
  <div><div class="data-label">Status</div><span class="badge ${badge}">${a.status}</span></div>
  <div style="display:flex; flex-direction:column; gap:0.5rem;">
- ${a.status === 'PENDING' ? `<button class="action-btn" style="padding:0.6rem; font-size:9px;" onclick="reviewClub(${a.id}, 'APPROVED', this)">Approve</button><button class="action-btn" style="padding:0.6rem; font-size:9px; border-color:var(--accent-red); color:var(--accent-red);" onclick="reviewClub(${a.id}, 'REJECTED', this)">Reject</button>` : ''}
+ ${a.status === 'PENDING' ? `<button class="action-btn" style="padding:0.6rem; font-size:9px;" onclick="reviewClub(${a.id}, 'APPROVED', this)">Approve</button><button class="action-btn" style="padding:0.6rem; font-size:9px; border-color:var(--accent-red); color:var(--accent-red-text);" onclick="reviewClub(${a.id}, 'REJECTED', this)">Reject</button>` : ''}
  ${a.status === 'REJECTED' ? `<button class="action-btn" style="padding:0.6rem; font-size:9px;" onclick="revertClub(${a.id}, this)">Undo</button>` : ''}
  </div>`;
  container.appendChild(card);
@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
  const safeEmail = window.escapeHtml(u.email);
  const safeName = window.escapeHtml(u.full_name || 'Member');
  const isSelf = u.email === user.email;
- const deleteBtn = (isSelf || u.status === 'ADMIN') ? '' : `<button class="action-btn" style="border-color: var(--accent-red); color: var(--accent-red); padding:0.8rem; font-size:9px;" data-email="${safeEmail}" onclick="deleteUser(this.getAttribute('data-email'), this)">Purge</button>`;
+ const deleteBtn = (isSelf || u.status === 'ADMIN') ? '' : `<button class="action-btn" style="border-color: var(--accent-red); color: var(--accent-red-text); padding:0.8rem; font-size:9px;" data-email="${safeEmail}" onclick="deleteUser(this.getAttribute('data-email'), this)">Purge</button>`;
  card.innerHTML = `
  <div><div class="data-label">${safeName}</div><div class="data-display">${safeEmail}</div></div>
  <div><div class="data-label">Role</div><select id="st-${i}" style="margin:0;"><option value="PARTICIPANT" ${u.status==='PARTICIPANT'?'selected':''}>Participant</option><option value="ADMIN" ${u.status==='ADMIN'?'selected':''}>Admin</option></select></div>
@@ -558,10 +558,10 @@ document.addEventListener('DOMContentLoaded', () => {
  if (res && res.ok) {
  const data = await res.json();
  if (data.make_webhook_configured) {
- statusEl.style.color = 'var(--accent-gold)';
+ statusEl.style.color = 'var(--accent-gold-text)';
  statusEl.textContent = 'CONFIGURED (Make.com Webhook URL Present — Live Delivery Unverified Until Dispatched)';
  } else {
- statusEl.style.color = 'var(--accent-red)';
+ statusEl.style.color = 'var(--accent-red-text)';
  statusEl.textContent = 'NOT CONFIGURED (MAKE_WEBHOOK_URL Absent in Environment)';
  }
  } else {

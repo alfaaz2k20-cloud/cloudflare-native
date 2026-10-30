@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
  if (!query) return; 
  input.value = '';
  
- appendPhantomMessage(output, 'You', query, 'margin-top:1.5rem; color: var(--accent-gold); font-weight: 500;');
+ appendPhantomMessage(output, 'You', query, 'margin-top:1.5rem; color: var(--accent-gold-text); font-weight: 500;');
  const loadMsg = appendPhantomMessage(output, '', 'Curator AI is reflecting...', 'color:var(--text-secondary); font-style:italic; margin-top:0.5rem;');
  
  const coldTimer = setTimeout(() => {
@@ -138,14 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
      window.alfaazCuratorMemory?.add?.('user', query);
      window.alfaazCuratorMemory?.add?.('assistant', data.answer);
    } else if (res && res.status === 429) {
-     appendPhantomMessage(output, '', 'Curator AI is currently occupied with other visitors. Please wait a moment.', 'color:var(--accent-red); margin-top:0.5rem;');
+     appendPhantomMessage(output, '', 'Curator AI is currently occupied with other visitors. Please wait a moment.', 'color:var(--accent-red-text); margin-top:0.5rem;');
    } else {
-     appendPhantomMessage(output, '', 'The archives are momentarily quiet. Please inquire again in a few moments.', 'color:var(--accent-red); margin-top:0.5rem;');
+     appendPhantomMessage(output, '', 'The archives are momentarily quiet. Please inquire again in a few moments.', 'color:var(--accent-red-text); margin-top:0.5rem;');
    }
  } catch (err) { 
    clearTimeout(coldTimer);
    if (loadMsg.isConnected) loadMsg.remove();
-   appendPhantomMessage(output, '', 'Connection interrupted. Please try again.', 'color:var(--accent-red); margin-top:0.5rem;');
+   appendPhantomMessage(output, '', 'Connection interrupted. Please try again.', 'color:var(--accent-red-text); margin-top:0.5rem;');
  }
  output.scrollTop = output.scrollHeight;
  };
@@ -214,8 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
  try {
  const res = await window.globalApiFetch('/events/register', { method: 'POST', body: JSON.stringify({ event_id: currentRsvpEventId, whatsapp_number: wa }) });
  if (res && res.ok) { window.closeRsvpModal(); showToast('Spot secured.', 'success'); loadActiveEvents(); loadMyTickets(); }
- else { const data = await res.json(); showToast(data.detail || 'Registration failed.', 'error'); }
- } catch (e) {}
+ else { const data = await res.json().catch(() => ({})); showToast(data.detail || data.error || 'Registration failed.', 'error'); }
+ } catch (e) { showToast('Network error while securing spot.', 'error'); }
  btn.textContent = "Secure Spot"; btn.disabled = false;
  };
 

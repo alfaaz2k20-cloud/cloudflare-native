@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
  const file = fileInput && fileInput.files && fileInput.files[0];
  if (!file) {
-  status.style.color = "var(--accent-red)";
+  status.style.color = "var(--accent-red-text)";
   status.innerText = "Please select a manuscript or document to upload.";
   btn.innerText = "Submit to Storage";
   btn.disabled = false;
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
  });
 
  if (pyRes && pyRes.ok) {
- status.style.color = "var(--accent-green)";
+ status.style.color = "var(--accent-green-text)";
  status.innerText = "Submission Successful";
  btn.style.background = "var(--accent-gold)";
  btn.style.borderColor = "var(--accent-gold)";
@@ -83,13 +83,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
  setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
  } else {
- throw new Error("The Storage system rejected the submission.");
+  let errMsg = "The Storage system rejected the submission.";
+  if (pyRes) {
+    try {
+      const errJson = await pyRes.json();
+      if (errJson.error || errJson.detail) errMsg = errJson.error || errJson.detail;
+    } catch (_) {}
+  }
+  throw new Error(errMsg);
  }
  } catch (error) {
- status.style.color = "var(--accent-red)";
+ status.style.color = "var(--accent-red-text)";
  status.innerText = "ERROR: " + error.message;
  btn.innerText = "Submit to Storage";
  btn.disabled = false;
+ btn.style.background = "";
+ btn.style.borderColor = "";
  }
  });
 });
