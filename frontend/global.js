@@ -61,7 +61,7 @@ window.globalApiFetch = async function(endpoint, options = {}) {
         });
 
         if (response.status === 401) {
-            const authPages = ['login.html', 'register.html', 'reset.html'];
+            const authPages = ['login.html', 'register.html', 'reset.html', 'recruit.html'];
             const isAuthPage = authPages.some(page => window.location.pathname.endsWith(page));
             if (!isAuthPage) {
                 localStorage.removeItem('alfaaz_token');

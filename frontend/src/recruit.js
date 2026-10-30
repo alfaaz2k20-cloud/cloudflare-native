@@ -365,12 +365,15 @@ async function restoreLocalState() {
 }
 
 async function apiFetch(endpoint, options = {}) {
- const apiBase = (window.ALFAAZ_API_URL !== undefined && window.ALFAAZ_API_URL !== null) ? window.ALFAAZ_API_URL : '';
- const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
- return fetch(`${apiBase}${endpoint}`, {
- ...options,
- headers
- });
+  if (window.globalApiFetch) {
+    return window.globalApiFetch(endpoint, options);
+  }
+  const apiBase = (window.ALFAAZ_API_URL !== undefined && window.ALFAAZ_API_URL !== null) ? window.ALFAAZ_API_URL : '';
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  return fetch(`${apiBase}${endpoint}`, {
+    ...options,
+    headers
+  });
 }
 
 // Telemetry Client

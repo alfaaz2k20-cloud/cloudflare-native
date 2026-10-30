@@ -432,7 +432,7 @@ describe('Error Paths & Defensive Security Integration Test Suite', () => {
   });
 
   describe('9. Turnstile Challenge Verification & Production Resilience', () => {
-    it('allows registration to proceed when TURNSTILE_SECRET_KEY is unconfigured in production', async () => {
+    it('strictly rejects registration with 403 when TURNSTILE_SECRET_KEY is unconfigured in production (fail-closed)', async () => {
       const prodEnvWithoutTurnstile = {
         ...getTestEnv(),
         ENV: 'production'
@@ -442,15 +442,36 @@ describe('Error Paths & Defensive Security Integration Test Suite', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: 'unblocked_prod_user@alfaaz.local',
+          email: 'blocked_prod_user@alfaaz.local',
           password: 'SecureProdPassword123!',
-          full_name: 'Unblocked Prod User'
+          full_name: 'Blocked Prod User'
         })
       }, prodEnvWithoutTurnstile as any);
 
+      expect(res.status).toBe(403);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Turnstile verification failed');
+    });
+
+    it('bypasses Turnstile when TURNSTILE_SECRET_KEY is unconfigured in development/test', async () => {
+      const devEnvWithoutTurnstile = {
+        ...getTestEnv(),
+        ENV: 'development'
+      };
+
+      const res = await app.request('/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'dev_user@alfaaz.local',
+          password: 'SecureDevPassword123!',
+          full_name: 'Dev User'
+        })
+      }, devEnvWithoutTurnstile as any);
+
       expect(res.status).toBe(200);
       const data: any = await res.json();
-      expect(data.user.email).toBe('unblocked_prod_user@alfaaz.local');
+      expect(data.user.email).toBe('dev_user@alfaaz.local');
     });
 
     it('strictly rejects registration with 403 when TURNSTILE_SECRET_KEY is provisioned but token is missing', async () => {
@@ -494,6 +515,48 @@ describe('Error Paths & Defensive Security Integration Test Suite', () => {
       }, testEnvWithDummyKey as any);
 
       expect(res.status).toBe(200);
+    });
+
+    it('strictly rejects /auth/login with 403 when TURNSTILE_SECRET_KEY is provisioned but token is missing', async () => {
+      const prodEnvWithTurnstile = {
+        ...getTestEnv(),
+        ENV: 'production',
+        TURNSTILE_SECRET_KEY: '0x4AAAAAAAJ_test_secret_key_123456789'
+      };
+
+      const res = await app.request('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'volunteer@alfaaz.com',
+          password: 'Password123!'
+        })
+      }, prodEnvWithTurnstile as any);
+
+      expect(res.status).toBe(403);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Turnstile verification failed');
+    });
+
+    it('accepts /auth/login with valid Turnstile dummy pass key', async () => {
+      const testEnvWithDummyKey = {
+        ...getTestEnv(),
+        TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA'
+      };
+
+      const res = await app.request('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'volunteer@alfaaz.com',
+          password: 'alfaaz2026!',
+          turnstile_token: 'dummy-token'
+        })
+      }, testEnvWithDummyKey as any);
+
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data.token).toBeDefined();
     });
   });
 

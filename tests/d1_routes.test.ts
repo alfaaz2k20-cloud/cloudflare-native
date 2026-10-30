@@ -719,5 +719,31 @@ describe('Real Route-Level D1 SQLite & R2 Integration Test Suite', () => {
       const dualRes = await app.request('/notices', { method: 'GET' }, getTestEnv());
       expect(dualRes.status).toBe(200);
     });
+
+    it('handles legacy blog backward compatibility routes with 301 redirects to canonical endpoints', async () => {
+      // 1. GET /api/blog?id=1 redirects (301) to canonical /api/blogs/1
+      const redirectRes = await app.request('/api/blog?id=1', { method: 'GET' }, getTestEnv());
+      expect(redirectRes.status).toBe(301);
+      expect(redirectRes.headers.get('location')).toBe('/api/blogs/1');
+
+      // 2. GET /api/blog without id returns 400
+      const missingIdRes = await app.request('/api/blog', { method: 'GET' }, getTestEnv());
+      expect(missingIdRes.status).toBe(400);
+
+      // 3. GET /api/blog with non-numeric id returns 400
+      const invalidIdRes = await app.request('/api/blog?id=invalid', { method: 'GET' }, getTestEnv());
+      expect(invalidIdRes.status).toBe(400);
+
+      // 4. GET /api/blogs returns 200 list of published articles
+      const blogsListRes = await app.request('/api/blogs', { method: 'GET' }, getTestEnv());
+      expect(blogsListRes.status).toBe(200);
+      const blogsData: any = await blogsListRes.json();
+      expect(Array.isArray(blogsData)).toBe(true);
+
+      // 5. GET /notices/blogs redirects (301) to canonical /api/blogs
+      const noticesBlogsRes = await app.request('/notices/blogs', { method: 'GET' }, getTestEnv());
+      expect(noticesBlogsRes.status).toBe(301);
+      expect(noticesBlogsRes.headers.get('location')).toBe('/api/blogs');
+    });
   });
 });

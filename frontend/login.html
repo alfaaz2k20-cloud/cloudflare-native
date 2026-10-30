@@ -14,6 +14,7 @@
   <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
   <title>Login — ALFAAZ Collective</title>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script src="https://cdn.tailwindcss.com" defer></script>
   <script src="https://unpkg.com/lucide@latest" defer></script>
   <link rel="stylesheet" href="global.css">
@@ -66,6 +67,7 @@
       </div>
       <a href="#" id="forgotBtn" class="recovery-link">Lost Password?</a>
       <div class="forgot-hint" id="forgotHint">↑ Enter your email above, then click "Lost Password?"</div>
+      <div id="loginTurnstile" style="margin-top: 1rem; margin-bottom: 1rem; display: flex; justify-content: center;"></div>
       <button type="submit" class="submit-btn" style="width: 100%;">Log In</button>
     </form>
     <div class="toggle-auth">New to the collective? <a href="register.html">Register here</a></div>

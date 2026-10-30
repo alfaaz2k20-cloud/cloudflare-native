@@ -66,43 +66,19 @@ async function handleNotices(c: Context<{ Bindings: Env; Variables: Variables }>
 noticesRouter.get('/notices', handleNotices);
 noticesRouter.get('/', handleNotices);
 
-// GET /api/blogs - Legacy Vercel endpoint: List all published blogs
-noticesRouter.get('/blogs', async (c) => {
-  const result = await c.env.DB.prepare(`
-    SELECT id, title, excerpt, created_at
-    FROM blogs
-    WHERE is_published = 1
-    ORDER BY created_at DESC
-  `).all();
+// Legacy backward-compatibility redirects: Canonical blog endpoints reside in blogsRouter (/api/blogs)
+noticesRouter.get('/blogs', (c) => c.redirect('/api/blogs', 301));
 
-  c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
-  return c.json(result.results || []);
-});
-
-// GET /api/blog - Legacy Vercel endpoint: Single published blog by query param ?id=
-noticesRouter.get('/blog', async (c) => {
+noticesRouter.get('/blog', (c) => {
   const idStr = c.req.query('id');
   if (!idStr) {
     return c.json({ error: 'Missing article ID' }, 400);
   }
-
   const id = parseInt(idStr, 10);
   if (isNaN(id)) {
     return c.json({ error: 'Invalid ID format' }, 400);
   }
-
-  const article = await c.env.DB.prepare(`
-    SELECT *
-    FROM blogs
-    WHERE id = ? AND is_published = 1
-  `).bind(id).first();
-
-  if (!article) {
-    return c.json({ error: 'Article not found.' }, 404);
-  }
-
-  c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
-  return c.json(article);
+  return c.redirect(`/api/blogs/${id}`, 301);
 });
 
 export default noticesRouter;

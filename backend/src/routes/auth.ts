@@ -84,6 +84,13 @@ authRouter.post('/login', async (c) => {
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password;
 
+  const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
+  if (!turnstileValid) {
+    return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
+  }
+
   if (!email || !password) {
     return c.json({ detail: 'Invalid credentials' }, 401);
   }

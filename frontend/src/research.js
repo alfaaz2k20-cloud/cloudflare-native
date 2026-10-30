@@ -41,14 +41,12 @@ async function loadSessionsList(selectedStatus = '') {
 
   try {
     const token = localStorage.getItem('alfaaz_token');
-    const url = `${apiBase}/recruit/research/sessions${selectedStatus ? `?status=${encodeURIComponent(selectedStatus)}` : ''}`;
-    const resp = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const endpoint = `/recruit/research/sessions${selectedStatus ? `?status=${encodeURIComponent(selectedStatus)}` : ''}`;
+    const resp = await window.globalApiFetch(endpoint);
 
     if (resp.status === 401 || resp.status === 403) {
-      alert('Admin clearance required.');
-      window.location.href = 'login.html';
+      container.innerHTML = '<div class="p-8 text-center text-sm font-mono text-[var(--accent-red-text)]">Admin clearance required. Redirecting to login...</div>';
+      setTimeout(() => { window.location.href = 'login.html'; }, 1200);
       return;
     }
 
@@ -199,8 +197,8 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
 
   try {
     const token = localStorage.getItem('alfaaz_token');
-    const url = `${apiBase}/recruit/research/sessions/${sessionId}${forceRecompute ? '?recompute=true' : ''}`;
-    const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const endpoint = `/recruit/research/sessions/${sessionId}${forceRecompute ? '?recompute=true' : ''}`;
+    const resp = await window.globalApiFetch(endpoint);
 
     if (!resp.ok) {
         let errDetail = resp.statusText;
@@ -777,9 +775,7 @@ async function openInterviewSettingsModal() {
   document.getElementById('closeSettingsModalBtn')?.addEventListener('click', () => modal.remove());
 
   try {
-    const resp = await fetch(`${apiBase}/recruit/research/interview-settings`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const resp = await window.globalApiFetch('/recruit/research/interview-settings');
     const data = await resp.json();
     const currentSlots = (data.slots || []).join(', ');
     const skipDays = data.skip_days || ['Sunday'];
@@ -847,12 +843,8 @@ async function openInterviewSettingsModal() {
       feedback.innerText = 'Transmitting sample payload to Make.com...';
 
       try {
-        const testResp = await fetch(`${apiBase}/recruit/research/webhook-test`, {
+        const testResp = await window.globalApiFetch('/recruit/research/webhook-test', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
           body: JSON.stringify({ webhook_url: customUrl || undefined })
         });
 
@@ -878,7 +870,8 @@ async function openInterviewSettingsModal() {
       const rawSlots = document.getElementById('settingsSlotsInput').value;
       const slots = rawSlots.split(',').map(s => s.trim()).filter(Boolean);
       if (slots.length === 0) {
-        alert('Please enter at least one time slot.');
+        feedback.className = 'text-[11px] text-red-600 block';
+        feedback.innerText = 'Please enter at least one time slot.';
         return;
       }
       const checkedDays = Array.from(document.querySelectorAll('input[name="skipDayCheck"]:checked')).map(cb => cb.value);
@@ -889,12 +882,8 @@ async function openInterviewSettingsModal() {
       saveBtn.innerText = 'Saving...';
 
       try {
-        const updateResp = await fetch(`${apiBase}/recruit/research/interview-settings`, {
+        const updateResp = await window.globalApiFetch('/recruit/research/interview-settings', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
           body: JSON.stringify({ slots, skip_days: checkedDays })
         });
         if (!updateResp.ok) throw new Error('Failed to save settings');
@@ -945,7 +934,7 @@ async function openRescheduleModal(sessionId, applicant, currentBooking) {
   document.getElementById('closeRescheduleModalBtn')?.addEventListener('click', () => modal.remove());
 
   try {
-    const resp = await fetch(`${apiBase}/recruit/interview-slots`);
+    const resp = await window.globalApiFetch('/recruit/interview-slots');
     const slotsData = await resp.json();
     const days = slotsData.days || [];
 
@@ -1033,7 +1022,8 @@ async function openRescheduleModal(sessionId, applicant, currentBooking) {
         slotTime = customTime.trim();
         slotDisplay = `${customDate} at ${customTime}`;
       } else {
-        alert('Please choose an available slot or enter a custom date and time.');
+        feedback.className = 'text-[11px] text-red-600 block';
+        feedback.innerText = 'Please choose an available slot or enter a custom date and time.';
         return;
       }
 
@@ -1043,12 +1033,8 @@ async function openRescheduleModal(sessionId, applicant, currentBooking) {
       confirmBtn.innerText = 'Updating...';
 
       try {
-        const resp = await fetch(`${apiBase}/recruit/research/sessions/${sessionId}/reschedule`, {
+        const resp = await window.globalApiFetch(`/recruit/research/sessions/${sessionId}/reschedule`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
           body: JSON.stringify({
             slot_date: slotDate,
             slot_time: slotTime,

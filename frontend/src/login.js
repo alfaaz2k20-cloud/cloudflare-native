@@ -35,11 +35,55 @@ document.addEventListener('DOMContentLoaded', () => {
  forgotHint.classList.remove('visible');
  });
 
- // Handle Login Submit
+  // Turnstile Explicit Rendering with Network/Ad-blocker Resilience
+  let turnstileToken = '';
+  function initTurnstile() {
+    const container = document.getElementById('loginTurnstile');
+    const sitekey = window.ALFAAZ_TURNSTILE_SITEKEY || '0x4AAAAAAFsRHzhKR6YGsXSy';
+    if (window.turnstile && container && !container.hasChildNodes()) {
+      try {
+        window.turnstile.render('#loginTurnstile', {
+          sitekey: sitekey,
+          theme: 'light',
+          callback: (token) => { turnstileToken = token; },
+          'expired-callback': () => { turnstileToken = ''; }
+        });
+      } catch (err) {
+        console.warn('Turnstile render warning:', err);
+      }
+    }
+  }
+  if (window.turnstile) {
+    initTurnstile();
+  } else {
+    window.addEventListener('load', () => {
+      setTimeout(initTurnstile, 500);
+      // Graceful degraded notice if CDN is blocked by browser/ad-blocker
+      setTimeout(() => {
+        const container = document.getElementById('loginTurnstile');
+        if (!window.turnstile && container && !container.hasChildNodes()) {
+          container.innerHTML = '<div style="font-size:10px; color:var(--accent-gold-text); line-height:1.4; text-align:center; padding:6px; border:1px dashed var(--accent-gold); border-radius:3px;">Security verification is taking longer to load.<br>If you use an aggressive ad-blocker, please allow Cloudflare Turnstile.</div>';
+        }
+      }, 3500);
+    });
+  }
+
+  // Handle Login Submit
  form.addEventListener('submit', async (e) => {
  e.preventDefault();
  const emailValue = emailInput.value.trim();
  const passwordValue = pwInput.value;
+
+ if (!turnstileToken && !window.turnstile) {
+   const hint = document.getElementById('forgotHint');
+   if (hint) {
+     hint.textContent = '✗ Security script blocked. Please disable ad-blockers or reload the page.';
+     hint.style.color = 'var(--accent-red-text)';
+     hint.classList.add('visible');
+     setTimeout(() => { hint.classList.remove('visible'); hint.style.color = ''; }, 6000);
+   }
+   return;
+ }
 
  submitBtn.textContent = "Authenticating...";
  submitBtn.disabled = true;
@@ -48,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
  // Using the globalApiFetch consolidated in global.js
  const response = await window.globalApiFetch('/auth/login', {
  method: 'POST',
- body: JSON.stringify({ email: emailValue, password: passwordValue })
+ body: JSON.stringify({ email: emailValue, password: passwordValue, turnstile_token: turnstileToken })
  });
  if (!response) throw new Error("No response from authentication service.");
  const data = await response.json().catch(() => ({}));
@@ -76,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
  } else {
  submitBtn.textContent = "Log In";
  submitBtn.disabled = false;
+    if (window.turnstile) { try { window.turnstile.reset(); turnstileToken = ''; } catch (_) {} }
  const card = document.querySelector('.auth-card');
  if (card) {
  card.style.borderColor = 'var(--accent-red)';
