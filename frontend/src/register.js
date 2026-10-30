@@ -77,6 +77,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
  confirmInput?.addEventListener('input', checkMatch);
 
+ if (window.turnstile && document.getElementById('registerTurnstile')) {
+  try {
+   window.turnstile.render('#registerTurnstile', {
+    sitekey: window.ALFAAZ_TURNSTILE_SITEKEY || '0x4AAAAAAFsRHzhKR6YGsXSy',
+    theme: 'light'
+   });
+  } catch (_) {}
+ }
+
  // Handle Registration Submit
  form.addEventListener('submit', async (e) => {
  e.preventDefault();
@@ -105,13 +114,15 @@ document.addEventListener('DOMContentLoaded', () => {
  submitBtn.disabled = true;
 
  try {
+ const turnstileToken = window.turnstile ? (window.turnstile.getResponse() || '') : (document.querySelector('[name="cf-turnstile-response"]')?.value || '');
  // Using the globalApiFetch consolidated in global.js
  const response = await window.globalApiFetch('/auth/register', {
  method: 'POST',
  body: JSON.stringify({
  email: emailValue,
  password: passwordValue,
- full_name: nameValue || null
+ full_name: nameValue || null,
+ turnstile_token: turnstileToken
  })
  });
  if (!response) throw new Error("No response from authentication service.");
@@ -140,12 +151,23 @@ document.addEventListener('DOMContentLoaded', () => {
  } else {
  submitBtn.textContent = "Create Account";
  submitBtn.disabled = false;
- alert("Registration Failed: " + (data.detail?.[0]?.msg || data.detail || "Registration failed."));
+ const errMsg = data.detail?.[0]?.msg || data.detail || data.error || "Registration failed.";
+ if (matchIndicator) {
+  matchIndicator.textContent = '✗ ' + errMsg;
+  matchIndicator.style.color = 'var(--accent-red-text)';
+ } else {
+  alert("Registration Failed: " + errMsg);
+ }
  }
  } catch (error) {
  submitBtn.textContent = "Create Account";
  submitBtn.disabled = false;
- alert("Cannot reach the server.");
+ if (matchIndicator) {
+  matchIndicator.textContent = '✗ Cannot reach the server. Please check connection.';
+  matchIndicator.style.color = 'var(--accent-red-text)';
+ } else {
+  alert("Cannot reach the server.");
+ }
  }
  });
 });

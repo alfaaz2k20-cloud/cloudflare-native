@@ -806,7 +806,7 @@ function renderConsent(app) {
  if (window.turnstile && document.getElementById('recruitTurnstile')) {
    try {
      window.turnstile.render('#recruitTurnstile', {
-       sitekey: window.ALFAAZ_TURNSTILE_SITEKEY || '1x00000000000000000000AA',
+       sitekey: window.ALFAAZ_TURNSTILE_SITEKEY || '0x4AAAAAAFsRHzhKR6YGsXSy',
        theme: 'light'
      });
    } catch (_) {}

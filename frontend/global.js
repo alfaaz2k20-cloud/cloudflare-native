@@ -11,12 +11,15 @@ const CLOUDINARY_CLOUD_NAME =
     import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dmqwjpmjk';
 const CLOUDINARY_UPLOAD_PRESET =
     import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'alfaaz_vault';
+const TURNSTILE_SITEKEY =
+    import.meta.env.VITE_TURNSTILE_SITEKEY || '0x4AAAAAAFsRHzhKR6YGsXSy';
 
 window.ALFAAZ_API_URL = API_URL;
 window.ALFAAZ_CLOUDINARY = {
     cloudName: CLOUDINARY_CLOUD_NAME,
     uploadPreset: CLOUDINARY_UPLOAD_PRESET
 };
+window.ALFAAZ_TURNSTILE_SITEKEY = TURNSTILE_SITEKEY;
 
 window.escapeHtml = function(str) {
     if (str == null) return '';

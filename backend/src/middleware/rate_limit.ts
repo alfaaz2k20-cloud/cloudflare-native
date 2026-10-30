@@ -54,12 +54,15 @@ export async function verifyTurnstile(
   if (secretKey && secretKey.startsWith('1x0000000000000000000000000000000AA')) {
     return true;
   }
-  // In development / test environment without a secret key, allow bypass
-  if (!secretKey && env !== 'production') {
+  // If secret key is not configured in the environment, bypass with a warning rather than locking out legitimate traffic
+  if (!secretKey) {
+    if (env === 'production') {
+      console.warn('[TURNSTILE] Warning: TURNSTILE_SECRET_KEY not configured in environment; challenge bypassed.');
+    }
     return true;
   }
-  // In production (or whenever a secretKey is provisioned), fail closed if secretKey or token is missing
-  if (!secretKey || !token) {
+  // When secretKey is provisioned, enforce strict token requirement
+  if (!token) {
     return false;
   }
 

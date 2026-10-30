@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
  return;
  }
 
- status.style.color = 'var(--accent-gold)';
+ status.style.color = 'var(--accent-gold-text)';
  status.textContent = `Uploading ${file.name}...`;
 
  try {
@@ -50,17 +50,18 @@ document.addEventListener('DOMContentLoaded', () => {
  formData.append('file', file);
  formData.append('upload_preset', UPLOAD_PRESET);
  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method: 'POST', body: formData });
- const data = await res.json();
+ const data = await res.json().catch(() => ({}));
  if (data.secure_url) {
- uploadedPdfUrl = data.secure_url;
- status.style.color = 'var(--accent-green)';
- status.textContent = '✓ Uploaded successfully.';
+  uploadedPdfUrl = data.secure_url;
+  status.style.color = 'var(--accent-green-text)';
+  status.textContent = '✓ Uploaded successfully.';
  } else {
- throw new Error();
+  const detail = data.error?.message ? `: ${data.error.message}` : '';
+  throw new Error(`Upload failed${detail}`);
  }
- } catch {
- status.style.color = 'var(--accent-red)';
- status.textContent = '✗ Upload failed — please try again.';
+ } catch (uploadErr) {
+ status.style.color = 'var(--accent-red-text)';
+ status.textContent = `✗ ${uploadErr.message || 'Upload failed — please try again.'}`;
  uploadedPdfUrl = null;
  }
  });
@@ -112,6 +113,15 @@ document.addEventListener('DOMContentLoaded', () => {
  const fadeElements = document.querySelectorAll('.fade-in');
  setTimeout(() => { fadeElements.forEach(el => el.classList.add('visible')); }, 100);
  if (window.lucide) window.lucide.createIcons();
+
+ if (window.turnstile && document.getElementById('exhibitionTurnstile')) {
+  try {
+   window.turnstile.render('#exhibitionTurnstile', {
+    sitekey: window.ALFAAZ_TURNSTILE_SITEKEY || '0x4AAAAAAFsRHzhKR6YGsXSy',
+    theme: 'light'
+   });
+  } catch (_) {}
+ }
  }
 
  // ── Form Submission ───────────────────────────────────────────────
@@ -123,11 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
  // Guard: PDF must be uploaded first
  if (!uploadedPdfUrl) {
  if (msg) {
- msg.style.color = 'var(--accent-red)';
+ msg.style.color = 'var(--accent-red-text)';
  msg.textContent = 'Please upload your portfolio PDF before submitting.';
  }
  return;
  }
+
+ const turnstileToken = window.turnstile ? (window.turnstile.getResponse() || '') : (document.querySelector('[name="cf-turnstile-response"]')?.value || '');
 
  const payload = {
  full_name: document.getElementById('fname').value.trim(),
@@ -140,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
  over_19: document.getElementById('checkAge').checked,
  agreed_to_screening: document.getElementById('checkScreen').checked,
  applicant_note: document.getElementById('note').value.trim() || null,
+ turnstile_token: turnstileToken
  };
 
  if (btn) { btn.textContent = "Submitting..."; btn.disabled = true; }
@@ -160,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
  if (res && res.ok) {
  if (msg) {
- msg.style.color = 'var(--accent-green)';
+ msg.style.color = 'var(--accent-green-text)';
  msg.textContent = '✓ Portfolio submitted. Redirecting to dashboard...';
  }
  setTimeout(() => window.location.href = 'dashboard.html', 2000);
@@ -169,14 +182,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
  const errorData = await res?.json().catch(() => ({}));
  if (msg) {
- msg.style.color = 'var(--accent-red)';
+ msg.style.color = 'var(--accent-red-text)';
  msg.textContent = errorData.detail || errorData.error || 'Submission failed. Please try again.';
  }
  restoreBtn();
  } catch (err) {
  console.error('[Exhibition submit error]', err);
  if (msg) {
- msg.style.color = 'var(--accent-red)';
+ msg.style.color = 'var(--accent-red-text)';
  msg.textContent = 'Could not reach the server. Please check your connection and try again.';
  }
  restoreBtn();

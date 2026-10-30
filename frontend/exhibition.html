@@ -23,6 +23,7 @@
   <meta name="twitter:description" content="Submit your portfolio for screening for upcoming gallery cycles." />
   <meta name="twitter:image" content="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg" />
   <title>Exhibition Portal — ALFAAZ COLLECTIVE</title>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script src="https://cdn.tailwindcss.com" defer></script>
   <script src="https://unpkg.com/lucide@latest" defer></script>
   <link rel="stylesheet" href="global.css?v=alfaaz-clubs">
@@ -36,7 +37,7 @@
     
     .exhib-details-box { background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 3rem; margin-top: -3rem; position: relative; z-index: 20; box-shadow: var(--shadow-float); display: flex; flex-direction: column; gap: 2rem; }
     .detail-item { display: flex; flex-direction: column; gap: 0.5rem; text-align: center; }
-    .detail-item .label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold); }
+    .detail-item .label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); }
     .detail-item .value { font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); }
     
     .exhib-desc { font-size: 13px; line-height: 1.8; color: var(--text-secondary); text-align: center; max-width: 700px; margin: 0 auto; padding-top: 2rem; border-top: 1px solid var(--grid-border); }
@@ -198,6 +199,7 @@
           </div>
 
           <div style="margin-top: 3rem; text-align: center;">
+            <div id="exhibitionTurnstile" style="margin-bottom: 1.5rem; display: flex; justify-content: center;"></div>
             <button type="submit" class="submit-btn" id="submitBtn">Submit to Curator</button>
             <div id="formMsg" style="margin-top: 1rem; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;"></div>
           </div>

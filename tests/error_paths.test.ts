@@ -430,4 +430,122 @@ describe('Error Paths & Defensive Security Integration Test Suite', () => {
       expect(wrongToken.status).toBe(403);
     });
   });
+
+  describe('9. Turnstile Challenge Verification & Production Resilience', () => {
+    it('allows registration to proceed when TURNSTILE_SECRET_KEY is unconfigured in production', async () => {
+      const prodEnvWithoutTurnstile = {
+        ...getTestEnv(),
+        ENV: 'production'
+      };
+
+      const res = await app.request('/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'unblocked_prod_user@alfaaz.local',
+          password: 'SecureProdPassword123!',
+          full_name: 'Unblocked Prod User'
+        })
+      }, prodEnvWithoutTurnstile as any);
+
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data.user.email).toBe('unblocked_prod_user@alfaaz.local');
+    });
+
+    it('strictly rejects registration with 403 when TURNSTILE_SECRET_KEY is provisioned but token is missing', async () => {
+      const prodEnvWithTurnstile = {
+        ...getTestEnv(),
+        ENV: 'production',
+        TURNSTILE_SECRET_KEY: '0x4AAAAAAAJ_test_secret_key_123456789'
+      };
+
+      const res = await app.request('/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'bot_attack@alfaaz.local',
+          password: 'BotPassword123!',
+          full_name: 'Bot Attacker'
+        })
+      }, prodEnvWithTurnstile as any);
+
+      expect(res.status).toBe(403);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Turnstile verification failed');
+    });
+
+    it('accepts Cloudflare official dummy pass secret key 1x0000000000000000000000000000000AA', async () => {
+      const testEnvWithDummyKey = {
+        ...getTestEnv(),
+        ENV: 'production',
+        TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA'
+      };
+
+      const res = await app.request('/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'dummy_pass_user@alfaaz.local',
+          password: 'DummyPassPassword123!',
+          full_name: 'Dummy Pass User',
+          turnstile_token: 'dummy-token'
+        })
+      }, testEnvWithDummyKey as any);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('10. Curator AI & Scheduled Automation Resilience', () => {
+    it('returns contemplative offline answers when AI keys are unset', async () => {
+      const res = await app.request('/phantom/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: 'What is Tchandervar?' })
+      }, getTestEnv());
+
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data.answer).toContain('Tchandervar');
+      expect(data.answer).toContain('Alfaaz Collective');
+    });
+
+    it('handles empty questions gracefully', async () => {
+      const res = await app.request('/curator/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: '' })
+      }, getTestEnv());
+
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data.answer).toContain('Please share your contemplation or inquiry');
+    });
+
+    it('executes scheduled cron cleanly and enforces publication idempotency', async () => {
+      const env = getTestEnv();
+      let waitUntilPromise: Promise<any> | null = null;
+      const fakeCtx = {
+        waitUntil: (p: Promise<any>) => { waitUntilPromise = p; }
+      };
+
+      const initial: any = await mockDb.prepare('SELECT COUNT(*) as n FROM blogs').first();
+      const initialCount = initial.n;
+
+      // First run: publishes essay
+      await (app as any).scheduled({ cron: '0 10 * * SUN', scheduledTime: Date.now() }, env, fakeCtx);
+      if (waitUntilPromise) await waitUntilPromise;
+
+      const afterFirst: any = await mockDb.prepare('SELECT COUNT(*) as n FROM blogs').first();
+      expect(afterFirst.n).toBe(initialCount + 1);
+
+      // Second run: idempotency skips duplicate
+      await (app as any).scheduled({ cron: '0 10 * * SUN', scheduledTime: Date.now() }, env, fakeCtx);
+      if (waitUntilPromise) await waitUntilPromise;
+
+      const afterSecond: any = await mockDb.prepare('SELECT COUNT(*) as n FROM blogs').first();
+      expect(afterSecond.n).toBe(initialCount + 1);
+    });
+  });
 });
