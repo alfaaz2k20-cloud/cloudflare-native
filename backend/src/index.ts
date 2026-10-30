@@ -123,28 +123,56 @@ app.get('/api/ping', (c) => c.json({
 
 // Legacy Vercel Navigation Rewrites (Matching vercel.json)
 app.use('*', async (c, next) => {
-  const path = c.req.path.replace(/\/+$/, '') || '/';
   const method = c.req.method;
 
   if (method === 'GET' || method === 'HEAD') {
+    const rawPath = c.req.path;
+    const path = rawPath.replace(/\/+$/, '') || '/';
     const url = new URL(c.req.url);
     const search = url.search;
-    const host = c.req.header('host') || url.host;
+    const host = (c.req.header('host') || url.host).toLowerCase();
 
-    // Tchandervar Subdomain & Route Isolation (tch.alfaazcollective.org or /tch, /tchandervar)
+    // 1. Permanent redirect for /tch or /tchandervar without trailing slash
+    // Guarantees browser base URL is /tch/ so relative asset paths resolve cleanly
+    if (rawPath === '/tch' || rawPath === '/tchandervar') {
+      return c.redirect('/tch/' + search, 301);
+    }
+
+    // 2. Tchandervar Subdomain & Route Isolation (tch.alfaazcollective.org or /tch/, /tchandervar/)
     if (host.startsWith('tch.') || path === '/tch' || path === '/tchandervar' || path.startsWith('/tch/') || path.startsWith('/tchandervar/')) {
       let subPath = path;
       if (path === '/tch' || path === '/tchandervar' || path === '/') {
         subPath = '/tchandervar/index.html';
       } else if (path.startsWith('/tch/')) {
-        subPath = '/tchandervar/' + path.slice(5);
+        const afterTch = path.slice(5);
+        if (afterTch.startsWith('assets/')) {
+          subPath = '/' + afterTch;
+        } else if (afterTch.startsWith('images/')) {
+          subPath = '/tchandervar/' + afterTch;
+        } else {
+          subPath = '/tchandervar/' + afterTch;
+        }
+      } else if (path.startsWith('/assets/')) {
+        // Shared Vite assets bundle is placed at /assets/ in dist
+        subPath = path;
       } else if (!path.startsWith('/tchandervar/')) {
         subPath = '/tchandervar' + path;
       }
-      const destUrl = new URL(subPath + search, c.req.url);
+
+      // Canonicalize asset URL to the primary apex domain so env.ASSETS always matches
+      const assetUrl = new URL(subPath + search, 'https://alfaazcollective.org');
       return c.env?.ASSETS
-        ? c.env.ASSETS.fetch(new Request(destUrl, { method, headers: c.req.raw.headers }))
+        ? c.env.ASSETS.fetch(new Request(assetUrl, { method, headers: c.req.raw.headers }))
         : c.redirect('/tchandervar/index.html' + search);
+    }
+
+    // 3. Failsafe: Direct requests to Tchandervar images from apex domain
+    if (path.startsWith('/images/artwork-') || path.startsWith('/images/frame') || path.startsWith('/images/slide-new')) {
+      const subPath = '/tchandervar' + path;
+      const assetUrl = new URL(subPath + search, 'https://alfaazcollective.org');
+      return c.env?.ASSETS
+        ? c.env.ASSETS.fetch(new Request(assetUrl, { method, headers: c.req.raw.headers }))
+        : c.redirect(subPath + search);
     }
 
     if (path === '/recruit/sjt') {

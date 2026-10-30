@@ -112,8 +112,8 @@ nav.hidden {
 /* ── LABELS ───────────────────────────────────── */
 .data-label, .input-label, .section-label {
   font-family: var(--font-body); font-size: 10px; font-weight: 600;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--text-secondary); margin-bottom: 0.5rem;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--text-secondary); margin-bottom: 1.25rem;
   display: block;
 }
 
@@ -238,7 +238,7 @@ h3.ur-hover {
   font-size: clamp(2.8rem, 9vw, 6.5rem);
   font-weight: 400; line-height: 1;
   text-transform: uppercase; color: var(--text-primary);
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.75rem;
 }
 
 .hero-title.ur-hover {
@@ -257,19 +257,27 @@ h3.ur-hover {
 }
 
 .hero-title.ur-hover::before {
-  font-size: 1.5em;
+  font-size: 1.35em;
   color: var(--text-primary);
+  top: 48%;
+  line-height: 1.3;
 }
 
 /* Club titles */
 .club-title { 
-  margin-bottom: 0.5rem; 
-  padding-bottom: 1.8rem; /* Stretches the box downward so text doesn't bleed */
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem; 
+  padding-bottom: 1.6rem; /* Stretches the box downward so text doesn't bleed */
+  min-height: 3.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1.4; 
 }
 .club-title.ur-hover::before { 
-  font-size: 1.6em; 
-  top: 40%; /* Lifts the Urdu text slightly higher inside the box */
+  font-size: 1.5em; 
+  top: 36%; /* Lifts the Urdu text comfortably higher inside the box */
+  line-height: 1.3;
 }
 
 /* ── POETIC EPIGRAPH (CONTEMPLATIVE SECTION) ────── */

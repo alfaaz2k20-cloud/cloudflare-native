@@ -174,6 +174,47 @@ describe('Hono Worker Integration Endpoints', () => {
     expect(res.headers.get('location')).toBe('https://alfaazcollective.org/recruit');
   });
 
+  it('handles Tchandervar routes, redirects /tch to /tch/, and serves assets properly', async () => {
+    // 1. /tch without trailing slash redirects 301 to /tch/
+    const resTchRedirect = await app.request('/tch');
+    expect(resTchRedirect.status).toBe(301);
+    expect(resTchRedirect.headers.get('location')).toBe('/tch/');
+
+    // 2. /tchandervar without trailing slash redirects 301 to /tch/
+    const resTchandervarRedirect = await app.request('/tchandervar');
+    expect(resTchandervarRedirect.status).toBe(301);
+    expect(resTchandervarRedirect.headers.get('location')).toBe('/tch/');
+
+    // 3. /tch/ with mock ASSETS serves /tchandervar/index.html
+    let fetchedPath = '';
+    const mockAssets = {
+      fetch: async (req: Request) => {
+        fetchedPath = new URL(req.url).pathname;
+        return new Response('TCHANDARVAR_HTML', { status: 200, headers: { 'content-type': 'text/html' } });
+      }
+    };
+
+    const resTchSlash = await app.request('/tch/', {}, { ASSETS: mockAssets } as any);
+    expect(resTchSlash.status).toBe(200);
+    expect(fetchedPath).toBe('/tchandervar/index.html');
+
+    // 4. /tch/images/artwork-s001.jpg fetches /tchandervar/images/artwork-s001.jpg
+    await app.request('/tch/images/artwork-s001.jpg', {}, { ASSETS: mockAssets } as any);
+    expect(fetchedPath).toBe('/tchandervar/images/artwork-s001.jpg');
+
+    // 5. Host: tch.alfaazcollective.org root request fetches /tchandervar/index.html
+    await app.request('/', { headers: { 'Host': 'tch.alfaazcollective.org' } }, { ASSETS: mockAssets } as any);
+    expect(fetchedPath).toBe('/tchandervar/index.html');
+
+    // 6. Host: tch.alfaazcollective.org requesting /assets/bundle.js remains at /assets/bundle.js
+    await app.request('/assets/tchandervar-xyz.js', { headers: { 'Host': 'tch.alfaazcollective.org' } }, { ASSETS: mockAssets } as any);
+    expect(fetchedPath).toBe('/assets/tchandervar-xyz.js');
+
+    // 7. Failsafe: Direct request to /images/artwork-s001.jpg on apex routes to /tchandervar/images/artwork-s001.jpg
+    await app.request('/images/artwork-s001.jpg', {}, { ASSETS: mockAssets } as any);
+    expect(fetchedPath).toBe('/tchandervar/images/artwork-s001.jpg');
+  });
+
   it('GET /api/unknown-endpoint returns 404 with JSON error', async () => {
     const res = await app.request('/api/unknown-endpoint');
     expect(res.status).toBe(404);
