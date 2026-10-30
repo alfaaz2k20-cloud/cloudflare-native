@@ -129,6 +129,23 @@ app.use('*', async (c, next) => {
   if (method === 'GET' || method === 'HEAD') {
     const url = new URL(c.req.url);
     const search = url.search;
+    const host = c.req.header('host') || url.host;
+
+    // Tchandervar Subdomain & Route Isolation (tch.alfaazcollective.org or /tch, /tchandervar)
+    if (host.startsWith('tch.') || path === '/tch' || path === '/tchandervar' || path.startsWith('/tch/') || path.startsWith('/tchandervar/')) {
+      let subPath = path;
+      if (path === '/tch' || path === '/tchandervar' || path === '/') {
+        subPath = '/tchandervar/index.html';
+      } else if (path.startsWith('/tch/')) {
+        subPath = '/tchandervar/' + path.slice(5);
+      } else if (!path.startsWith('/tchandervar/')) {
+        subPath = '/tchandervar' + path;
+      }
+      const destUrl = new URL(subPath + search, c.req.url);
+      return c.env?.ASSETS
+        ? c.env.ASSETS.fetch(new Request(destUrl, { method, headers: c.req.raw.headers }))
+        : c.redirect('/tchandervar/index.html' + search);
+    }
 
     if (path === '/recruit/sjt') {
       const destUrl = new URL('/recruit.html' + search, c.req.url);

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tchandervar — Edition I, Summer 2025</title>
+  <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Montserrat:wght@300;400;500;600&family=Teko:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <nav id="navbar">
+    <div class="logo-container">
+      <a href="#" class="logo magnetic">tchandervar</a>
+      <span class="logo-subtitle">Edition I — Summer 2025</span>
+    </div>
+    <div class="nav-links" id="navLinks">
+           <a href="#collection" class="magnetic">Collection</a>
+      <a href="#frames" class="magnetic">Frames</a>
+      <a href="#about" class="magnetic">About</a>
+      <a href="#contact" class="magnetic">Contact</a>
+      <a href="https://alfaazcollective.org/blogs.html" class="magnetic">Blog</a>
+    </div>
+    <button id="menuToggle" aria-label="Toggle menu" aria-expanded="false">
+      <span class="hamburger-open">≡</span>
+      <span class="hamburger-close">×</span>
+    </button>
+    <a id="alfaazLinkNav" href="https://alfaazcollective.org" target="_blank" rel="noopener noreferrer" class="nav-cta magnetic">
+      Alfaaz
+    </a>
+  </nav>
+
+  <section class="hero">
+    <p class="hero-subtitle">Alfaaz Collective</p>
+    <h1 class="char-reveal fade-in-up">It belongs to where it lives</h1>
+    <div class="hero-illustration fade-in-up">
+      <svg viewBox="0 0 200 80">
+        <path d="M10,50 C50,70 90,30 140,50 C170,60 180,45 190,40" stroke-width="1.5" stroke-linecap="round" stroke="var(--accent-red)" fill="none"/>
+        <path d="M10,55 C50,75 90,35 140,55 C170,65 180,50 190,45" stroke-width="0.5" stroke-linecap="round" stroke="var(--accent-red)" opacity="0.4" fill="none"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="poem">
+    <p class="poem-text fade-in-up">
+      چشمها را باید شست، جور دیگر باید دید<br>
+      چترها را باید بست، زیر باران باید رفت
+    </p>
+    <p class="poem-author fade-in-up">— سهراب سپهری</p>
+  </section>
+
+  <div class="divider fade-in-up">
+    <div class="divider-line"></div>
+    <svg viewBox="0 0 120 20">
+      <path d="M10,10 C 30,20 40,-5 60,10 C 80,25 90,0 110,10" stroke-width="1" stroke-linecap="round" stroke="var(--accent-red)" fill="none"/>
+    </svg>
+    <div class="divider-line"></div>
+  </div>
+
+  <section class="slider-section fade-in-up">
+    <div class="slider" id="slideContainer">
+      <div class="slides">
+        <img src="images/slide-new1.jpg" alt="Artwork 1">
+        <img src="images/slide2.jpg" alt="Artwork 2">
+        <img src="images/slide3.jpg" alt="Artwork 3">
+      </div>
+      <div class="slider-buttons">
+        <button class="slider-button prev magnetic" onclick="plusSlides(-1)"><span class="magnetic-content">←</span></button>
+        <button class="slider-button next magnetic" onclick="plusSlides(1)"><span class="magnetic-content">→</span></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider fade-in-up">
+    <div class="divider-line"></div>
+    <svg viewBox="0 0 120 20">
+      <path d="M10,10 C 30,20 40,-5 60,10 C 80,25 90,0 110,10" stroke-width="1" stroke-linecap="round" stroke="var(--accent-red)" fill="none"/>
+    </svg>
+    <div class="divider-line"></div>
+  </div>
+
+  <nav class="collection-nav fade-in-up" id="collectionNav">
+    <a href="#groupA" class="collection-nav-item active magnetic" data-group="groupA"><span class="magnetic-content">Group A</span></a>
+    <a href="#groupB" class="collection-nav-item magnetic" data-group="groupB"><span class="magnetic-content">Group B</span></a>
+    <a href="#groupC" class="collection-nav-item magnetic" data-group="groupC"><span class="magnetic-content">Group C</span></a>
+    <a href="#groupD" class="collection-nav-item magnetic" data-group="groupD"><span class="magnetic-content">Group D</span></a>
+    <a href="#groupE" class="collection-nav-item magnetic" data-group="groupE"><span class="magnetic-content">Group E</span></a>
+  </nav>
+
+  <section class="artwork-section" id="collection">
+    
+    <section id="groupA" data-collection="Group A">
+      <div class="collection-intro fade-in-up">
+        <h2>Group A</h2>
+        <p>A curated collection featuring Kashmiri landscapes and traditional motifs, capturing the serene beauty of Dal Lake and historic gardens.</p>
+      </div>
+      <div class="gallery" id="gallery-groupA"></div>
+    </section>
+
+    <section id="groupB" style="display: none;" data-collection="Group B">
+      <div class="collection-intro">
+        <h2>Group B</h2>
+        <p>Intimate portraits and expressive studies exploring the human form and emotional depth through various mediums.</p>
+      </div>
+      <div class="gallery" id="gallery-groupB"></div>
+    </section>
+
+    <section id="groupC" style="display: none;" data-collection="Group C">
+      <div class="collection-intro">
+        <h2>Group C</h2>
+        <p>Still life compositions and intimate domestic scenes celebrating the quiet beauty of everyday objects.</p>
+      </div>
+      <div class="gallery" id="gallery-groupC"></div>
+    </section>
+
+    <section id="groupD" style="display: none;" data-collection="Group D">
+      <div class="collection-intro">
+        <h2>Group D</h2>
+        <p>Bold expressionist works and abstract compositions exploring color, form, and emotional resonance.</p>
+      </div>
+      <div class="gallery" id="gallery-groupD"></div>
+    </section>
+
+    <section id="groupE" style="display: none;" data-collection="Group E">
+      <div class="collection-intro">
+        <h2>Group E</h2>
+        <p>Delicate watercolor studies capturing the ephemeral beauty of architecture and urban landscapes.</p>
+      </div>
+      <div class="gallery" id="gallery-groupE"></div>
+    </section>
+
+  </section>
+
+  <section class="frame-section fade-in-up" id="frames">
+    <img src="images/frame1.jpg" alt="Customized frame design" loading="lazy">
+    <p>Our customized frames are designed to enhance—never overpower the delicate rhythm of art. Drawing inspiration from the harmony found in Kashmiri crafts, architecture, and landscape, each frame brings a quiet reverence to the artwork it surrounds.</p>
+  </section>
+
+  <section class="about-section fade-in-up" id="about">
+    <h2>About tchandervar</h2>
+    <p>tchandervar connects local artists with individuals who want to enhance their spaces with unique, high-quality artwork. We curate a diverse collection of paintings and other art forms, carefully chosen to fit a variety of environments. Clients can explore this collection or collaborate with us to find pieces that best suit their space, whether it's a residence, a hotel, office, or restaurant. Our service goes beyond just selling art—we provide personalized recommendations to create the perfect ambiance for each setting.</p>
+  </section>
+
+  <section class="contact-section fade-in-up" id="contact">
+    <h2>Get in Touch</h2>
+    <p>For inquiries, commissions, or just to say hello, feel free to reach out:</p>
+    <div class="contact-icons">
+      <a href="mailto:alfaaz2k20@gmail.com" aria-label="Email" class="magnetic"><span class="magnetic-content"><i class="fas fa-envelope"></i></span></a>
+      <a href="https://wa.me/917006613891" target="_blank" aria-label="WhatsApp" class="magnetic"><span class="magnetic-content"><i class="fab fa-whatsapp"></i></span></a>
+      <a href="https://www.instagram.com/alfaaz.2020" target="_blank" aria-label="Instagram" class="magnetic"><span class="magnetic-content"><i class="fab fa-instagram"></i></span></a>
+    </div>
+  </section>
+
+  <footer class="fade-in-up">
+    <p>&copy; 2026 tchandervar — An Alfaaz Initiative</p>
+  </footer>
+
+  <button id="scrollToTopBtn" title="Go to top" class="magnetic"><span class="magnetic-content">↑</span></button>
+
+    <script type="module" src="gallery-data.js"></script>
+  <script type="module" src="app.js"></script>
+
+</body>
+</html>

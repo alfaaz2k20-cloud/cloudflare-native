@@ -145,8 +145,6 @@
     @media (max-width: 768px) { 
         nav { padding: 1rem 1.5rem; } 
         .nav-actions { gap: 1rem; } 
-        .nav-login { display: none !important; }
-        .mobile-only-link { display: block; } 
         .nav-links { display: none; position: absolute; top: 100%; left: 0; width: 100%; flex-direction: column; background: var(--bg-secondary); padding: 2rem; gap: 1.5rem; border-bottom: 1px solid var(--grid-border); box-shadow: 0 10px 20px rgba(0,0,0,0.05); } 
         .nav-links.active { display: flex; } 
         #menuToggle { display: flex; align-items: center; justify-content: center; margin-left: 0.5rem;} 
@@ -208,14 +206,15 @@
       <a href="blogs.html" class="ur-hover" data-ur="جریدہ">
         <span class="en-text">Journal</span>
       </a>
-      <a id="mobileLoginBtn" href="login.html" class="mobile-only-link ur-hover" data-ur="داخلہ">
+      <a id="navLoginBtn" href="login.html" class="ur-hover" data-ur="داخلہ">
         <span class="en-text">Login / Register</span>
       </a>
     </div>
 
     <div class="nav-actions">
-      <a id="navLoginBtn" href="login.html" class="nav-login" style="font-family:var(--font-body); font-size:11px; text-decoration:none; text-transform:uppercase; letter-spacing:2px; color:var(--text-primary); transition:color 0.3s;">Login / Register</a>
-      <a id="tchLinkNav" href="https://tchandervar.neocities.org" target="_blank" rel="noopener noreferrer" class="cta-btn" style="padding: 0.6rem 1.2rem; font-size: 10px;">Tchandervar</a>
+      <a id="tchLinkNav" href="https://tch.alfaazcollective.org" target="_blank" rel="noopener noreferrer" class="cta-btn ur-hover" data-ur="ژٔندٕروار" style="padding: 0.6rem 1.2rem; font-size: 10px; min-width: 110px; text-align: center;">
+        <span class="en-text">Tchandervar</span>
+      </a>
       
       <button id="menuToggle" aria-label="Toggle menu" aria-expanded="false">
         <i data-lucide="menu" class="w-6 h-6 hamburger-open"></i>
@@ -247,20 +246,17 @@
       <div class="hero-scroll"><span>Scroll</span><div class="scroll-line"></div></div>
     </section>
 
-    <section class="marquee-section">
-      <div class="marquee">
-        <div class="marquee-content">
-          <span class="marquee-item">Art & Literature</span><span class="marquee-dot"></span>
-          <span class="marquee-item">Creative Expression</span><span class="marquee-dot"></span>
-          <span class="marquee-item">Visual Storytelling</span><span class="marquee-dot"></span>
-          <span class="marquee-item">Cultural Heritage</span><span class="marquee-dot"></span>
-        </div>
-        <div class="marquee-content">
-          <span class="marquee-item">Art & Literature</span><span class="marquee-dot"></span>
-          <span class="marquee-item">Creative Expression</span><span class="marquee-dot"></span>
-          <span class="marquee-item">Visual Storytelling</span><span class="marquee-dot"></span>
-          <span class="marquee-item">Cultural Heritage</span><span class="marquee-dot"></span>
-        </div>
+    <section class="epigraph-section fade-in">
+      <div class="epigraph-inner">
+        <div class="epigraph-rule"></div>
+        <p class="epigraph-verse" dir="rtl">
+          چشمہا را باید شست، جور دیگر باید دید
+        </p>
+        <p class="epigraph-translation">
+          "The eyes must be washed, to see in another way."
+        </p>
+        <span class="epigraph-source">— Sohrab Sepehri · Inscribed for Alfaaz</span>
+        <div class="epigraph-rule"></div>
       </div>
     </section>
 
@@ -387,8 +383,11 @@
       <div class="fade-in">
         <p class="section-label" style="margin-bottom: 1.5rem;">An Open Call</p>
         <h2 class="cta-title" style="margin-bottom: 1.5rem;">Send word,<br><em style="font-style: italic; color: var(--accent-gold);">or a page.</em></h2>
-        <p class="cta-text">Discover our collective's ongoing initiatives, curated shows, and archived exhibitions celebrating Kashmiri art and expression.</p>
-        <a href="https://linktr.ee/alfaaz2k20" target="_blank" rel="noopener noreferrer" class="cta-btn">Submit Work →</a>
+        <p class="cta-text">Share your paintings, poetry, essays, and photographic studies with the collective's curators.</p>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; margin-top: 2rem;">
+          <a href="submit.html" class="cta-btn">Submit Creative Work →</a>
+          <a href="https://linktr.ee/alfaaz2k20" target="_blank" rel="noopener noreferrer" style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; border-bottom: 1px solid var(--grid-border); padding-bottom: 2px;">View Historical Archives ↗</a>
+        </div>
       </div>
     </section>
   </main>
@@ -511,20 +510,17 @@
         navLinks.classList.toggle('active'); 
     });
 
-    // MARQUEE PAUSE logic
-    const marquee = document.querySelector('.marquee'); marquee?.addEventListener('mouseenter', () => { marquee.style.animationPlayState = 'paused'; }); marquee?.addEventListener('mouseleave', () => { marquee.style.animationPlayState = 'running'; });
-
     // SMART ROUTING
     (function() {
       const isLoggedIn = !!localStorage.getItem('alfaaz_token');
-      const navLoginBtn = document.getElementById('navLoginBtn'), joinClubBtn = document.getElementById('joinClubBtn'), mobileLoginLink = document.getElementById('mobileLoginBtn');
+      const navLoginBtn = document.getElementById('navLoginBtn'), joinClubBtn = document.getElementById('joinClubBtn');
       if (isLoggedIn) {
-        if (navLoginBtn) { navLoginBtn.textContent = 'Dashboard'; navLoginBtn.href = 'dashboard.html'; }
-        if (mobileLoginLink) {
-          const enSpan = mobileLoginLink.querySelector('.en-text');
+        if (navLoginBtn) {
+          navLoginBtn.href = 'dashboard.html';
+          navLoginBtn.setAttribute('data-ur', 'ڈیش بورڈ');
+          const enSpan = navLoginBtn.querySelector('.en-text');
           if (enSpan) enSpan.textContent = 'Dashboard';
-          else mobileLoginLink.textContent = 'Dashboard';
-          mobileLoginLink.href = 'dashboard.html';
+          else navLoginBtn.textContent = 'Dashboard';
         }
         if (joinClubBtn) { joinClubBtn.textContent = 'Apply for a Club'; joinClubBtn.href = 'dashboard.html'; }
       } else {

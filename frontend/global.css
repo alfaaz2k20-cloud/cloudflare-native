@@ -178,26 +178,44 @@ nav.hidden {
 }
 
 .ur-hover .en-text {
-  
+  display: inline-block;
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
 }
 
 .ur-hover::before {
   content: attr(data-ur);
-  position: absolute; top: 50%; left: 50%;
-  
-  font-family: var(--font-urdu); font-size: 1.4em; line-height: 1;
-  font-style: normal; font-weight: 400;
-  color: var(--accent-gold); opacity: 0;
-  
-  pointer-events: none; white-space: nowrap;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(6px);
+  font-family: var(--font-urdu);
+  font-size: 1.35em;
+  line-height: 1.2;
+  font-style: normal;
+  font-weight: 400;
+  color: var(--accent-gold);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
 }
 
 /* Trigger: hover or JS-toggled class */
 .ur-hover:hover .en-text,
-.ur-hover.lang-swapped .en-text { opacity: 0; transform: translateY(-8px); }
+.ur-hover.lang-swapped .en-text {
+  opacity: 0;
+  transform: translateY(-6px);
+}
 
 .ur-hover:hover::before,
-.ur-hover.lang-swapped::before { opacity: 1; transform: translate(-50%, -50%) translateY(0); }
+.ur-hover.lang-swapped::before {
+  opacity: 1;
+  transform: translate(-50%, -50%) translateY(0);
+}
 
 /* Logo */
 .logo.ur-hover::before { font-size: 1.1em; color: var(--text-primary); }
@@ -252,6 +270,50 @@ h3.ur-hover {
 .club-title.ur-hover::before { 
   font-size: 1.6em; 
   top: 40%; /* Lifts the Urdu text slightly higher inside the box */
+}
+
+/* ── POETIC EPIGRAPH (CONTEMPLATIVE SECTION) ────── */
+.epigraph-section {
+  padding: 5rem 2rem;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--grid-border);
+  border-bottom: 1px solid var(--grid-border);
+  text-align: center;
+}
+.epigraph-inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+.epigraph-rule {
+  width: 48px;
+  height: 1px;
+  background: var(--accent-gold);
+  margin: 1.5rem auto;
+  opacity: 0.6;
+}
+.epigraph-verse {
+  font-family: var(--font-urdu);
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  line-height: 1.8;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+.epigraph-translation {
+  font-family: var(--font-heading);
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: var(--accent-gold-text);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+.epigraph-source {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 
 /* ── NOTICE CARDS ─────────────────────────────── */

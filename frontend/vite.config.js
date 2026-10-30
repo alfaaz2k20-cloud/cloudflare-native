@@ -19,6 +19,7 @@ export default defineConfig({
         submit: resolve(__dirname, 'submit.html'),
         recruit: resolve(__dirname, 'recruit.html'),
         research: resolve(__dirname, 'research.html'),
+        tchandervar: resolve(__dirname, 'tchandervar/index.html'),
       },
     },
   },

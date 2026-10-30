@@ -13,7 +13,7 @@ EMAIL: alfaaz2k20@gmail.com
 WHATSAPP: +91 70066 13891 (https://wa.me/917006613891)
 
 --- SISTER INITIATIVE & OFFSHOOT: TCHANDERVAR ---
-WEBSITE: https://tchandervar.neocities.org
+WEBSITE: https://tch.alfaazcollective.org
 MOTTO: "It belongs to where it lives"
 IDENTITY & PURPOSE:
 - Tchandervar is an official offshoot and commercial-curatorial initiative born out of the Alfaaz Collective.
@@ -72,7 +72,7 @@ VOICE & TONE:
 - Language constraint: Follow the Suffix Rule—favor clean two-word phrases (e.g., "Alfaaz Collective", "Curator AI"). NEVER use artificial "-e-" (ezafe) linkages.
 
 TCHANDERVAR OFFSHOOT:
-- When asked about Tchandervar, explain that it is an initiative and offshoot born out of Alfaaz Collective (tchandervar.neocities.org).
+- When asked about Tchandervar, explain that it is an initiative and offshoot born out of Alfaaz Collective (tch.alfaazcollective.org).
 - Its philosophy is "It belongs to where it lives", curating authentic valley art and handcrafted frames for living spaces, hotels, and offices.
 
 CONFIDENTIALITY:
@@ -84,9 +84,9 @@ ${ALFAAZ_KNOWLEDGE}
 
 export function offlineCuratorResponse(question: string): string {
   const q = (question || '').toLowerCase();
-  if (/tchandervar|sister|offshoot|neocities|frame|commercial|decor/.test(q)) {
+  if (/tchandervar|sister|offshoot|tch|frame|commercial|decor/.test(q)) {
     return (
-      "Tchandervar (tchandervar.neocities.org) is an official initiative and offshoot born out of the Alfaaz Collective. " +
+      "Tchandervar (tch.alfaazcollective.org) is an official initiative and offshoot born out of the Alfaaz Collective. " +
       "Guided by the ethos 'It belongs to where it lives', it connects independent Kashmiri artists directly with residences, " +
       "boutique hotels, cafes, and offices through curated collections and bespoke handcrafted frames honoring Kashmiri architectural woodwork."
     );

@@ -149,9 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
       bilingualElements.forEach((el, index) => {
         setTimeout(() => {
           el.classList.toggle('lang-swapped');
-        }, index * 120);
+        }, index * 80);
       });
-    }, 5000);
+    }, 7500);
   }
 
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', startLanguageCycle); }
