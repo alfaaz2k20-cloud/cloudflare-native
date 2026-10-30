@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
  
  if (window.refreshGlobalEffects) window.refreshGlobalEffects();
  } catch (error) { 
- container.innerHTML = '<div class="loading-state" style="color: var(--accent-red);">[Error] Archives unavailable.</div>'; 
+ container.innerHTML = '<div class="loading-state" style="color: var(--accent-red-text);">[Error] Archives unavailable.</div>'; 
  console.error("Blog Fetch Error:", error);
  }
  }
