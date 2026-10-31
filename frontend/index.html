@@ -213,7 +213,7 @@
     </div>
 
     <div class="nav-actions">
-      <a id="tchLinkNav" href="/tch/" target="_blank" rel="noopener noreferrer" class="cta-btn ur-hover" data-ur="ژٔندٕروار" style="padding: 0.65rem 1.4rem; font-size: 10px; min-width: 110px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; text-align: center;">
+      <a id="tchLinkNav" href="/tch/" target="_blank" rel="noopener noreferrer" class="tch-nav-badge ur-hover" data-ur="ژندروار">
         <span class="en-text">Tchandervar</span>
       </a>
       
@@ -363,8 +363,8 @@
       </div>
       
       <div class="slider-controls fade-in">
-        <button id="vitrinePrev" class="slider-arrow"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-        <button id="vitrineNext" class="slider-arrow"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+        <button id="vitrinePrev" class="slider-arrow" aria-label="Previous archival frame"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+        <button id="vitrineNext" class="slider-arrow" aria-label="Next archival frame"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
       </div>
     </section>
 
@@ -385,7 +385,7 @@
     <div class="footer-content">
       <div class="footer-logo">ALFAAZ COLLECTIVE</div>
       <div class="footer-social">
-        <a href="mailto:alfaaz2k20@gmail.com" class="">Email</a>
+        <a href="mailto:curator@alfaazcollective.org" class="">Email</a>
         <a href="https://www.instagram.com/alfaaz.2020" target="_blank" class="">Instagram</a>
         <a href="https://wa.me/917006613891" target="_blank" class="">WhatsApp</a>
       </div>
@@ -588,6 +588,7 @@
     async function sendCuratorMiniMessage() {
       const query = pIn.value.trim();
       if (!query) return;
+      if (pSend) { pSend.disabled = true; pSend.style.opacity = '0.5'; }
       pIn.value = '';
       clearCuratorPlaceholder();
       appendCuratorMessage('You', query, 'color: var(--accent-gold-text); font-weight: 500;');
@@ -635,6 +636,8 @@
         clearTimeout(coldStartTimer);
         if (loadingRow.isConnected) loadingRow.remove();
         appendCuratorMessage('', 'Connection interrupted. Please try again.', 'color: var(--accent-red-text); font-style: italic;');
+      } finally {
+        if (pSend) { pSend.disabled = false; pSend.style.opacity = '1'; }
       }
     }
     pIn.addEventListener('keydown', async (e) => {
@@ -804,7 +807,7 @@
     document.addEventListener('DOMContentLoaded', loadLiveNotices);
     // Only refetch when the page is restored from the back/forward cache, not on every initial load.
     window.addEventListener('pageshow', (event) => { if (event.persisted) loadLiveNotices(); });
-    setInterval(() => { if (!document.hidden) loadLiveNotices(); }, 25000);
+    setInterval(() => { if (!document.hidden) loadLiveNotices(); }, 60000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) loadLiveNotices(); });
 })();
     
