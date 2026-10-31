@@ -185,15 +185,22 @@ document.addEventListener('DOMContentLoaded', () => {
           sitekey: sitekey,
           theme: 'light',
           callback: (token) => {
-          turnstileToken = token;
-          if (phoneHint && phoneHint.textContent.includes('security verification')) {
-            setPhoneHint('Security verified. Proceeding with your code...', true);
-            if (sendOtpBtn && !sendOtpBtn.disabled) {
-              setTimeout(() => sendOtpBtn.click(), 400);
+            turnstileToken = token;
+            if (phoneHint && phoneHint.textContent.includes('security verification')) {
+              setPhoneHint('Security verified. Proceeding with your code...', true);
+              if (sendOtpBtn && !sendOtpBtn.disabled) {
+                setTimeout(() => sendOtpBtn.click(), 400);
+              }
+            }
+          },
+          'expired-callback': () => { turnstileToken = ''; },
+          'error-callback': (code) => {
+            console.error('Turnstile verification error:', code);
+            const container = document.getElementById('loginTurnstile');
+            if (container) {
+              container.innerHTML = '<div style="font-size:11px; color:var(--accent-red-text); line-height:1.4; text-align:center; padding:8px; border:1px dashed var(--accent-red); border-radius:3px;">Security challenge error (code: ' + code + ').<br>If on workers.dev or custom domain, verify hostname in Cloudflare Turnstile settings.</div>';
             }
           }
-        },
-          'expired-callback': () => { turnstileToken = ''; }
         });
       } catch (err) {
         console.warn('Turnstile render warning:', err);
@@ -223,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       forgotHint.classList.remove('visible');
       forgotHint.style.color = '';
-    }, 5000);
+    }, 6000);
   }
 
   // 6. Primary Form Submit (Email & Password)
@@ -240,6 +247,18 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmPwInput?.focus();
         return;
       }
+    }
+
+    if (!turnstileToken && window.turnstile && window.ALFAAZ_TURNSTILE_SITEKEY) {
+      showHint('Please complete the security challenge below.');
+      const tEl = document.getElementById('loginTurnstile');
+      if (tEl) {
+        tEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        tEl.style.transition = 'outline 0.3s ease';
+        tEl.style.outline = '2px solid var(--accent-gold)';
+        setTimeout(() => { tEl.style.outline = 'none'; }, 2500);
+      }
+      return;
     }
 
     submitBtn.textContent = currentMode === 'register' ? 'Creating Account...' : 'Authenticating...';
@@ -490,7 +509,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (otpCodeInput) otpCodeInput.focus();
       startPhoneCooldown(30);
     } catch (err) {
-      setPhoneHint((err && (err.message || err.code)) || 'Unable to send code.');
+      const errCode = err && err.code;
+      let msg = (err && (err.message || err.code)) || 'Unable to send code.';
+      if (errCode === 'auth/unauthorized-domain') {
+        msg = 'Domain not authorized in Firebase. Add ' + window.location.hostname + ' to Firebase Auth settings.';
+      } else if (errCode === 'auth/operation-not-allowed') {
+        msg = 'Phone Auth is not enabled in Firebase Console. Enable it in Auth > Sign-in method.';
+      } else if (errCode === 'auth/invalid-app-credential') {
+        msg = 'Phone verification credential error. Check Firebase Phone Auth settings.';
+      }
+      setPhoneHint(msg);
       sendOtpBtn.disabled = false;
       sendOtpBtn.textContent = originalText;
     }
@@ -555,6 +583,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (errCode === 'auth/popup-closed-by-user' || errCode === 'auth/cancelled-popup-request') return;
       if (errCode === 'auth/account-exists-with-different-credential') {
         showHint('An account already exists with this email. Please log in with that method.');
+      } else if (errCode === 'auth/unauthorized-domain') {
+        showHint('Domain not authorized in Firebase. Add ' + window.location.hostname + ' to Firebase Auth settings.');
+      } else if (errCode === 'auth/operation-not-allowed') {
+        showHint('Google Sign-in is not enabled in Firebase Console. Enable it in Auth > Sign-in method.');
       } else {
         showHint((err && err.message) || 'Social sign-in failed.');
       }
@@ -562,8 +594,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('btnGoogleAuth')?.addEventListener('click', () => handleSocialLogin('google'));
-  document.getElementById('btnAppleAuth')?.addEventListener('click', () => handleSocialLogin('apple'));
-  document.getElementById('btnMetaAuth')?.addEventListener('click', () => handleSocialLogin('meta'));
+  document.getElementById('btnAppleAuth')?.addEventListener('click', () => {
+    showHint('Apple Sign-In is in developer onboarding. Please use Google One-Tap or Email & Password.');
+  });
+  document.getElementById('btnMetaAuth')?.addEventListener('click', () => {
+    showHint('Meta Sign-In is in developer review. Please use Google One-Tap or Email & Password.');
+  });
 });
 
 

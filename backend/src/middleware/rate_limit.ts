@@ -72,7 +72,34 @@ export async function verifyTurnstile(
     const formData = new URLSearchParams();
     formData.append('secret', secretKey);
     formData.append('response', token);
-    if (remoteIp) formData.append('remoteip', remoteIp);
+
+    // Only forward client IP if it is a valid public IP (never pass loopback or private ranges to Cloudflare siteverify)
+    const isPublicIp = remoteIp &&
+      !remoteIp.startsWith('127.') &&
+      remoteIp !== 'localhost' &&
+      remoteIp !== '::1' &&
+      !remoteIp.startsWith('10.') &&
+      !remoteIp.startsWith('192.168.') &&
+      !remoteIp.startsWith('172.16.') &&
+      !remoteIp.startsWith('172.17.') &&
+      !remoteIp.startsWith('172.18.') &&
+      !remoteIp.startsWith('172.19.') &&
+      !remoteIp.startsWith('172.20.') &&
+      !remoteIp.startsWith('172.21.') &&
+      !remoteIp.startsWith('172.22.') &&
+      !remoteIp.startsWith('172.23.') &&
+      !remoteIp.startsWith('172.24.') &&
+      !remoteIp.startsWith('172.25.') &&
+      !remoteIp.startsWith('172.26.') &&
+      !remoteIp.startsWith('172.27.') &&
+      !remoteIp.startsWith('172.28.') &&
+      !remoteIp.startsWith('172.29.') &&
+      !remoteIp.startsWith('172.30.') &&
+      !remoteIp.startsWith('172.31.');
+
+    if (isPublicIp) {
+      formData.append('remoteip', remoteIp);
+    }
 
     const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
