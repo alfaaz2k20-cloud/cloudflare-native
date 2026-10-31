@@ -21,7 +21,8 @@ authRouter.post('/send-otp', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
-  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
+  // Trust cf-connecting-ip from Cloudflare edge; fallback to x-forwarded-for only in test environment
+  const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for') || '127.0.0.1') : '127.0.0.1');
 
   // 1. Bot Verification via Cloudflare Turnstile
   const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
@@ -71,29 +72,46 @@ authRouter.post('/federated-login', async (c) => {
 
   const uid = verified.user_id || verified.sub;
   const email = verified.email ? verified.email.toLowerCase().trim() : null;
+  const emailVerified = Boolean(verified.email_verified);
   const phone = verified.phone_number ? verified.phone_number.trim() : null;
   const fullName = verified.name ? String(verified.name).slice(0, 80).trim() : null;
-  const provider = body.provider || verified.firebase?.sign_in_provider || 'federated';
+  
+  // Security fix: Provider is derived exclusively from cryptographically verified token claims, NOT client body
+  const provider = verified.firebase?.sign_in_provider || (phone ? 'phone' : (email ? 'google.com' : 'federated'));
 
-  // Find existing user by email, phone, or firebase_uid
+  // Priority 1: Match existing user by sovereign firebase_uid
   let userRow: any = null;
-  if (email) {
+  if (uid) {
     userRow = await c.env.DB
-      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE email = ?')
-      .bind(email)
+      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE firebase_uid = ?')
+      .bind(uid)
       .first();
   }
+
+  // Priority 2: Match by verified phone number (phone was verified by SMS gateway)
   if (!userRow && phone) {
     userRow = await c.env.DB
       .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE phone = ?')
       .bind(phone)
       .first();
   }
-  if (!userRow && uid) {
-    userRow = await c.env.DB
-      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE firebase_uid = ?')
-      .bind(uid)
+
+  // Priority 3: Match existing user by email
+  // CRITICAL P0 INVARIANT: An existing account MUST NEVER be matched or linked to a federated token
+  // unless the email address has been explicitly verified (email_verified === true).
+  // Without this check, an attacker can create an unverified Firebase account using a victim's email and hijack it.
+  if (!userRow && email) {
+    const existingByEmail = await c.env.DB
+      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE email = ?')
+      .bind(email)
       .first();
+
+    if (existingByEmail) {
+      if (!emailVerified) {
+        return c.json({ error: 'Email address is not verified by authentication provider.' }, 401);
+      }
+      userRow = existingByEmail;
+    }
   }
 
   if (userRow) {
@@ -115,19 +133,39 @@ authRouter.post('/federated-login', async (c) => {
       .bind(userRow.id)
       .first();
   } else {
-    // Insert new federated user
-    await c.env.DB
-      .prepare(`
-        INSERT INTO users (email, password, full_name, status, phone, auth_provider, firebase_uid)
-        VALUES (?, NULL, ?, 'PARTICIPANT', ?, ?, ?)
-      `)
-      .bind(email, fullName, phone, provider, uid)
-      .run();
+    // New account creation: If user has email but no phone, email must be verified
+    if (email && !phone && !emailVerified) {
+      return c.json({ error: 'Email address is not verified by authentication provider.' }, 401);
+    }
 
-    userRow = await c.env.DB
-      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE firebase_uid = ? OR (email IS NOT NULL AND email = ?) OR (phone IS NOT NULL AND phone = ?)')
-      .bind(uid, email, phone)
-      .first();
+    // Insert new federated user with race condition protection
+    try {
+      await c.env.DB
+        .prepare(`
+          INSERT INTO users (email, password, full_name, status, phone, auth_provider, firebase_uid)
+          VALUES (?, NULL, ?, 'PARTICIPANT', ?, ?, ?)
+        `)
+        .bind(email, fullName, phone, provider, uid)
+        .run();
+
+      userRow = await c.env.DB
+        .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE firebase_uid = ?')
+        .bind(uid)
+        .first();
+    } catch (err: any) {
+      if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
+        // Handle concurrent insert race condition gracefully
+        userRow = await c.env.DB
+          .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE firebase_uid = ? OR (email IS NOT NULL AND email = ?) OR (phone IS NOT NULL AND phone = ?)')
+          .bind(uid, email, phone)
+          .first();
+        if (!userRow) {
+          return c.json({ error: 'Account conflict occurred during registration.' }, 409);
+        }
+      } else {
+        throw err;
+      }
+    }
   }
 
   const secret = getJwtSecret(c.env);
@@ -412,8 +450,8 @@ authRouter.patch('/me', requireAuth, async (c) => {
       return c.json({ detail: 'Name too long.' }, 400);
     }
     await c.env.DB
-      .prepare('UPDATE users SET full_name = ? WHERE email = ?')
-      .bind(name || null, user.email)
+      .prepare('UPDATE users SET full_name = ? WHERE email = ? OR phone = ?')
+      .bind(name || null, user.email, user.email)
       .run();
     return c.json({ status: 'SUCCESS', full_name: name });
   }

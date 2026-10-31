@@ -79,6 +79,8 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
   async function createMockFirebaseToken(payload: {
     uid: string;
     email?: string;
+    email_verified?: boolean;
+    provider?: string;
     phone_number?: string;
     name?: string;
     exp?: number;
@@ -98,12 +100,12 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       iat: now - 10,
       exp: payload.exp !== undefined ? payload.exp : now + 3600,
       email: payload.email,
-      email_verified: Boolean(payload.email),
+      email_verified: payload.email_verified !== undefined ? payload.email_verified : Boolean(payload.email),
       phone_number: payload.phone_number,
       name: payload.name || 'Alfaaz Member',
       firebase: {
         identities: {},
-        sign_in_provider: payload.phone_number ? 'phone' : 'google.com'
+        sign_in_provider: payload.provider || (payload.phone_number ? 'phone' : 'google.com')
       }
     };
 
@@ -222,7 +224,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       });
 
       it('T1_R2_03: POST /auth/federated-login contract: Apple ID social provider returns sovereign JWT', async () => {
-        const idToken = await createMockFirebaseToken({ uid: 'apple_uid_202', email: 'member@privaterelay.appleid.com', name: 'Curatorial Member' });
+        const idToken = await createMockFirebaseToken({ uid: 'apple_uid_202', email: 'member@privaterelay.appleid.com', name: 'Curatorial Member', provider: 'apple.com' });
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -236,7 +238,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       });
 
       it('T1_R2_04: POST /auth/federated-login contract: Meta / Facebook social provider returns sovereign JWT', async () => {
-        const idToken = await createMockFirebaseToken({ uid: 'meta_uid_303', email: 'artist@meta.com', name: 'Zeenat Mahal' });
+        const idToken = await createMockFirebaseToken({ uid: 'meta_uid_303', email: 'artist@meta.com', name: 'Zeenat Mahal', provider: 'facebook.com' });
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -438,6 +440,56 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         expect(verified?.email).toBe('session_test@alfaaz.org');
         expect(verified?.status).toBe('PARTICIPANT');
         expect(verified?.exp).toBeGreaterThan(Math.floor(Date.now() / 1000) + 6 * 86400);
+      });
+
+      it('T1_R4_06: P0 Account Takeover Protection: rejects unverified email (email_verified: false) matching existing admin with 401', async () => {
+        const victimEmail = 'victim_admin@alfaaz.local';
+        await mockDb.prepare('INSERT INTO users (email, password, full_name, status) VALUES (?, ?, ?, ?)')
+          .bind(victimEmail, await hashPassword('VictimSecretPass!'), 'Victim Admin', 'ADMIN')
+          .run();
+
+        // Attacker creates unverified Firebase account with victim's email
+        const attackerToken = await createMockFirebaseToken({
+          uid: 'attacker_fake_uid',
+          email: victimEmail,
+          email_verified: false,
+          name: 'Attacker'
+        });
+
+        const res = await app.request('/auth/federated-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: attackerToken, provider: 'password' })
+        }, getTestEnv());
+
+        await assertContract(res, 401, (data) => {
+          expect(data.error).toMatch(/Email.*not verified/i);
+        });
+
+        // Ensure victim's account is NOT compromised or linked to attacker
+        const row: any = await mockDb.prepare('SELECT firebase_uid FROM users WHERE email = ?')
+          .bind(victimEmail)
+          .first();
+        expect(row.firebase_uid).toBeNull();
+      });
+
+      it('T1_R4_07: P0 Account Takeover Protection: rejects new user registration with unverified email (email_verified: false) with 401', async () => {
+        const unverifiedToken = await createMockFirebaseToken({
+          uid: 'unverified_new_uid',
+          email: 'unverified_poet@alfaaz.local',
+          email_verified: false,
+          name: 'Unverified Poet'
+        });
+
+        const res = await app.request('/auth/federated-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: unverifiedToken, provider: 'password' })
+        }, getTestEnv());
+
+        await assertContract(res, 401, (data) => {
+          expect(data.error).toMatch(/Email.*not verified/i);
+        });
       });
     });
 
