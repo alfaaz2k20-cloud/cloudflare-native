@@ -5,7 +5,9 @@
 -- ==============================================================================
 
 -- 1. Master Administrator & Test Volunteer
--- Passwords: admin -> 'curator2026!' | volunteer -> 'alfaaz2026!'
+-- Passwords are PBKDF2-hashed below; plaintext values are intentionally not
+-- recorded here (AGENTS.md rule 1). Retrieve dev credentials from the team's
+-- secret store, never from this seed. Local-only seeding via `npm run db:seed:local`.
 INSERT OR IGNORE INTO users (id, email, password, full_name, status) VALUES
 (1, 'admin@alfaaz.com', '0df14623474ea17cc4e62d3a5ca57bf9:2d4f90ebad455edb3c9ea1c320eda4594a9394de888d9bb763b2f4c21ccde303', 'The Curator', 'ADMIN'),
 (2, 'volunteer@alfaaz.com', 'aadac75aa9440935eaafb7d27d046d37:cd0d19846fef44d6e5d877b63c8c6dd4a2b91ce01971deed6c2dc21d116275cf', 'Zainab Mir', 'PARTICIPANT');

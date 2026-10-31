@@ -465,7 +465,8 @@ describe('Error Paths & Defensive Security Integration Test Suite', () => {
         body: JSON.stringify({
           email: 'dev_user@alfaaz.local',
           password: 'SecureDevPassword123!',
-          full_name: 'Dev User'
+          full_name: 'Dev User',
+          phone: '+919876543210'
         })
       }, devEnvWithoutTurnstile as any);
 
@@ -496,7 +497,7 @@ describe('Error Paths & Defensive Security Integration Test Suite', () => {
       expect(data.detail).toContain('Turnstile verification failed');
     });
 
-    it('accepts Cloudflare official dummy pass secret key 1x0000000000000000000000000000000AA', async () => {
+    it('strictly rejects Cloudflare dummy pass secret key in production environment (fail-closed)', async () => {
       const testEnvWithDummyKey = {
         ...getTestEnv(),
         ENV: 'production',
@@ -510,11 +511,14 @@ describe('Error Paths & Defensive Security Integration Test Suite', () => {
           email: 'dummy_pass_user@alfaaz.local',
           password: 'DummyPassPassword123!',
           full_name: 'Dummy Pass User',
+          phone: '+919876543210',
           turnstile_token: 'dummy-token'
         })
       }, testEnvWithDummyKey as any);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(403);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Turnstile verification failed');
     });
 
     it('strictly rejects /auth/login with 403 when TURNSTILE_SECRET_KEY is provisioned but token is missing', async () => {

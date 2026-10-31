@@ -145,11 +145,6 @@ nav.hidden {
   color: var(--bg-secondary); box-shadow: 0 8px 20px rgba(189,111,93,0.25);
 }
 
-/* Accessible Accent Text Utilities (WCAG AA) */
-.text-accent-gold { color: var(--accent-gold-text) !important; }
-.text-accent-green { color: var(--accent-green-text) !important; }
-.text-accent-red { color: var(--accent-red-text) !important; }
-
 /* ── TCHANDERVAR CULTURAL BADGE ───────────────── */
 .tch-nav-badge {
   position: relative;
@@ -221,11 +216,6 @@ nav.hidden {
   
 }
 .fade-in.visible { opacity: 1;  }
-
-.protected-artwork {
-  pointer-events: none; user-select: none; -webkit-user-drag: none;
-  margin: 3rem auto; display: block; max-width: 100%;
-}
 
 /* ── BILINGUAL CROSSFADE ENGINE ───────────────── */
 
@@ -344,50 +334,6 @@ h3.ur-hover {
   line-height: 1.3;
 }
 
-/* ── POETIC EPIGRAPH (CONTEMPLATIVE SECTION) ────── */
-.epigraph-section {
-  padding: 5rem 2rem;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--grid-border);
-  border-bottom: 1px solid var(--grid-border);
-  text-align: center;
-}
-.epigraph-inner {
-  max-width: 680px;
-  margin: 0 auto;
-}
-.epigraph-rule {
-  width: 48px;
-  height: 1px;
-  background: var(--accent-gold);
-  margin: 1.5rem auto;
-  opacity: 0.6;
-}
-.epigraph-verse {
-  font-family: var(--font-urdu);
-  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
-  line-height: 1.8;
-  color: var(--text-primary);
-  margin-bottom: 0.75rem;
-}
-.epigraph-translation {
-  font-family: var(--font-heading);
-  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: 0.5px;
-  color: var(--accent-gold-text);
-  line-height: 1.5;
-  margin-bottom: 0.5rem;
-}
-.epigraph-source {
-  display: block;
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-
 /* ── NOTICE CARDS ─────────────────────────────── */
 .update-card {
   background: var(--bg-secondary); padding: 2.5rem;
@@ -503,25 +449,6 @@ h3.ur-hover {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-/* --- Soothing Animations --- */
-@keyframes soothingFade {
-  0% { opacity: 0; transform: translateY(6px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes soothingEntry {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-.animate-soft-fade-in {
-  
-}
-
-.animate-soothing-entry {
-  
 }
 
 /* Touch responsiveness without tap flickering or accidental zooming */

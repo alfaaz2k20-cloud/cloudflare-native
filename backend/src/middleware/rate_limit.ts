@@ -10,7 +10,10 @@ const memoryStore = new Map<string, { count: number; expiresAt: number }>();
 
 export function rateLimiter(config: RateLimitConfig) {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
-    const rawIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+    // Trust cf-connecting-ip from the Cloudflare edge; only fall back to the
+    // client-supplied x-forwarded-for in the test environment (AGENTS.md invariant 3).
+    const rawIp = c.req.header('cf-connecting-ip')
+      || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1') : '127.0.0.1');
     const now = Date.now();
     // Normalize path to prevent route-alias double-budgeting (/api/xyz vs /xyz)
     const normalizedPath = c.req.path.replace(/^\/api(?=\/|$)/, '') || '/';
@@ -50,17 +53,22 @@ export async function verifyTurnstile(
   remoteIp?: string,
   env?: string
 ): Promise<boolean> {
-  // Cloudflare always-pass dummy development key
+  // Cloudflare official dummy pass secret key is strictly rejected in production (fail-closed)
   if (secretKey && secretKey.startsWith('1x0000000000000000000000000000000AA')) {
+    if (env === 'production') {
+      console.warn('[TURNSTILE] Security Alert: Dummy pass secret rejected in production environment; failing closed.');
+      return false;
+    }
     return true;
   }
+
   // In production, strictly fail closed if TURNSTILE_SECRET_KEY is unconfigured to prevent silent bot drop
   if (!secretKey) {
     if (env === 'production') {
       console.error('[TURNSTILE] Critical: TURNSTILE_SECRET_KEY not configured in production environment; failing closed.');
       return false;
     }
-    // In development and test environments, bypass with a warning
+    // In development and test environments without secret key, bypass with a warning
     return true;
   }
   // When secretKey is provisioned, enforce strict token requirement

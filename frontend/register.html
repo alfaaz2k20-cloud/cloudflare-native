@@ -15,6 +15,7 @@
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
   <title>Register — ALFAAZ Collective</title>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.tailwindcss.com" defer></script>
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
@@ -67,6 +68,7 @@
 
     /* Phone OTP (Firebase Phone Auth) */
     .phone-auth-section { margin-bottom: 1.5rem; }
+    .phone-mode-caption { font-family: var(--font-body); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 0.85rem; }
     .phone-field-row { display: flex; gap: 10px; align-items: flex-end; }
         .country-prefix-select {
       background: transparent;
@@ -205,50 +207,8 @@
     </h1>
     <p class="auth-subtitle" id="authSubtitle">Join the collective</p>
 
-    <!-- 1. Phone Authentication (registration + login via SMS OTP) -->
-    <div class="phone-auth-section" style="margin-top: 1.5rem;">
-      <div class="input-group">
-        <label class="input-label" for="phoneInput">Mobile Phone Number</label>
-        <div class="phone-field-row">
-          <select id="countryPrefix" class="country-prefix-select" aria-label="Country Code">
-            <option value="+91" selected>IN +91</option>
-            <option value="+92">PK +92</option>
-            <option value="+1">US/CA +1</option>
-            <option value="+44">UK +44</option>
-            <option value="+971">AE +971</option>
-            <option value="+966">SA +966</option>
-            <option value="+880">BD +880</option>
-            <option value="+49">DE +49</option>
-            <option value="+33">FR +33</option>
-            <option value="+61">AU +61</option>
-            <option value="+">Other (+)</option>
-          </select>
-          <input type="tel" id="phoneInput" class="auth-input" placeholder="9876543210" autocomplete="tel">
-          <button type="button" id="sendOtpBtn" class="otp-btn">Send OTP</button>
-        </div>
-        <div id="phoneHint" class="forgot-hint" role="status" aria-live="polite"></div>
-      </div>
-
-      <div id="otpVerificationGroup" class="input-group" style="display: none;">
-        <label class="input-label" for="otpCode">6-Digit SMS Code</label>
-        <div class="phone-field-row">
-          <input type="text" id="otpCode" class="auth-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="123456" autocomplete="one-time-code">
-          <button type="button" id="verifyOtpBtn" class="otp-btn primary">Verify</button>
-        </div>
-      </div>
-
-      <!-- Invisible reCAPTCHA verifier container for Firebase Phone Auth -->
-      <div id="recaptcha-container"></div>
-    </div>
-
-    <!-- 2. One-Tap Social App Integrations (Google, Apple, Meta) -->
-    <div class="auth-divider">
-      <span class="auth-divider-line"></span>
-      <span class="auth-divider-text">or continue with apps</span>
-      <span class="auth-divider-line"></span>
-    </div>
-
-    <div class="social-buttons-grid">
+    <!-- 1. One-Tap Social App Integrations (Google, Apple, Meta) -->
+    <div class="social-buttons-grid" style="margin-top: 1.5rem;">
       <button type="button" id="btnGoogleAuth" class="social-badge-btn" aria-label="Sign in with Google">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
           <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/>
@@ -273,17 +233,37 @@
       </button>
     </div>
 
-    <!-- 3. Primary Email & Password System (as it was earlier) -->
+    <!-- 2. Primary Sovereign Authentication Form -->
     <div class="auth-divider">
       <span class="auth-divider-line"></span>
-      <span class="auth-divider-text">or with email & password</span>
+      <span class="auth-divider-text" id="socialDividerText">or register with your details</span>
       <span class="auth-divider-line"></span>
     </div>
 
     <form id="authForm">
-      <div id="displayNameGroup" class="input-group" style="">
-        <label class="input-label" for="regFullName">Full Name <span style="color:var(--text-secondary); text-transform:lowercase;">(optional)</span></label>
-        <input type="text" id="regFullName" class="auth-input" autocomplete="name" spellcheck="false" placeholder="e.g. Agha Shahid">
+      <div id="displayNameGroup" class="input-group">
+        <label class="input-label" for="regFullName">Full Name</label>
+        <input type="text" id="regFullName" class="auth-input" autocomplete="name" spellcheck="false" placeholder="e.g. Agha Shahid Ali" required>
+      </div>
+
+      <div id="whatsappGroup" class="input-group">
+        <label class="input-label" for="whatsappNumber">WhatsApp Number</label>
+        <div class="phone-field-row">
+          <select id="regCountryPrefix" class="country-prefix-select" aria-label="Country Code">
+            <option value="+91" selected>IN +91</option>
+            <option value="+92">PK +92</option>
+            <option value="+1">US/CA +1</option>
+            <option value="+44">UK +44</option>
+            <option value="+971">AE +971</option>
+            <option value="+966">SA +966</option>
+            <option value="+880">BD +880</option>
+            <option value="+49">DE +49</option>
+            <option value="+33">FR +33</option>
+            <option value="+61">AU +61</option>
+            <option value="+">Other (+)</option>
+          </select>
+          <input type="tel" id="whatsappNumber" class="auth-input" placeholder="9876543210" autocomplete="tel" required>
+        </div>
       </div>
 
       <div class="input-group">
@@ -299,14 +279,13 @@
         </div>
       </div>
 
-      <div id="confirmPasswordGroup" class="input-group" style="">
+      <div id="confirmPasswordGroup" class="input-group">
         <label class="input-label" for="confirmPassword">Confirm Password</label>
-        <input type="password" id="confirmPassword" class="auth-input" autocomplete="new-password">
+        <input type="password" id="confirmPassword" class="auth-input" autocomplete="new-password" required>
       </div>
 
       <a href="#" id="forgotBtn" class="recovery-link" style="display: none;">Lost Password?</a>
       <div class="forgot-hint" id="forgotHint" role="status" aria-live="polite">↑ Enter your email above, then click "Lost Password?"</div>
-      
       
       <!-- Security Gatekeeper: Cloudflare Turnstile -->
       <div id="loginTurnstile" style="margin-top: 1rem; margin-bottom: 1.25rem; min-height: 65px; display: flex; justify-content: center;"></div>

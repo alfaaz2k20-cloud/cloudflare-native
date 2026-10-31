@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import app from '../backend/src/index';
 import { createMockD1, createMockR2, createMockKV } from './helpers/d1_mock';
 import { createToken, hashPassword } from '../backend/src/auth/crypto';
@@ -13,6 +13,25 @@ describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite',
   const jwtSecret = 'test-jwt-secret-verification-32chars!';
   const passTurnstileSecret = '1x0000000000000000000000000000000AA';
   const dummyTurnstileToken = '0x4AAAAAAtestdummytoken';
+  const simulatedProdTurnstileSecret = '0x4AAAAAAtest_simulated_production_secret';
+
+  const originalFetch = globalThis.fetch;
+  beforeAll(() => {
+    globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as any)?.url;
+      if (url && url.includes('challenges.cloudflare.com/turnstile/v0/siteverify')) {
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      return originalFetch(input, init);
+    };
+  });
+
+  afterAll(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   function getTestEnv(overrides: Record<string, any> = {}) {
     return {
@@ -300,6 +319,7 @@ describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite',
 
       const prodEnv = getTestEnv({
         ENV: 'production',
+        TURNSTILE_SECRET_KEY: simulatedProdTurnstileSecret,
         TWILIO_ACCOUNT_SID: undefined,
         TWILIO_AUTH_TOKEN: undefined,
         TWILIO_FROM_NUMBER: undefined
@@ -436,7 +456,7 @@ describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite',
           phone: '+14155552671',
           turnstile_token: dummyTurnstileToken
         })
-      }, getTestEnv({ ENV: 'production' }));
+      }, getTestEnv({ ENV: 'production', TURNSTILE_SECRET_KEY: simulatedProdTurnstileSecret }));
 
       expect(res.status).toBe(400);
       const data = await res.json();
@@ -454,7 +474,7 @@ describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite',
           phone: '+919876543210',
           turnstile_token: dummyTurnstileToken
         })
-      }, getTestEnv({ ENV: 'production' }));
+      }, getTestEnv({ ENV: 'production', TURNSTILE_SECRET_KEY: simulatedProdTurnstileSecret }));
 
       expect(res.status).toBe(200);
       const data = await res.json();

@@ -33,7 +33,8 @@ describe('Real Route-Level D1 SQLite & R2 Integration Test Suite', () => {
         body: JSON.stringify({
           email: 'poet@alfaaz.local',
           password: 'Password123!',
-          full_name: 'Mirza Ghalib'
+          full_name: 'Mirza Ghalib',
+          phone: '+919876543210'
         })
       }, getTestEnv());
 
@@ -41,21 +42,25 @@ describe('Real Route-Level D1 SQLite & R2 Integration Test Suite', () => {
       const data: any = await res.json();
       expect(data.token).toBeDefined();
       expect(data.user.email).toBe('poet@alfaaz.local');
+      expect(data.user.full_name).toBe('Mirza Ghalib');
+      expect(data.user.phone).toBe('+919876543210');
       expect(data.user.status).toBe('PARTICIPANT');
 
       // Verify row in D1
-      const user = await mockDb.prepare('SELECT email, full_name, status FROM users WHERE email = ?')
+      const user = await mockDb.prepare('SELECT email, full_name, phone, status FROM users WHERE email = ?')
         .bind('poet@alfaaz.local')
         .first();
       expect(user).toBeDefined();
       expect((user as any).full_name).toBe('Mirza Ghalib');
+      expect((user as any).phone).toBe('+919876543210');
     });
 
     it('POST /auth/register rejects duplicate registration with 400', async () => {
       const payload = JSON.stringify({
         email: 'volunteer@alfaaz.com', // Seed user
         password: 'Password123!',
-        full_name: 'Existing Volunteer'
+        full_name: 'Existing Volunteer',
+        phone: '+919876543211'
       });
 
       const res = await app.request('/auth/register', {

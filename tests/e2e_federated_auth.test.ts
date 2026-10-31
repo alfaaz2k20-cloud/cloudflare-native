@@ -986,7 +986,13 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         const res = await app.request('/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'audit_user@alfaaz.local', password: 'PlaintextPassword123!', turnstile_token: dummyTurnstileToken })
+          body: JSON.stringify({
+            email: 'audit_user@alfaaz.local',
+            password: 'PlaintextPassword123!',
+            full_name: 'Audit User',
+            phone: '+919876543210',
+            turnstile_token: dummyTurnstileToken
+          })
         }, getTestEnv());
 
         expect(res.status).toBe(200);

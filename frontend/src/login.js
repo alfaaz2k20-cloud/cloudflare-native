@@ -89,6 +89,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmPwInput = document.getElementById('confirmPassword');
   const displayNameGroup = document.getElementById('displayNameGroup');
   const regFullName = document.getElementById('regFullName');
+  const whatsappGroup = document.getElementById('whatsappGroup');
+  const whatsappInput = document.getElementById('whatsappNumber');
+  const regCountryPrefix = document.getElementById('regCountryPrefix');
   const footerText = document.getElementById('footerText');
   const footerActionLink = document.getElementById('footerActionLink');
   const returnBtn = document.getElementById('returnBtn');
@@ -116,6 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Dual Segmented Toggle Handler (Zero layout shift)
   function setAuthMode(mode) {
     currentMode = mode;
+    const socialDividerText = document.getElementById('socialDividerText');
+    const googleBtn = document.getElementById('btnGoogleAuth');
     if (mode === 'register') {
       tabRegister?.classList.add('active');
       tabRegister?.setAttribute('aria-selected', 'true');
@@ -128,11 +133,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (submitBtn) submitBtn.textContent = 'Create Account';
 
       if (displayNameGroup) displayNameGroup.style.display = 'block';
+      if (whatsappGroup) whatsappGroup.style.display = 'block';
       if (confirmGroup) confirmGroup.style.display = 'block';
+      regFullName?.setAttribute('required', 'true');
+      whatsappInput?.setAttribute('required', 'true');
+      confirmPwInput?.setAttribute('required', 'true');
       if (forgotBtn) forgotBtn.style.display = 'none';
 
       if (footerText) footerText.textContent = 'Already in the collective?';
       if (footerActionLink) footerActionLink.textContent = 'Log In';
+
+      if (socialDividerText) socialDividerText.textContent = 'or register with your details';
+      if (googleBtn) googleBtn.setAttribute('aria-label', 'Sign up with Google');
     } else {
       tabLogin?.classList.add('active');
       tabLogin?.setAttribute('aria-selected', 'true');
@@ -145,11 +157,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (submitBtn) submitBtn.textContent = 'Log In';
 
       if (displayNameGroup) displayNameGroup.style.display = 'none';
+      if (whatsappGroup) whatsappGroup.style.display = 'none';
       if (confirmGroup) confirmGroup.style.display = 'none';
+      regFullName?.removeAttribute('required');
+      whatsappInput?.removeAttribute('required');
+      confirmPwInput?.removeAttribute('required');
       if (forgotBtn) forgotBtn.style.display = 'block';
 
       if (footerText) footerText.textContent = 'New to the collective?';
       if (footerActionLink) footerActionLink.textContent = 'Register here';
+
+      if (socialDividerText) socialDividerText.textContent = 'or continue with email';
+      if (googleBtn) googleBtn.setAttribute('aria-label', 'Sign in with Google');
     }
   }
 
@@ -233,14 +252,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 6000);
   }
 
-  // 6. Primary Form Submit (Email & Password)
+  // 6. Primary Form Submit (Email & Password + WhatsApp on Register)
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const emailValue = emailInput.value.trim();
     const passwordValue = pwInput.value;
     const fullNameValue = regFullName?.value?.trim() || '';
 
+    let whatsappNormalized = '';
     if (currentMode === 'register') {
+      if (!fullNameValue || fullNameValue.length < 2) {
+        showHint('Please enter your full name (at least 2 characters).');
+        regFullName?.focus();
+        return;
+      }
+      const selectedPrefix = regCountryPrefix ? regCountryPrefix.value : '+91';
+      whatsappNormalized = normalizeE164Phone(whatsappInput?.value, selectedPrefix) || '';
+      if (!whatsappNormalized) {
+        showHint('Please enter a valid WhatsApp mobile number (e.g. 9876543210).');
+        whatsappInput?.focus();
+        return;
+      }
+
       const confirmValue = confirmPwInput?.value || '';
       if (passwordValue !== confirmValue) {
         showHint('Passwords do not match.');
@@ -269,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
       email: emailValue,
       password: passwordValue,
       turnstile_token: turnstileToken,
-      ...(currentMode === 'register' && fullNameValue ? { full_name: fullNameValue } : {})
+      ...(currentMode === 'register' ? { full_name: fullNameValue, phone: whatsappNormalized } : {})
     };
 
     try {
@@ -593,7 +626,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  document.getElementById('btnGoogleAuth')?.addEventListener('click', () => handleSocialLogin('google'));
+  // 10. Native Google Identity Services (GIS) Integration
+  function initGoogleIdentity() {
+    if (window.google?.accounts?.id && window.ALFAAZ_GOOGLE_CLIENT_ID) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: window.ALFAAZ_GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            if (response && response.credential) {
+              try {
+                const data = await federatedLogin(response.credential, 'google');
+                markAuthSuccess('social');
+                finalizeAuth(data, redirectTarget);
+              } catch (err) {
+                showHint(err.message || 'Google authentication failed.');
+              }
+            }
+          }
+        });
+        window.google.accounts.id.prompt();
+      } catch (err) {
+        console.warn('GIS init error:', err);
+      }
+    }
+  }
+
+  if (window.google?.accounts?.id) {
+    initGoogleIdentity();
+  } else {
+    window.addEventListener('load', () => setTimeout(initGoogleIdentity, 600));
+  }
+
+  document.getElementById('btnGoogleAuth')?.addEventListener('click', () => {
+    if (window.google?.accounts?.id && window.ALFAAZ_GOOGLE_CLIENT_ID) {
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Fall back to popup if One-Tap prompt is suppressed
+          handleSocialLogin('google');
+        }
+      });
+    } else {
+      handleSocialLogin('google');
+    }
+  });
   document.getElementById('btnAppleAuth')?.addEventListener('click', () => {
     showHint('Apple Sign-In is in developer onboarding. Please use Google One-Tap or Email & Password.');
   });
@@ -604,9 +679,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   function showVerificationStep(user, token, redirectTarget) {
+    const dest = redirectTarget || 'dashboard.html';
     const verifStep = document.getElementById('verificationStep');
     if (!verifStep) {
-      window.location.href = redirectTarget;
+      window.location.href = dest;
       return;
     }
 
@@ -638,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const skipLink = document.getElementById('skipVerifLink');
 
     if (skipLink) {
-      skipLink.href = redirectTarget;
+      skipLink.href = dest;
     }
 
     let purpose = isMissingEmail ? 'email' : 'phone';
@@ -727,7 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmBtn.style.background = 'var(--accent-green)';
             confirmBtn.style.color = '#fff';
             setTimeout(() => {
-              window.location.href = redirectTarget;
+              window.location.href = dest;
             }, 800);
           } else {
             alert(resData.error || 'Invalid or expired verification code.');

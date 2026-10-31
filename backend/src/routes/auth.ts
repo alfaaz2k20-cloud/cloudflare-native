@@ -223,6 +223,7 @@ authRouter.post('/register', async (c) => {
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password;
   const fullName = (body.full_name || '').trim();
+  const phone = (body.phone || body.whatsapp || '').trim();
 
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
   const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for') || '127.0.0.1') : '127.0.0.1');
@@ -237,28 +238,46 @@ authRouter.post('/register', async (c) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
     return c.json({ detail: 'A valid email address is required.' }, 400);
   }
-  if (fullName.length > 80) {
-    return c.json({ detail: 'Name must be under 80 characters.' }, 400);
-  }
 
-  const existing = await c.env.DB
+  const existingEmail = await c.env.DB
     .prepare('SELECT id FROM users WHERE email = ?')
     .bind(email)
     .first();
 
-  if (existing) {
+  if (existingEmail) {
     return c.json({ detail: 'User already registered.' }, 400);
+  }
+
+  if (!fullName || fullName.length < 2) {
+    return c.json({ detail: 'Full name is required (at least 2 characters).' }, 400);
+  }
+  if (fullName.length > 80) {
+    return c.json({ detail: 'Name must be under 80 characters.' }, 400);
+  }
+  if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) {
+    return c.json({ detail: 'A valid WhatsApp mobile number in E.164 format (e.g., +919876543210) is required.' }, 400);
+  }
+
+  const existingPhone = await c.env.DB
+    .prepare('SELECT id FROM users WHERE phone = ?')
+    .bind(phone)
+    .first();
+
+  if (existingPhone) {
+    return c.json({ detail: 'This WhatsApp number is already registered. Please log in.' }, 400);
   }
 
   const hashedPassword = await hashPassword(password);
   try {
+    // Email ownership is NOT proven by password registration; start unverified and
+    // drive it through /verification/email/* (mirrors the federated email_verified gate).
     await c.env.DB
-      .prepare('INSERT INTO users (email, password, full_name, status, email_verified, phone_verified, email_verified_at) VALUES (?, ?, ?, ?, 1, 0, CURRENT_TIMESTAMP)')
-      .bind(email, hashedPassword, fullName || null, 'PARTICIPANT')
+      .prepare('INSERT INTO users (email, password, full_name, phone, status, email_verified, phone_verified) VALUES (?, ?, ?, ?, ?, 0, 0)')
+      .bind(email, hashedPassword, fullName, phone, 'PARTICIPANT')
       .run();
   } catch (err: any) {
     if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
-      return c.json({ detail: 'User already registered.' }, 400);
+      return c.json({ detail: 'User already registered with this email or WhatsApp number.' }, 400);
     }
     throw err;
   }
@@ -272,14 +291,14 @@ authRouter.post('/register', async (c) => {
       c.env,
       email,
       'Welcome to Alfaaz Collective',
-      `Greetings${fullName ? ' ' + fullName : ''},\n\nYour account at Alfaaz Collective has been registered successfully.\n\nYou can access your portfolio, events, and collective circles at:\n${appUrl}/dashboard.html\n\n— Alfaaz Collective`
+      `Greetings ${fullName},\n\nYour account at Alfaaz Collective has been registered successfully.\n\nYou can access your portfolio, events, and collective circles at:\n${appUrl}/dashboard.html\n\n— Alfaaz Collective`
     );
   } catch (emailErr) {
     console.warn('[EMAIL WARNING] Welcome email dispatch failed:', emailErr);
   }
 
   return c.json({
-    user: { email, status: 'PARTICIPANT', email_verified: 1, phone_verified: 0 },
+    user: { email, full_name: fullName, phone, status: 'PARTICIPANT', email_verified: 0, phone_verified: 0 },
     token
   });
 });

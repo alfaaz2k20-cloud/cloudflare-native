@@ -55,17 +55,21 @@ function base64UrlDecodeJson<T = any>(str: string): T {
 }
 
 /**
- * Fetch and cache Google Firebase Auth public keys in JWK format.
+ * Fetch and cache Google Auth public keys (GIS or Firebase) in JWK format.
  */
-async function getGooglePublicKey(kid: string): Promise<CryptoKey | null> {
+async function getGooglePublicKey(kid: string, isGis: boolean = false): Promise<CryptoKey | null> {
   const now = Date.now();
-  const cached = jwkCache.get(kid);
+  const cacheKey = `${isGis ? 'gis:' : 'fb:'}${kid}`;
+  const cached = jwkCache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
     return cached.key;
   }
 
   try {
-    const res = await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com');
+    const url = isGis
+      ? 'https://www.googleapis.com/oauth2/v3/certs'
+      : 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
+    const res = await fetch(url);
     if (!res.ok) return null;
 
     const cacheControl = res.headers.get('cache-control') || '';
@@ -75,7 +79,7 @@ async function getGooglePublicKey(kid: string): Promise<CryptoKey | null> {
 
     const data: { keys: any[] } = await res.json();
     for (const keyData of data.keys) {
-      if (keyData.kty === 'RSA' && keyData.alg === 'RS256' && keyData.kid) {
+      if (keyData.kty === 'RSA' && (keyData.alg === 'RS256' || !keyData.alg) && keyData.kid) {
         try {
           const importedKey = await crypto.subtle.importKey(
             'jwk',
@@ -84,16 +88,16 @@ async function getGooglePublicKey(kid: string): Promise<CryptoKey | null> {
             false,
             ['verify']
           );
-          jwkCache.set(keyData.kid, { key: importedKey, expiresAt });
+          jwkCache.set(`${isGis ? 'gis:' : 'fb:'}${keyData.kid}`, { key: importedKey, expiresAt });
         } catch {
           // Skip unparseable key
         }
       }
     }
 
-    return jwkCache.get(kid)?.key || null;
+    return jwkCache.get(cacheKey)?.key || null;
   } catch (err) {
-    console.warn('[AUTH] Failed to fetch Google Firebase public keys:', err);
+    console.warn('[AUTH] Failed to fetch Google public keys:', err);
     return null;
   }
 }
@@ -142,15 +146,25 @@ export async function verifyFirebaseToken(
     return null;
   }
 
-  // Issuer check: must be https://securetoken.google.com/<projectId>
-  const expectedIssuer = `https://securetoken.google.com/${expectedProjectId}`;
-  if (payload.iss !== expectedIssuer) {
-    return null;
-  }
-
-  // Audience check: must match expectedProjectId
-  if (payload.aud !== expectedProjectId) {
-    return null;
+  // Issuer check: supports both Google Identity Services (GIS) and Firebase Auth
+  const isGis = payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com';
+  if (isGis) {
+    if (!payload.email_verified && payload.email_verified !== 'true' as any) {
+      return null;
+    }
+    // Tag provider for consistent downstream mapping
+    if (!payload.firebase) {
+      payload.firebase = { sign_in_provider: 'google.com' };
+    }
+    payload.email_verified = true;
+  } else {
+    const expectedIssuer = `https://securetoken.google.com/${expectedProjectId}`;
+    if (payload.iss !== expectedIssuer) {
+      return null;
+    }
+    if (payload.aud !== expectedProjectId) {
+      return null;
+    }
   }
 
   // Subject check: must be non-empty string
@@ -172,14 +186,9 @@ export async function verifyFirebaseToken(
 
   if (envName === 'test' && testKey) {
     verifyKey = testKey;
-  } else if (envName === 'test') {
-    if (signatureB64.includes('tampered') || signatureB64.length < 10) {
-      return null;
-    }
-    return payload;
   } else {
     if (!header.kid) return null;
-    verifyKey = await getGooglePublicKey(header.kid);
+    verifyKey = await getGooglePublicKey(header.kid, isGis);
     if (!verifyKey) return null;
   }
 

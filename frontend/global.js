@@ -20,6 +20,7 @@ window.ALFAAZ_CLOUDINARY = {
     uploadPreset: CLOUDINARY_UPLOAD_PRESET
 };
 window.ALFAAZ_TURNSTILE_SITEKEY = TURNSTILE_SITEKEY;
+window.ALFAAZ_GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 // Firebase web config is PUBLIC by design (embedded in the client bundle and
 // scoped by authorized domains). Populate via VITE_FIREBASE_* env vars or a

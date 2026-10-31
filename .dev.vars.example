@@ -18,5 +18,6 @@ GEMINI_API_KEY=
 GROQ_API_KEY=
 
 # 4. Turnstile Bot Protection (Optional in local dev)
-# Set to 1x0000000000000000000000000000000AA for Cloudflare always-pass testing key
-TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+# In development/test, if TURNSTILE_SECRET_KEY is left empty, Turnstile verification passes automatically.
+# In production, set your real Cloudflare Turnstile Secret Key via `npx wrangler secret put TURNSTILE_SECRET_KEY`.
+TURNSTILE_SECRET_KEY=
