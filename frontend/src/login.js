@@ -16,8 +16,14 @@ function normalizeE164Phone(raw, prefixInput = "+91") {
   return /^\+[1-9]\d{6,14}$/.test(full) ? full : null;
 }
 
+function getApiUrl(endpoint) {
+  const base = (window.ALFAAZ_API_URL || '').replace(/\/$/, '');
+  const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+  return `${base}${path}`;
+}
+
 async function federatedLogin(idToken, provider) {
-  const res = await fetch('/auth/federated-login', {
+  const res = await fetch(getApiUrl('/auth/federated-login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id_token: idToken, provider })
@@ -77,6 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentMode = 'login'; // 'login' | 'register'
   let turnstileToken = '';
+  let gisInitialized = false;
+  let gisLoadFailed = false;
+  let isFederatedAuthInProgress = false;
 
   // 1. Safe Redirect Target Evaluation
   const urlParams = new URLSearchParams(window.location.search);
@@ -90,6 +99,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Helper to resolve Google Client ID reliably
+  function getGoogleClientId() {
+    return (window.ALFAAZ_GOOGLE_CLIENT_ID || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GOOGLE_CLIENT_ID) || '').trim();
+  }
+
+  // Helper to render or update GIS button cleanly without iframe duplication
+  function renderGisButton() {
+    const gisContainer = document.getElementById('googleBtnContainer');
+    const clientId = getGoogleClientId();
+    if (!gisContainer || !clientId || !window.google?.accounts?.id || !gisInitialized) return;
+
+    // Reset container to avoid duplicate iframes on re-rendering or tab switching
+    gisContainer.innerHTML = '';
+    gisContainer.style.display = 'flex';
+
+    const containerWidth = gisContainer.clientWidth || 320;
+    const buttonWidth = Math.min(320, Math.max(200, Math.floor(containerWidth)));
+
+    try {
+      window.google.accounts.id.renderButton(gisContainer, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: currentMode === 'register' ? 'signup_with' : 'signin_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
+        width: buttonWidth
+      });
+    } catch (err) {
+      console.warn('GIS renderButton error:', err);
+    }
+  }
+
   // Check URL mode parameter (?mode=register or register.html)
   if (urlParams.get('mode') === 'register' || window.location.pathname.includes('register.html')) {
     setAuthMode('register');
@@ -100,6 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
     currentMode = mode;
     const socialDividerText = document.getElementById('socialDividerText');
     const googleBtn = document.getElementById('btnGoogleAuth');
+    const clientId = getGoogleClientId();
+
     if (mode === 'register') {
       tabRegister?.classList.add('active');
       tabRegister?.setAttribute('aria-selected', 'true');
@@ -123,7 +167,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (footerActionLink) footerActionLink.textContent = 'Log In';
 
       if (socialDividerText) socialDividerText.textContent = 'or register with your details';
-      if (googleBtn) googleBtn.setAttribute('aria-label', 'Sign up with Google');
+      if (googleBtn) {
+        googleBtn.setAttribute('aria-label', clientId ? 'Sign up with Google' : 'Sign up with Google (Coming Soon)');
+      }
+      renderGisButton();
     } else {
       tabLogin?.classList.add('active');
       tabLogin?.setAttribute('aria-selected', 'true');
@@ -147,7 +194,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (footerActionLink) footerActionLink.textContent = 'Register here';
 
       if (socialDividerText) socialDividerText.textContent = 'or continue with email';
-      if (googleBtn) googleBtn.setAttribute('aria-label', 'Sign in with Google');
+      if (googleBtn) {
+        googleBtn.setAttribute('aria-label', clientId ? 'Sign in with Google' : 'Sign in with Google (Coming Soon)');
+      }
+      renderGisButton();
     }
   }
 
@@ -220,26 +270,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  let forgotHintTimer = null;
   function showHint(message, isSuccess = false) {
     if (!forgotHint) return;
+    clearTimeout(forgotHintTimer);
     forgotHint.textContent = (isSuccess ? '✓ ' : '✗ ') + message;
     forgotHint.style.color = isSuccess ? 'var(--accent-green-text)' : 'var(--accent-red-text)';
     forgotHint.classList.add('visible');
-    setTimeout(() => {
+    forgotHintTimer = setTimeout(() => {
       forgotHint.classList.remove('visible');
       forgotHint.style.color = '';
     }, 6000);
   }
 
+  let socialHintTimer = null;
   function showSocialHint(message, isSuccess = false) {
     if (!socialAuthHint) {
       showHint(message, isSuccess);
       return;
     }
+    clearTimeout(socialHintTimer);
     socialAuthHint.textContent = (isSuccess ? '✓ ' : 'ⓘ ') + message;
     socialAuthHint.style.color = isSuccess ? 'var(--accent-green-text)' : 'var(--accent-gold)';
     socialAuthHint.style.display = 'block';
-    setTimeout(() => {
+    socialHintTimer = setTimeout(() => {
       socialAuthHint.style.display = 'none';
       socialAuthHint.textContent = '';
     }, 8000);
@@ -248,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 6. Primary Form Submit (Email & Password + WhatsApp on Register)
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (isFederatedAuthInProgress) return;
     const emailValue = emailInput.value.trim();
     const passwordValue = pwInput.value;
     const fullNameValue = regFullName?.value?.trim() || '';
@@ -256,6 +311,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentMode === 'register') {
       if (!fullNameValue || fullNameValue.length < 2) {
         showHint('Please enter your full name (at least 2 characters).');
+        regFullName?.focus();
+        return;
+      }
+      if (fullNameValue.length > 80) {
+        showHint('Full name must be under 80 characters.');
         regFullName?.focus();
         return;
       }
@@ -299,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch(getApiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -342,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = true;
 
     try {
-      const response = await fetch('/auth/forgot-password', {
+      const response = await fetch(getApiUrl('/auth/forgot-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailValue, turnstile_token: turnstileToken })
@@ -380,37 +440,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Google Identity Services (GIS) Native Integration (Zero Firebase)
   function initGoogleIdentity() {
     const googleBtn = document.getElementById('btnGoogleAuth');
-    if (window.ALFAAZ_GOOGLE_CLIENT_ID) {
-      if (googleBtn) {
-        googleBtn.classList.remove('gated');
-        googleBtn.removeAttribute('title');
-      }
-      if (window.google?.accounts?.id) {
-        try {
-          window.google.accounts.id.initialize({
-            client_id: window.ALFAAZ_GOOGLE_CLIENT_ID,
-            callback: async (response) => {
-              if (response && response.credential) {
-                try {
-                  const data = await federatedLogin(response.credential, 'google');
-                  markAuthSuccess();
-                  finalizeAuth(data, redirectTarget);
-                } catch (err) {
-                  showSocialHint(err.message || 'Google authentication failed.');
-                }
-              }
-            }
-          });
-          window.google.accounts.id.prompt();
-        } catch (err) {
-          console.warn('GIS init error:', err);
-        }
-      }
-    } else {
+    const gisContainer = document.getElementById('googleBtnContainer');
+    const clientId = getGoogleClientId();
+
+    if (!clientId) {
       // Visibly gated per Rule 4: Zero-Facade Engineering
+      if (gisContainer) {
+        gisContainer.style.display = 'none';
+        gisContainer.innerHTML = '';
+      }
       if (googleBtn) {
         googleBtn.classList.add('gated');
         googleBtn.setAttribute('title', 'Google Sign-In is awaiting Google OAuth Client ID setup (Coming Soon)');
+        googleBtn.setAttribute('aria-label', currentMode === 'register' ? 'Sign up with Google (Coming Soon)' : 'Sign in with Google (Coming Soon)');
         if (!googleBtn.querySelector('.gated-pill')) {
           const pill = document.createElement('span');
           pill.className = 'gated-pill';
@@ -418,20 +460,140 @@ document.addEventListener('DOMContentLoaded', () => {
           googleBtn.appendChild(pill);
         }
       }
+      return;
+    }
+
+    // Configured state: un-gate the social badge button
+    if (googleBtn) {
+      googleBtn.classList.remove('gated');
+      googleBtn.removeAttribute('title');
+      const pill = googleBtn.querySelector('.gated-pill');
+      if (pill) pill.remove();
+      googleBtn.setAttribute('aria-label', currentMode === 'register' ? 'Sign up with Google' : 'Sign in with Google');
+    }
+
+    if (!window.google?.accounts?.id || gisInitialized) {
+      return;
+    }
+
+    try {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response) => {
+          if (response && response.credential) {
+            if (isFederatedAuthInProgress || (submitBtn && submitBtn.disabled && submitBtn.textContent.includes('...'))) return;
+            isFederatedAuthInProgress = true;
+            if (submitBtn) submitBtn.disabled = true;
+            try {
+              showSocialHint('Authenticating with Google...', true);
+              const data = await federatedLogin(response.credential, 'google');
+              markAuthSuccess();
+              finalizeAuth(data, redirectTarget);
+            } catch (err) {
+              isFederatedAuthInProgress = false;
+              if (submitBtn) submitBtn.disabled = false;
+              showSocialHint(err.message || 'Google authentication failed.');
+            }
+          }
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+
+      gisInitialized = true;
+      renderGisButton();
+
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          console.log('GIS One-Tap status:', notification.getNotDisplayedReason?.() || notification.getSkippedReason?.() || 'skipped');
+        }
+      });
+    } catch (err) {
+      console.warn('GIS init error:', err);
     }
   }
 
-  if (window.google?.accounts?.id) {
-    initGoogleIdentity();
-  } else {
-    window.addEventListener('load', () => setTimeout(initGoogleIdentity, 600));
+  // 1. Immediately evaluate configuration state (synchronously gates unconfigured state on DOM load)
+  initGoogleIdentity();
+
+  // 2. If client ID is present, initialize GIS when library loads
+  if (getGoogleClientId() && !gisInitialized) {
+    if (window.google?.accounts?.id) {
+      initGoogleIdentity();
+    } else {
+      const gsiScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+      let attempts = 0;
+      let pollInterval = null;
+      if (gsiScript) {
+        gsiScript.addEventListener('load', () => {
+          if (!gisInitialized) initGoogleIdentity();
+        });
+        gsiScript.addEventListener('error', () => {
+          gisLoadFailed = true;
+          if (pollInterval) clearInterval(pollInterval);
+        });
+      }
+      pollInterval = setInterval(() => {
+        attempts++;
+        if (window.google?.accounts?.id) {
+          clearInterval(pollInterval);
+          initGoogleIdentity();
+        } else if (attempts >= 50) {
+          clearInterval(pollInterval);
+          gisLoadFailed = true;
+        }
+      }, 150);
+      window.addEventListener('load', () => {
+        if (!gisInitialized && !gisLoadFailed) {
+          setTimeout(initGoogleIdentity, 200);
+        }
+      });
+    }
   }
 
+  // 3. Responsive GIS button re-render on viewport resize
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (!gisInitialized) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      renderGisButton();
+    }, 200);
+  });
+
   document.getElementById('btnGoogleAuth')?.addEventListener('click', () => {
-    if (window.ALFAAZ_GOOGLE_CLIENT_ID && window.google?.accounts?.id) {
-      window.google.accounts.id.prompt();
+    if (isFederatedAuthInProgress || (submitBtn && submitBtn.disabled && submitBtn.textContent.includes('...'))) return;
+    const clientId = getGoogleClientId();
+    if (clientId) {
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment?.()) {
+            const reason = notification.getNotDisplayedReason?.() || notification.getSkippedReason?.() || notification.getDismissedReason?.() || '';
+            console.log('GIS One-Tap prompt status:', reason);
+            const gisContainer = document.getElementById('googleBtnContainer');
+            if (gisContainer && gisContainer.style.display !== 'none') {
+              showSocialHint('Google One-Tap is unavailable. Please click the Google Sign-In button below or continue with email.');
+              gisContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+              showSocialHint(
+                currentMode === 'register'
+                  ? 'Google One-Tap was dismissed or blocked by browser privacy settings. You may also register with your details below.'
+                  : 'Google One-Tap was dismissed or blocked by browser privacy settings. You may also log in with your email below.'
+              );
+            }
+          }
+        });
+      } else if (gisLoadFailed) {
+        showSocialHint('Google Sign-In could not be loaded (likely blocked by privacy/ad-blocker settings). Please continue with email below.');
+      } else {
+        showSocialHint('Google Identity Services is loading. Please try again in a moment.');
+      }
     } else {
-      showSocialHint('Google Sign-In is awaiting Google OAuth Client ID setup. Please register with your Full Name, WhatsApp, Email & Password below.');
+      showSocialHint(
+        currentMode === 'register'
+          ? 'Google Sign-In is awaiting Google OAuth Client ID setup. Please register with your Full Name, WhatsApp, Email & Password below.'
+          : 'Google Sign-In is awaiting Google OAuth Client ID setup. Please log in with your Email & Password below.'
+      );
     }
   });
 
@@ -462,10 +624,25 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.auth-divider').forEach(d => d.style.display = 'none');
     const socialGrid = document.querySelector('.social-buttons-grid');
     if (socialGrid) socialGrid.style.display = 'none';
+    const gisContainer = document.getElementById('googleBtnContainer');
+    if (gisContainer) {
+      gisContainer.style.display = 'none';
+      gisContainer.innerHTML = '';
+    }
+    const socialHint = document.getElementById('socialAuthHint');
+    if (socialHint) {
+      socialHint.style.display = 'none';
+      socialHint.textContent = '';
+    }
     const turnstileContainer = document.getElementById('loginTurnstile');
     if (turnstileContainer) turnstileContainer.style.display = 'none';
     const toggleFooter = document.getElementById('toggleAuthFooter');
     if (toggleFooter) toggleFooter.style.display = 'none';
+    const authSub = document.getElementById('authSubtitle');
+    if (authSub) {
+      authSub.textContent = 'Account verification required';
+      authSub.style.color = 'var(--text-secondary)';
+    }
 
     verifStep.style.display = 'block';
 
@@ -517,7 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const endpoint = purpose === 'email' ? '/verification/email/send' : '/verification/phone/send';
           const body = purpose === 'email' ? { email: val } : { phone: val };
-          const res = await fetch(endpoint, {
+          const res = await fetch(getApiUrl(endpoint), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -556,7 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmBtn.textContent = 'Verifying...';
         try {
           const endpoint = purpose === 'email' ? '/verification/email/confirm' : '/verification/phone/confirm';
-          const res = await fetch(endpoint, {
+          const res = await fetch(getApiUrl(endpoint), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

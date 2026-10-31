@@ -1324,5 +1324,216 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       expect(content).toContain('id="returnBtn"');
       expect(content).toContain('Lost Password?');
     });
+
+    it('T4_S06: GIS Integration & Zero Firebase Script Invariant on Auth Pages', () => {
+      const loginHtml = fs.readFileSync(path.resolve(process.cwd(), 'frontend/login.html'), 'utf8');
+      const registerHtml = fs.readFileSync(path.resolve(process.cwd(), 'frontend/register.html'), 'utf8');
+      const loginJs = fs.readFileSync(path.resolve(process.cwd(), 'frontend/src/login.js'), 'utf8');
+
+      // 1. GIS script library loaded on login.html and register.html
+      expect(loginHtml).toContain('src="https://accounts.google.com/gsi/client"');
+      expect(registerHtml).toContain('src="https://accounts.google.com/gsi/client"');
+
+      // 2. Dedicated Google rendered button container present on both pages
+      expect(loginHtml).toContain('id="googleBtnContainer"');
+      expect(registerHtml).toContain('id="googleBtnContainer"');
+
+      // 3. Absolute Zero Firebase scripts, SDKs, or libraries loaded or invoked
+      expect(loginHtml).not.toContain('firebase');
+      expect(registerHtml).not.toContain('firebase');
+      expect(loginJs).not.toMatch(/firebase\.initializeApp|firebase\.auth/);
+    });
+
+    it('T4_S07: Mandatory Registration Fields and Boundaries on register.html', () => {
+      const registerHtml = fs.readFileSync(path.resolve(process.cwd(), 'frontend/register.html'), 'utf8');
+
+      // 1. Full Name: required with boundary length constraints [2, 80]
+      expect(registerHtml).toMatch(/id="regFullName"[^>]*required/);
+      expect(registerHtml).toMatch(/id="regFullName"[^>]*minlength="2"/);
+      expect(registerHtml).toMatch(/id="regFullName"[^>]*maxlength="80"/);
+
+      // 2. WhatsApp Number: required with country code prefix selector
+      expect(registerHtml).toMatch(/id="whatsappNumber"[^>]*required/);
+      expect(registerHtml).toContain('id="regCountryPrefix"');
+      expect(registerHtml).toContain('value="+91"');
+      expect(registerHtml).toContain('value="+1"');
+      expect(registerHtml).toContain('value="+44"');
+    });
+
+    it('T4_S08: Google Identity Services Environment Configuration Support', () => {
+      const envExamplePath = path.resolve(process.cwd(), 'frontend/.env.example');
+      expect(fs.existsSync(envExamplePath)).toBe(true);
+      const envExample = fs.readFileSync(envExamplePath, 'utf8');
+
+      // 1. VITE_GOOGLE_CLIENT_ID documented in environment templates
+      expect(envExample).toContain('VITE_GOOGLE_CLIENT_ID');
+      expect(envExample).toMatch(/Google Cloud Console|OAuth 2\.0/i);
+
+      // 2. Global runtime mapping present in global.js
+      const globalJs = fs.readFileSync(path.resolve(process.cwd(), 'frontend/global.js'), 'utf8');
+      expect(globalJs).toContain('VITE_GOOGLE_CLIENT_ID');
+      expect(globalJs).toContain('window.ALFAAZ_GOOGLE_CLIENT_ID');
+
+      // 3. Static honest gating in HTML per Rule 4 (Zero-Facade Engineering)
+      const loginHtml = fs.readFileSync(path.resolve(process.cwd(), 'frontend/login.html'), 'utf8');
+      const registerHtml = fs.readFileSync(path.resolve(process.cwd(), 'frontend/register.html'), 'utf8');
+      expect(loginHtml).toMatch(/id="btnGoogleAuth"[^>]*class="[^"]*gated/);
+      expect(registerHtml).toMatch(/id="btnGoogleAuth"[^>]*class="[^"]*gated/);
+      expect(loginHtml).toMatch(/id="btnGoogleAuth"[^>]*title="[^"]*awaiting Google OAuth/);
+      expect(registerHtml).toMatch(/id="btnGoogleAuth"[^>]*title="[^"]*awaiting Google OAuth/);
+    });
+
+    it('T4_S09: Genuine Google Identity Services (GIS) ID Token Verification & Sovereign JWT Issuance', async () => {
+      const email = 'gis_sovereign@alfaaz.local';
+      const uid = 'google_gis_sub_99887766';
+      const fullName = 'GIS Sovereign Poet';
+
+      // 1. Generate authentic GIS ID token (iss = https://accounts.google.com, email_verified = true)
+      const idToken = await createMockFirebaseToken({
+        uid,
+        email,
+        name: fullName,
+        iss: 'https://accounts.google.com',
+        email_verified: true
+      });
+
+      // 2. Transmit to POST /auth/federated-login
+      const res = await app.request('/auth/federated-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.91' },
+        body: JSON.stringify({ id_token: idToken, provider: 'google' })
+      }, getTestEnv());
+
+      await assertContract(res, 200, async (data) => {
+        expect(data.token).toBeDefined();
+        expect(data.user.email).toBe(email);
+        expect(data.user.full_name).toBe(fullName);
+        expect(data.user.auth_provider).toBe('google.com');
+        expect(data.user.email_verified).toBe(1);
+
+        // Verify sovereign JWT cryptographic integrity
+        const decoded = await verifyToken(data.token, jwtSecret);
+        expect(decoded).toBeDefined();
+        expect(decoded?.email).toBe(email);
+
+        // Verify user persistence in D1
+        const userRow = await mockDb.prepare('SELECT id, email, full_name, auth_provider, firebase_uid, email_verified FROM users WHERE email = ?')
+          .bind(email)
+          .first();
+        expect(userRow).toBeDefined();
+        expect(userRow?.firebase_uid).toBe(uid);
+        expect(userRow?.auth_provider).toBe('google.com');
+        expect(userRow?.email_verified).toBe(1);
+      });
+    });
+
+    it('T4_S10: Strict Rejection of GIS Tokens with Unverified Email per Rule 3', async () => {
+      // Rule 3: Verified token MUST carry email_verified === true. If false or missing, reject 401.
+      const idToken = await createMockFirebaseToken({
+        uid: 'unverified_gis_attacker_uid',
+        email: 'unverified_victim@alfaaz.local',
+        name: 'Attacker Account',
+        iss: 'https://accounts.google.com',
+        email_verified: false
+      });
+
+      const res = await app.request('/auth/federated-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.92' },
+        body: JSON.stringify({ id_token: idToken, provider: 'google' })
+      }, getTestEnv());
+
+      await assertContract(res, 401, (data) => {
+        expect(data.error).toBe('Invalid or expired authentication token.');
+      });
+    });
+
+    it('T4_S11: Content Security Policy (CSP) Invariant for Google Identity Services', async () => {
+      const res = await app.request('/ping', { method: 'GET' }, getTestEnv());
+      expect(res.status).toBe(200);
+
+      const csp = res.headers.get('content-security-policy') || '';
+      expect(csp).toBeTruthy();
+
+      // Verify Google Identity Services domains are permitted across required CSP directives
+      expect(csp).toMatch(/script-src[^;]*https:\/\/accounts\.google\.com/);
+      expect(csp).toMatch(/frame-src[^;]*https:\/\/accounts\.google\.com/);
+      expect(csp).toMatch(/connect-src[^;]*https:\/\/accounts\.google\.com/);
+    });
+
+    it('T4_S12: Frontend Login Script In-Flight Guard, Script Load Listener & Resize Handling', () => {
+      const loginJs = fs.readFileSync(path.resolve(process.cwd(), 'frontend/src/login.js'), 'utf8');
+
+      // 1. In-flight double-submission guard present
+      expect(loginJs).toContain('isFederatedAuthInProgress');
+
+      // 2. Direct script load event listener present for immediate initialization
+      expect(loginJs).toContain('accounts.google.com/gsi/client');
+      expect(loginJs).toMatch(/gsiScript\.addEventListener\(['"]load['"]/);
+
+      // 3. Responsive resize handler present for dynamic button sizing
+      expect(loginJs).toMatch(/window\.addEventListener\(['"]resize['"]/);
+
+      // 4. API base URL support for federatedLogin
+      expect(loginJs).toContain('ALFAAZ_API_URL');
+    });
+
+    it('T4_S13: GIS Token Verification with OpenID Issuer Variant (accounts.google.com without https)', async () => {
+      const email = 'gis_schemeless@alfaaz.local';
+      const uid = 'google_gis_sub_schemeless_123';
+      const fullName = 'Schemeless GIS Poet';
+
+      // GIS tokens can legitimately carry iss = accounts.google.com without URI scheme
+      const idToken = await createMockFirebaseToken({
+        uid,
+        email,
+        name: fullName,
+        iss: 'accounts.google.com',
+        email_verified: true
+      });
+
+      const res = await app.request('/auth/federated-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.93' },
+        body: JSON.stringify({ id_token: idToken, provider: 'google' })
+      }, getTestEnv());
+
+      await assertContract(res, 200, async (data) => {
+        expect(data.token).toBeDefined();
+        expect(data.user.email).toBe(email);
+        expect(data.user.full_name).toBe(fullName);
+        expect(data.user.auth_provider).toBe('google.com');
+
+        const decoded = await verifyToken(data.token, jwtSecret);
+        expect(decoded).toBeDefined();
+        expect(decoded?.email).toBe(email);
+      });
+    });
+
+    it('T4_S14: GIS Frontend Script Error, Ad-Blocker Fallback & Mutual In-Flight Guard Invariants', () => {
+      const loginJs = fs.readFileSync(path.resolve(process.cwd(), 'frontend/src/login.js'), 'utf8');
+
+      // 1. Ad-blocker / script loading error listener present
+      expect(loginJs).toMatch(/gsiScript\.addEventListener\(['"]error['"]/);
+      expect(loginJs).toContain('gisLoadFailed');
+
+      // 2. Mutual concurrency lock between traditional form submission and Google Auth
+      expect(loginJs).toMatch(/form\?\.addEventListener\(['"]submit['"][\s\S]*?isFederatedAuthInProgress/);
+      expect(loginJs).toMatch(/btnGoogleAuth['"]\)\?\.addEventListener\(['"]click['"][\s\S]*?isFederatedAuthInProgress/);
+
+      // 3. Hint timer clearing to prevent premature clearing of subsequent feedback
+      expect(loginJs).toContain('clearTimeout(socialHintTimer)');
+      expect(loginJs).toContain('clearTimeout(forgotHintTimer)');
+
+      // 4. API base URL helper function routing endpoints through getApiUrl
+      expect(loginJs).toContain('function getApiUrl(');
+      expect(loginJs).toContain('getApiUrl(\'/auth/federated-login\')');
+      expect(loginJs).toContain('getApiUrl(\'/auth/forgot-password\')');
+
+      // 5. Backend CSP img-src includes Google static asset hosts
+      const indexTs = fs.readFileSync(path.resolve(process.cwd(), 'backend/src/index.ts'), 'utf8');
+      expect(indexTs).toMatch(/img-src[^;]*https:\/\/www\.gstatic\.com/);
+      expect(indexTs).toMatch(/img-src[^;]*https:\/\/ssl\.gstatic\.com/);
+    });
   });
 });
