@@ -15,6 +15,7 @@ import adminRouter from './routes/admin';
 import recruitRouter from './routes/recruit';
 import researchRouter from './routes/research';
 import noticesRouter from './routes/notices';
+import verificationRouter from './routes/verification';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -254,6 +255,10 @@ app.route('/api/recruit', recruitRouter);
 // 11. Community Notices Feed & Legacy Vercel Serverless Function Endpoints (/notices, /api/notices, /api/blogs, /api/blog)
 app.route('/notices', noticesRouter);
 app.route('/api', noticesRouter);
+
+// 12. Contact Cross-Verification
+app.route('/verification', verificationRouter);
+app.route('/api/verification', verificationRouter);
 
 // 404 Handler for API routes
 app.all('/api/*', (c) => c.json({ error: 'Endpoint not found on Cloudflare-native API' }, 404));

@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
  const userData = localStorage.getItem('alfaaz_user');
  if (!userData) {
- window.location.href = 'login.html';
+ window.location.href = 'login.html?redirect=admin.html';
  return;
  }
 
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
  user = JSON.parse(userData);
  } catch (error) {
  localStorage.removeItem('alfaaz_user');
- window.location.href = 'login.html';
+ window.location.href = 'login.html?redirect=admin.html';
  return;
  }
 
@@ -442,31 +442,160 @@ document.addEventListener('DOMContentLoaded', () => {
  window.reviewClub = async function(id, status, btn) { const note = status === 'REJECTED' ? prompt('Note:') : null; btn.textContent = '...'; const res = await window.globalApiFetch('/admin/club-applications/review', { method: 'POST', body: JSON.stringify({ application_id: id, status, admin_note: note }) }); if (res && res.ok) window.loadClubs('ALL'); };
  window.revertClub = async function(id, btn) { if (!confirm('Undo rejection?')) return; btn.textContent = '...'; btn.disabled = true; const res = await window.globalApiFetch(`/admin/club-applications/${id}/revert`, { method: 'PATCH' }); if (res && res.ok) { window.loadClubs('ALL'); window.filterClubs('ALL'); } };
 
+ // ========================================= // ==========================================
+ // ROSTER LOGIC & ACTIVITY LEDGER
  // ==========================================
- // ROSTER LOGIC
- // ==========================================
+ window.toggleActivityDrawer = function(index) {
+   const drawer = document.getElementById('drawer-' + index);
+   const btn = document.getElementById('drawer-btn-' + index);
+   if (!drawer) return;
+   const isOpen = drawer.classList.contains('open');
+   if (isOpen) {
+     drawer.classList.remove('open');
+     if (btn) btn.textContent = 'Activity Ledger ▾';
+   } else {
+     drawer.classList.add('open');
+     if (btn) btn.textContent = 'Activity Ledger ▴';
+   }
+ };
+
  window.loadRoster = async function() {
- const container = document.getElementById('rosterContainer'); const res = await window.globalApiFetch('/admin/users'); if(!res) return; const users = await res.json(); container.innerHTML = '';
- if (!users.length) {
- container.innerHTML = '<div class="empty-state">No users registered yet.</div>';
- return;
- }
- users.forEach((u, i) => {
- const card = document.createElement('div'); card.className = 'data-card user-card';
- const safeEmail = window.escapeHtml(u.email);
- const safeName = window.escapeHtml(u.full_name || 'Member');
- const isSelf = u.email === user.email;
- const deleteBtn = (isSelf || u.status === 'ADMIN') ? '' : `<button class="action-btn" style="border-color: var(--accent-red); color: var(--accent-red-text); padding:0.8rem; font-size:9px;" data-email="${safeEmail}" onclick="deleteUser(this.getAttribute('data-email'), this)">Purge</button>`;
- card.innerHTML = `
- <div><div class="data-label">${safeName}</div><div class="data-display">${safeEmail}</div></div>
- <div><div class="data-label">Role</div><select id="st-${i}" style="margin:0;"><option value="PARTICIPANT" ${u.status==='PARTICIPANT'?'selected':''}>Participant</option><option value="ADMIN" ${u.status==='ADMIN'?'selected':''}>Admin</option></select></div>
- <div style="display:flex; gap:0.5rem; align-items:center;">
- <button class="action-btn gold" style="padding:0.8rem; font-size:9px;" data-email="${safeEmail}" onclick="updateStatus(this.getAttribute('data-email'), ${i}, this)">Save Role</button>
- ${deleteBtn}
- </div>`;
- container.appendChild(card);
- });
- if(window.refreshGlobalEffects) window.refreshGlobalEffects();
+   const container = document.getElementById('rosterContainer');
+   const res = await window.globalApiFetch('/admin/users');
+   if (!res) return;
+   const users = await res.json();
+   container.innerHTML = '';
+   if (!users.length) {
+     container.innerHTML = '<div class="empty-state">No users registered yet.</div>';
+     return;
+   }
+   users.forEach((u, i) => {
+     const card = document.createElement('div');
+     card.className = 'roster-card';
+     const safeEmail = window.escapeHtml(u.email || '-');
+     const safePhone = window.escapeHtml(u.phone || '-');
+     const safeName = window.escapeHtml(u.full_name || 'Member');
+     const safeProvider = window.escapeHtml(u.auth_provider || 'email');
+     const isSelf = u.email === user.email;
+
+     const emailBadge = u.email_verified
+       ? '<span class="badge badge-verified">✓ Email</span>'
+       : '<span class="badge badge-unverified">Email Pending</span>';
+
+     const phoneBadge = u.phone_verified
+       ? '<span class="badge badge-verified">✓ Phone</span>'
+       : (u.phone ? '<span class="badge badge-unverified">Phone Pending</span>' : '<span class="badge badge-closed">No Phone</span>');
+
+     const deleteBtn = (isSelf || u.status === 'ADMIN') ? '' : `
+       <button class="action-btn" style="border-color: var(--accent-red); color: var(--accent-red-text); padding:0.6rem 0.8rem; font-size:9px;" data-email="${safeEmail}" onclick="deleteUser(this.getAttribute('data-email'), this)">Purge</button>
+     `;
+
+     let clubsHtml = '<div class="activity-empty">No club applications on record.</div>';
+     if (u.clubs && u.clubs.length) {
+       clubsHtml = u.clubs.map(c => `
+         <div class="activity-item">
+           <div style="font-weight: 500;">${window.escapeHtml(c.club_name)}</div>
+           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+             <span class="badge badge-${(c.status || '').toLowerCase()}">${window.escapeHtml(c.status)}</span>
+             <span style="font-size:10px; color:var(--text-secondary);">${window.escapeHtml(c.created_at ? c.created_at.slice(0, 10) : '')}</span>
+           </div>
+         </div>
+       `).join('');
+     }
+
+     let eventsHtml = '<div class="activity-empty">No event registrations on record.</div>';
+     if (u.events && u.events.length) {
+       eventsHtml = u.events.map(e => `
+         <div class="activity-item">
+           <div style="font-weight: 500;">${window.escapeHtml(e.event_name)}</div>
+           <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Date: ${window.escapeHtml(e.event_date || 'TBD')}</div>
+         </div>
+       `).join('');
+     }
+
+     let exhibitionsHtml = '<div class="activity-empty">No exhibition cycles on record.</div>';
+     if (u.exhibitions && u.exhibitions.length) {
+       exhibitionsHtml = u.exhibitions.map(x => `
+         <div class="activity-item">
+           <div style="font-weight: 500;">${window.escapeHtml(x.exhibition_cycle || 'Cycle')}</div>
+           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+             <span class="badge badge-${(x.status || '').toLowerCase()}">Review: ${window.escapeHtml(x.status)}</span>
+             <span style="font-size:10px; color:var(--text-secondary);">Reg: ${window.escapeHtml(x.registration_status || 'NONE')}</span>
+           </div>
+         </div>
+       `).join('');
+     }
+
+     let feesHtml = '<div class="activity-empty">No exhibition fee records.</div>';
+     if (u.fees && u.fees.length) {
+       feesHtml = u.fees.map(f => {
+         const proofLink = f.payment_proof_url ? `<a href="${window.escapeHtml(f.payment_proof_url)}" target="_blank" rel="noopener" style="color:var(--accent-gold); text-decoration:underline; font-size:11px;">Proof ↗</a>` : '<span style="color:var(--text-secondary); font-size:11px;">No Proof</span>';
+         return `
+           <div class="activity-item">
+             <div style="display:flex; justify-content:space-between;">
+               <span style="font-weight:500;">${window.escapeHtml(f.exhibition_cycle)}</span>
+               <span style="font-size:11px;">${window.escapeHtml(f.registration_fee)}</span>
+             </div>
+             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+               <span class="badge ${f.registration_status === 'CONFIRMED' ? 'badge-approved' : 'badge-pending'}">${window.escapeHtml(f.registration_status)}</span>
+               ${proofLink}
+             </div>
+           </div>
+         `;
+       }).join('');
+     }
+
+     card.innerHTML = `
+       <div class="roster-header">
+         <div>
+           <div class="data-label">${safeName}</div>
+           <div class="data-display" style="font-size: 13px;">${safeEmail}</div>
+           <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Phone: ${safePhone}</div>
+           <div style="display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap;">
+             ${emailBadge}
+             ${phoneBadge}
+             <span class="badge badge-closed">${safeProvider}</span>
+           </div>
+         </div>
+         <div>
+           <div class="data-label">Role</div>
+           <select id="st-${i}" style="margin:0; font-size:12px;">
+             <option value="PARTICIPANT" ${u.status === 'PARTICIPANT' ? 'selected' : ''}>Participant</option>
+             <option value="ADMIN" ${u.status === 'ADMIN' ? 'selected' : ''}>Admin</option>
+           </select>
+         </div>
+         <div style="display:flex; flex-direction:column; gap:0.5rem; align-items:stretch;">
+           <div style="display:flex; gap:0.5rem; align-items:center;">
+             <button class="action-btn gold" style="padding:0.6rem 0.8rem; font-size:9px; flex:1;" data-email="${safeEmail}" onclick="updateStatus(this.getAttribute('data-email'), ${i}, this)">Save Role</button>
+             ${deleteBtn}
+           </div>
+           <button class="activity-toggle-btn" id="drawer-btn-${i}" onclick="toggleActivityDrawer(${i})">Activity Ledger ▾</button>
+         </div>
+       </div>
+       <div class="activity-drawer" id="drawer-${i}">
+         <div class="activity-grid">
+           <div>
+             <div class="activity-col-title">Circles & Clubs</div>
+             ${clubsHtml}
+           </div>
+           <div>
+             <div class="activity-col-title">Event RSVPs</div>
+             ${eventsHtml}
+           </div>
+           <div>
+             <div class="activity-col-title">Exhibitions</div>
+             ${exhibitionsHtml}
+           </div>
+           <div>
+             <div class="activity-col-title">Fee Ledger</div>
+             ${feesHtml}
+           </div>
+         </div>
+       </div>
+     `;
+     container.appendChild(card);
+   });
+   if (window.refreshGlobalEffects) window.refreshGlobalEffects();
  };
 
  window.deleteUser = async function(email, btn) {

@@ -491,6 +491,60 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
           expect(data.error).toMatch(/Email.*not verified/i);
         });
       });
+
+      it('T1_R4_08: email_verified=true token matching existing account succeeds with 200', async () => {
+        const legitimateEmail = 'legit_poet@alfaaz.local';
+        await mockDb.prepare('INSERT INTO users (email, password, full_name, status) VALUES (?, ?, ?, ?)')
+          .bind(legitimateEmail, await hashPassword('LegitPass!123'), 'Legit Poet', 'PARTICIPANT')
+          .run();
+
+        const verifiedToken = await createMockFirebaseToken({
+          uid: 'legit_firebase_uid_1',
+          email: legitimateEmail,
+          email_verified: true,
+          name: 'Legit Poet'
+        });
+
+        const res = await app.request('/auth/federated-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: verifiedToken })
+        }, getTestEnv());
+
+        await assertContract(res, 200, (data) => {
+          expect(data.token).toBeDefined();
+          expect(data.user.email).toBe(legitimateEmail);
+        });
+      });
+
+      it('T1_R4_09: phone-only federated user can update profile via PATCH /me', async () => {
+        const phone = '+14155557788';
+        const idToken = await createMockFirebaseToken({ uid: 'phone_patch_uid', phone_number: phone });
+        const loginRes = await app.request('/auth/federated-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: idToken })
+        }, getTestEnv());
+        const loginData = await loginRes.json();
+        const jwt = loginData.token;
+
+        const patchRes = await app.request('/auth/me', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwt}`
+          },
+          body: JSON.stringify({ full_name: 'Updated Phone Poet' })
+        }, getTestEnv());
+
+        expect(patchRes.status).toBe(200);
+
+        const getRes = await app.request('/auth/me', {
+          headers: { 'Authorization': `Bearer ${jwt}` }
+        }, getTestEnv());
+        const getData = await getRes.json();
+        expect(getData.full_name).toBe('Updated Phone Poet');
+      });
     });
 
     describe('R5. Absolute Secret Redaction & Test Invariants', () => {

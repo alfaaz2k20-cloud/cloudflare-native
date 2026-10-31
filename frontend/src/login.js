@@ -1,6 +1,76 @@
 // login.js — Centralized Curatorial Auth Suite
 // Primary, working authentication with 50/50 dual toggle and honest, curated integration gating
 
+// ===== Module-scope Firebase Auth Suite (Phone OTP + One-Tap Social) =====
+let firebaseAuth = null;
+let recaptchaVerifier = null;
+let confirmationResult = null;
+
+function normalizeE164Phone(raw, prefixInput = "+91") {
+  if (!raw) return null;
+  let trimmed = String(raw).trim();
+  if (trimmed.startsWith("+")) {
+    let clean = "+" + trimmed.slice(1).replace(/\D/g, "");
+    return /^\+[1-9]\d{6,14}$/.test(clean) ? clean : null;
+  }
+  let digits = trimmed.replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("0")) digits = digits.slice(1);
+  const prefix = prefixInput || "+91";
+  const full = (prefix.startsWith("+") ? prefix : "+" + prefix) + digits;
+  return /^\+[1-9]\d{6,14}$/.test(full) ? full : null;
+}
+
+function initFirebase() {
+  if (firebaseAuth) return firebaseAuth;
+  if (typeof window.firebase === 'undefined') return null;
+  const cfg = window.ALFAAZ_FIREBASE_CONFIG || {};
+  if (!cfg.apiKey || !cfg.appId) return null;
+  try {
+    if (!window.firebase.apps || window.firebase.apps.length === 0) {
+      window.firebase.initializeApp(cfg);
+    }
+    firebaseAuth = window.firebase.auth();
+  } catch (err) {
+    console.warn('Firebase init failed:', err);
+    firebaseAuth = null;
+  }
+  return firebaseAuth;
+}
+
+async function federatedLogin(idToken, provider) {
+  const res = await fetch('/auth/federated-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id_token: idToken, provider })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.token) {
+    throw new Error(data.error || data.detail || 'Provider authentication failed.');
+  }
+  return data;
+}
+
+function finalizeAuth(data, redirectTarget) {
+  localStorage.setItem('alfaaz_user', JSON.stringify(data.user));
+  localStorage.setItem('alfaaz_token', data.token);
+
+  const defaultDest = (data.user?.status === 'ADMIN' || data.user?.role === 'ADMIN') ? 'admin.html' : 'dashboard.html';
+  const finalDest = redirectTarget || defaultDest;
+
+  const isAdmin = data.user?.status === 'ADMIN' || data.user?.role === 'ADMIN';
+  const needsCrossVerification = !isAdmin && data.user && (!data.user.email_verified || !data.user.phone_verified);
+  if (needsCrossVerification && document.getElementById('verificationStep')) {
+    setTimeout(() => {
+      showVerificationStep(data.user, data.token, finalDest);
+    }, 400);
+  } else {
+    setTimeout(() => {
+      window.location.href = finalDest;
+    }, 700);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
   const tabLogin = document.getElementById('tabLogin');
@@ -114,7 +184,15 @@ document.addEventListener('DOMContentLoaded', () => {
         window.turnstile.render('#loginTurnstile', {
           sitekey: sitekey,
           theme: 'light',
-          callback: (token) => { turnstileToken = token; },
+          callback: (token) => {
+          turnstileToken = token;
+          if (phoneHint && phoneHint.textContent.includes('security verification')) {
+            setPhoneHint('Security verified. Proceeding with your code...', true);
+            if (sendOtpBtn && !sendOtpBtn.disabled) {
+              setTimeout(() => sendOtpBtn.click(), 400);
+            }
+          }
+        },
           'expired-callback': () => { turnstileToken = ''; }
         });
       } catch (err) {
@@ -189,14 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.style.background = 'var(--accent-gold)';
         submitBtn.style.color = '#fff';
         submitBtn.style.borderColor = 'var(--accent-gold)';
-
-        localStorage.setItem('alfaaz_user', JSON.stringify(data.user));
-        localStorage.setItem('alfaaz_token', data.token);
-
-        setTimeout(() => {
-          const defaultDest = (data.user?.status === 'ADMIN' || data.user?.role === 'ADMIN') ? 'admin.html' : 'dashboard.html';
-          window.location.href = redirectTarget || defaultDest;
-        }, 700);
+        markAuthSuccess('email');
+        finalizeAuth(data, redirectTarget);
       } else {
         submitBtn.textContent = currentMode === 'register' ? 'Create Account' : 'Log In';
         submitBtn.disabled = false;
@@ -245,4 +317,392 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = false;
     }
   });
+
+  // 8. Phone Authentication (Firebase Phone Auth) — registration + login in one flow
+  const phoneInput = document.getElementById('phoneInput');
+  const sendOtpBtn = document.getElementById('sendOtpBtn');
+  const phoneHint = document.getElementById('phoneHint');
+  const otpVerificationGroup = document.getElementById('otpVerificationGroup');
+  const otpCodeInput = document.getElementById('otpCode');
+  const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+
+  let phoneCooldownTimer = null;
+  function startPhoneCooldown(seconds) {
+    if (!sendOtpBtn) return;
+    sendOtpBtn.disabled = true;
+    let remaining = seconds;
+    sendOtpBtn.textContent = 'Resend (' + remaining + 's)';
+    if (phoneCooldownTimer) clearInterval(phoneCooldownTimer);
+    phoneCooldownTimer = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(phoneCooldownTimer);
+        phoneCooldownTimer = null;
+        sendOtpBtn.disabled = false;
+        sendOtpBtn.textContent = 'Send OTP';
+      } else {
+        sendOtpBtn.textContent = 'Resend (' + remaining + 's)';
+      }
+    }, 1000);
+  }
+
+  function setPhoneHint(message, isSuccess = false) {
+    if (!phoneHint) return;
+    phoneHint.textContent = (isSuccess ? '✓ ' : '✗ ') + message;
+    phoneHint.style.color = isSuccess ? 'var(--accent-green-text)' : 'var(--accent-red-text)';
+    phoneHint.classList.add('visible');
+  }
+
+  function highlightInternationalAlternatives() {
+    const socialGrid = document.querySelector(".social-buttons-grid");
+    const emailForm = document.getElementById("authForm");
+    if (socialGrid) {
+      socialGrid.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      socialGrid.style.transition = "outline 0.3s ease";
+      socialGrid.style.outline = "2px solid var(--accent-gold)";
+      setTimeout(() => { socialGrid.style.outline = "none"; }, 2500);
+    }
+    if (emailForm) {
+      emailForm.style.transition = "outline 0.3s ease";
+      emailForm.style.outline = "1px solid var(--accent-gold)";
+      setTimeout(() => { emailForm.style.outline = "none"; }, 2500);
+    }
+  }
+
+  function markAuthSuccess(flow = 'email') {
+    if (submitBtn) {
+      submitBtn.textContent = 'Welcome';
+      submitBtn.style.background = 'var(--accent-gold)';
+      submitBtn.style.color = '#fff';
+      submitBtn.style.borderColor = 'var(--accent-gold)';
+    }
+    if (verifyOtpBtn && flow === 'phone') {
+      verifyOtpBtn.textContent = '✓ Welcome';
+      verifyOtpBtn.style.background = 'var(--accent-gold)';
+      verifyOtpBtn.style.borderColor = 'var(--accent-gold)';
+      verifyOtpBtn.style.color = '#fff';
+    }
+    if (flow === 'phone') {
+      setPhoneHint('Authenticated successfully. Redirecting...', true);
+    }
+    const authSub = document.getElementById('authSubtitle');
+    if (authSub) {
+      authSub.textContent = '✓ Authenticated successfully. Redirecting...';
+      authSub.style.color = 'var(--accent-green-text)';
+    }
+  }
+
+  const countryPrefixEl = document.getElementById("countryPrefix");
+  countryPrefixEl?.addEventListener("change", () => {
+    const prefix = countryPrefixEl.value;
+    if (prefix === "+") {
+      phoneInput?.setAttribute("placeholder", "e.g. 14155552671 or +1...");
+    } else if (prefix === "+91") {
+      phoneInput?.setAttribute("placeholder", "9876543210");
+    } else {
+      phoneInput?.setAttribute("placeholder", "Mobile number");
+    }
+
+    if (prefix !== "+91") {
+      setPhoneHint("International candidate? Please use Google One-Tap or Email below for instant access.", false);
+      highlightInternationalAlternatives();
+    } else if (phoneHint) {
+      phoneHint.classList.remove("visible");
+    }
+  });
+
+  sendOtpBtn?.addEventListener('click', async () => {
+    const prefixEl = document.getElementById("countryPrefix");
+    const selectedPrefix = prefixEl ? prefixEl.value : "+91";
+    const phone = normalizeE164Phone(phoneInput?.value, selectedPrefix);
+    if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) {
+      setPhoneHint(selectedPrefix === "+" ? "Enter your country code and number (e.g. +14155552671)." : "Enter a valid mobile number (e.g. 9876543210).");
+      phoneInput?.focus();
+      return;
+    }
+
+    // Rule: Non-+91 international numbers go to Google One-Tap or Email + Code
+    if (!phone.startsWith("+91")) {
+      setPhoneHint("International candidate: please use Google One-Tap or Email + Code below for instant access.", false);
+      highlightInternationalAlternatives();
+      return;
+    }
+
+    // Turnstile gatekeeper check: ensure verification token is ready if widget loaded
+    if (!turnstileToken && window.turnstile && window.ALFAAZ_TURNSTILE_SITEKEY) {
+      setPhoneHint("Please complete the security verification below.", false);
+      const turnstileEl = document.getElementById("loginTurnstile");
+      if (turnstileEl) {
+        turnstileEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        turnstileEl.style.transition = "outline 0.3s ease";
+        turnstileEl.style.outline = "2px solid var(--accent-gold)";
+        setTimeout(() => { turnstileEl.style.outline = "none"; }, 2500);
+      }
+      return;
+    }
+
+    sendOtpBtn.disabled = true;
+    const originalText = sendOtpBtn.textContent;
+    sendOtpBtn.textContent = "Sending...";
+
+    try {
+      // Edge gatekeeper: Turnstile + velocity (prevents SMS bombing at our boundary)
+      const gateRes = await fetch('/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, turnstile_token: turnstileToken })
+      });
+      const gateData = await gateRes.json().catch(() => ({}));
+      if (!gateRes.ok) {
+        const retry = gateData.retry_after;
+        setPhoneHint(retry ? ('Too many attempts. Try again in ' + retry + 's.') : (gateData.error || 'Unable to send code.'));
+        if (gateRes.status === 403) {
+          if (window.turnstile) { try { window.turnstile.reset(); turnstileToken = ''; } catch (_) {} }
+          setPhoneHint('Security challenge required. Please solve the verification below.', false);
+          const tEl = document.getElementById('loginTurnstile');
+          if (tEl) {
+            tEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            tEl.style.transition = 'outline 0.3s ease';
+            tEl.style.outline = '2px solid var(--accent-gold)';
+            setTimeout(() => { tEl.style.outline = 'none'; }, 2500);
+          }
+          sendOtpBtn.disabled = false;
+          sendOtpBtn.textContent = originalText;
+          return;
+        }
+        if (retry) startPhoneCooldown(retry);
+        else { sendOtpBtn.disabled = false; sendOtpBtn.textContent = originalText; }
+        return;
+      }
+
+      const auth = initFirebase();
+      if (!auth) {
+        throw new Error('Phone verification is not configured yet.');
+      }
+      if (!recaptchaVerifier) {
+        recaptchaVerifier = new window.firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+      }
+      confirmationResult = await auth.signInWithPhoneNumber(phone, recaptchaVerifier);
+
+      if (window.turnstile) { try { window.turnstile.reset(); turnstileToken = ''; } catch (_) {} }
+      setPhoneHint('Code sent to ' + phone + '.', true);
+      if (otpVerificationGroup) otpVerificationGroup.style.display = 'block';
+      if (otpCodeInput) otpCodeInput.focus();
+      startPhoneCooldown(30);
+    } catch (err) {
+      setPhoneHint((err && (err.message || err.code)) || 'Unable to send code.');
+      sendOtpBtn.disabled = false;
+      sendOtpBtn.textContent = originalText;
+    }
+  });
+
+  verifyOtpBtn?.addEventListener('click', async () => {
+    const code = otpCodeInput?.value?.trim() || '';
+    if (!/^\d{6}$/.test(code)) {
+      setPhoneHint('Enter the 6-digit code from your SMS.');
+      otpCodeInput?.focus();
+      return;
+    }
+    if (!confirmationResult) {
+      setPhoneHint('Send a code first.');
+      return;
+    }
+
+    verifyOtpBtn.disabled = true;
+    verifyOtpBtn.textContent = 'Verifying...';
+    try {
+      const cred = await confirmationResult.confirm(code);
+      const idToken = await cred.user.getIdToken();
+      const data = await federatedLogin(idToken, 'phone');
+      markAuthSuccess('phone');
+      finalizeAuth(data, redirectTarget);
+    } catch (err) {
+      verifyOtpBtn.disabled = false;
+      verifyOtpBtn.textContent = 'Verify';
+      const errCode = err && err.code;
+      const msg = errCode === 'auth/invalid-verification-code' ? 'Invalid or expired code.' : ((err && err.message) || 'Verification failed.');
+      setPhoneHint(msg);
+    }
+  });
+
+  // 9. One-Tap Social Sign-In (Google / Apple / Meta)
+  async function handleSocialLogin(providerId) {
+    const auth = initFirebase();
+    if (!auth) {
+      showHint('Social sign-in is not configured yet.');
+      return;
+    }
+
+    let provider;
+    try {
+      if (providerId === 'google') provider = new window.firebase.auth.GoogleAuthProvider();
+      else if (providerId === 'apple') provider = new window.firebase.auth.OAuthProvider('apple.com');
+      else if (providerId === 'meta') provider = new window.firebase.auth.FacebookAuthProvider();
+      else throw new Error('Unknown provider');
+    } catch (err) {
+      showHint('Social sign-in is not configured yet.');
+      return;
+    }
+
+    try {
+      const result = await auth.signInWithPopup(provider);
+      const idToken = await result.user.getIdToken();
+      const data = await federatedLogin(idToken, providerId);
+      markAuthSuccess('social');
+      finalizeAuth(data, redirectTarget);
+    } catch (err) {
+      const errCode = err && err.code;
+      if (errCode === 'auth/popup-closed-by-user' || errCode === 'auth/cancelled-popup-request') return;
+      if (errCode === 'auth/account-exists-with-different-credential') {
+        showHint('An account already exists with this email. Please log in with that method.');
+      } else {
+        showHint((err && err.message) || 'Social sign-in failed.');
+      }
+    }
+  }
+
+  document.getElementById('btnGoogleAuth')?.addEventListener('click', () => handleSocialLogin('google'));
+  document.getElementById('btnAppleAuth')?.addEventListener('click', () => handleSocialLogin('apple'));
+  document.getElementById('btnMetaAuth')?.addEventListener('click', () => handleSocialLogin('meta'));
 });
+
+
+  function showVerificationStep(user, token, redirectTarget) {
+    const verifStep = document.getElementById('verificationStep');
+    if (!verifStep) {
+      window.location.href = redirectTarget;
+      return;
+    }
+
+    const authForm = document.getElementById('authForm');
+    if (authForm) authForm.style.display = 'none';
+    const nav = document.querySelector('.auth-segmented-nav');
+    if (nav) nav.style.display = 'none';
+    const phoneSection = document.querySelector('.phone-auth-section');
+    if (phoneSection) phoneSection.style.display = 'none';
+    document.querySelectorAll('.auth-divider').forEach(d => d.style.display = 'none');
+    const socialGrid = document.querySelector('.social-buttons-grid');
+    if (socialGrid) socialGrid.style.display = 'none';
+    const turnstileContainer = document.getElementById('loginTurnstile');
+    if (turnstileContainer) turnstileContainer.style.display = 'none';
+    const toggleFooter = document.getElementById('toggleAuthFooter');
+    if (toggleFooter) toggleFooter.style.display = 'none';
+
+    verifStep.style.display = 'block';
+
+    const isMissingEmail = !user.email_verified;
+    const titleEl = document.getElementById('verifStepTitle');
+    const descEl = document.getElementById('verifStepDesc');
+    const targetLabel = document.getElementById('verifTargetLabel');
+    const targetInput = document.getElementById('verifTarget');
+    const sendBtn = document.getElementById('sendCodeBtn');
+    const codeGroup = document.getElementById('verifCodeGroup');
+    const codeInput = document.getElementById('verifCode');
+    const confirmBtn = document.getElementById('confirmCodeBtn');
+    const skipLink = document.getElementById('skipVerifLink');
+
+    if (skipLink) {
+      skipLink.href = redirectTarget;
+    }
+
+    let purpose = isMissingEmail ? 'email' : 'phone';
+    if (isMissingEmail) {
+      if (titleEl) titleEl.textContent = 'Email Cross-Verification';
+      if (descEl) descEl.textContent = 'To secure your account, please verify your email address.';
+      if (targetLabel) targetLabel.textContent = 'Email Address';
+      if (targetInput) {
+        targetInput.type = 'email';
+        targetInput.value = user.email || '';
+        targetInput.placeholder = 'you@example.com';
+      }
+    } else {
+      if (titleEl) titleEl.textContent = 'Mobile Cross-Verification';
+      if (descEl) descEl.textContent = 'To secure your account, please verify your mobile number.';
+      if (targetLabel) targetLabel.textContent = 'Mobile Number (E.164)';
+      if (targetInput) {
+        targetInput.type = 'tel';
+        targetInput.value = user.phone || '';
+        targetInput.placeholder = '+14155552671';
+      }
+    }
+
+    if (sendBtn) {
+      sendBtn.onclick = async () => {
+        const val = targetInput ? targetInput.value.trim() : '';
+        if (!val) {
+          alert('Please enter a valid ' + purpose + '.');
+          return;
+        }
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending...';
+        try {
+          const endpoint = purpose === 'email' ? '/verification/email/send' : '/verification/phone/send';
+          const body = purpose === 'email' ? { email: val } : { phone: val };
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(body)
+          });
+          const resData = await res.json().catch(() => ({}));
+          if (res.ok) {
+            sendBtn.textContent = 'Code Sent';
+            sendBtn.style.display = 'none';
+            if (codeGroup) codeGroup.style.display = 'block';
+            if (confirmBtn) confirmBtn.style.display = 'block';
+            if (codeInput) codeInput.focus();
+          } else {
+            alert(resData.error || 'Failed to dispatch verification code.');
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send Code';
+          }
+        } catch (e) {
+          alert('Error dispatching code: ' + e.message);
+          sendBtn.disabled = false;
+          sendBtn.textContent = 'Send Code';
+        }
+      };
+    }
+
+    if (confirmBtn) {
+      confirmBtn.onclick = async () => {
+        const code = codeInput ? codeInput.value.trim() : '';
+        if (code.length !== 6) {
+          alert('Please enter a 6-digit code.');
+          return;
+        }
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Verifying...';
+        try {
+          const endpoint = purpose === 'email' ? '/verification/email/confirm' : '/verification/phone/confirm';
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ code })
+          });
+          const resData = await res.json().catch(() => ({}));
+          if (res.ok) {
+            confirmBtn.textContent = 'Verified ✓';
+            confirmBtn.style.background = 'var(--accent-green)';
+            confirmBtn.style.color = '#fff';
+            setTimeout(() => {
+              window.location.href = redirectTarget;
+            }, 800);
+          } else {
+            alert(resData.error || 'Invalid or expired verification code.');
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm';
+          }
+        } catch (e) {
+          alert('Error verifying code: ' + e.message);
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirm';
+        }
+      };
+    }
+  }

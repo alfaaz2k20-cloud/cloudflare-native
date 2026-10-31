@@ -42,6 +42,20 @@
     .badge-rejected { background: rgba(220, 38, 38, 0.05); color: var(--accent-red-text); border-color: var(--accent-red); } 
     .badge-open { background: rgba(22, 163, 74, 0.05); color: var(--accent-green-text); border-color: var(--accent-green); } 
     .badge-closed { background: var(--bg-primary); color: var(--text-secondary); border-color: var(--grid-border); }
+    .badge-verified { background: rgba(22, 163, 74, 0.08); color: var(--accent-green-text); border-color: var(--accent-green); font-size: 9px; padding: 2px 6px; }
+    .badge-unverified { background: rgba(234, 88, 12, 0.08); color: #c2410c; border-color: #ea580c; font-size: 9px; padding: 2px 6px; }
+
+    .roster-card { background: var(--bg-secondary); border: 1px solid var(--grid-border); margin-bottom: 1.25rem; transition: border-color 0.3s ease; }
+    .roster-card:hover { border-color: var(--accent-gold); }
+    .roster-header { padding: 1.5rem 2rem; display: grid; grid-template-columns: 2.5fr 1fr 1fr; gap: 1.5rem; align-items: center; }
+    .activity-toggle-btn { background: transparent; border: 1px solid var(--grid-border); color: var(--text-secondary); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 0.6rem 1rem; cursor: pointer; transition: all 0.2s; }
+    .activity-toggle-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+    .activity-drawer { border-top: 1px solid var(--grid-border); padding: 1.5rem 2rem; background: var(--bg-primary); display: none; }
+    .activity-drawer.open { display: block; }
+    .activity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+    .activity-col-title { font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.8rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.3rem; }
+    .activity-item { padding: 0.6rem 0; border-bottom: 1px dashed var(--grid-border); font-size: 12px; }
+    .activity-empty { font-size: 11px; color: var(--text-secondary); font-style: italic; padding: 0.8rem 0; }
     
     input, select, textarea { background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); padding: 0.8rem 0; width: 100%; font-family: var(--font-body); font-size: 13px; border-radius: 0; transition: border-color 0.3s; } input:focus, select:focus, textarea:focus { outline: none; border-bottom-color: var(--accent-gold); }
     
@@ -51,7 +65,7 @@
     
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(248, 246, 240, 0.95); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); } .modal-overlay.open { display: flex; } .modal { background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); padding: 3rem; max-width: 750px; width: 90%; max-height: 80vh; overflow-y: auto; } .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 1.5rem; }
     
-    @media (max-width: 768px) { .club-card, .event-card, .user-card, .exhib-card { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; gap: 1.5rem; } nav { padding: 1rem 1.5rem; } .nav-login { display: none !important; } .mobile-only-link { display: block; } .nav-links { display: none; position: absolute; top: 100%; left: 0; width: 100%; flex-direction: column; background: var(--bg-secondary); padding: 2rem; gap: 1.5rem; border-bottom: 1px solid var(--grid-border); box-shadow: 0 10px 20px rgba(0,0,0,0.05); } .nav-links.active { display: flex; } #menuToggle { display: flex; align-items: center; justify-content: center; margin-left: 0.5rem; } }
+    @media (max-width: 768px) { .club-card, .event-card, .user-card, .exhib-card, .roster-header { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; gap: 1.5rem; } nav { padding: 1rem 1.5rem; } .nav-login { display: none !important; } .mobile-only-link { display: block; } .nav-links { display: none; position: absolute; top: 100%; left: 0; width: 100%; flex-direction: column; background: var(--bg-secondary); padding: 2rem; gap: 1.5rem; border-bottom: 1px solid var(--grid-border); box-shadow: 0 10px 20px rgba(0,0,0,0.05); } .nav-links.active { display: flex; } #menuToggle { display: flex; align-items: center; justify-content: center; margin-left: 0.5rem; } }
   </style>
 </head>
 <body>

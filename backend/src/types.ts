@@ -21,6 +21,11 @@ export interface Env {
   CLOUDFLARE_EMAIL_TOKEN?: string;
   CLOUDFLARE_EMAIL_SENDER?: string;
 
+  // SMS / Twilio Configuration
+  TWILIO_ACCOUNT_SID?: string;
+  TWILIO_AUTH_TOKEN?: string;
+  TWILIO_FROM_NUMBER?: string;
+
   // External AI Keys
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
@@ -30,6 +35,9 @@ export interface JwtUserPayload {
   sub: string;
   email: string;
   status: 'ADMIN' | 'PARTICIPANT';
+  phone?: string;
+  email_verified?: number;
+  phone_verified?: number;
   exp: number;
   iat: number;
 }

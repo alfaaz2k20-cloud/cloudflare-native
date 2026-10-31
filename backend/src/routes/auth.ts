@@ -32,7 +32,14 @@ authRouter.post('/send-otp', async (c) => {
 
   // 2. Strict E.164 Phone Format Validation (+ followed by 7 to 15 digits)
   if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) {
-    return c.json({ error: 'Invalid phone number format. Must be in E.164 format (e.g., +14155552671).' }, 400);
+    return c.json({ error: 'Invalid phone number format. Must be in E.164 format (e.g., +919876543210).' }, 400);
+  }
+
+  // 2b. Geographic SMS Routing: In production, non-+91 international numbers are routed to Google One-Tap or Email
+  if (c.env.ENV === 'production' && !phone.startsWith('+91')) {
+    return c.json({
+      error: 'International participants: please authenticate using Google One-Tap or Email for instant global delivery.'
+    }, 400);
   }
 
   // 3. Velocity and Rate Limit Engine (60s cooldown, 5/24h per phone, 5/24h per IP)
@@ -45,6 +52,9 @@ authRouter.post('/send-otp', async (c) => {
     }, 429);
   }
 
+  // 4. SMS dispatch is delegated to Firebase Phone Auth (client calls signInWithPhoneNumber).
+  //    This route is a Turnstile + velocity gatekeeper that authorizes the SMS challenge
+  //    before the client asks Firebase to deliver the actual code.
   return c.json({
     success: true,
     message: 'OTP challenge authorized. Proceed with SMS verification.'
@@ -77,7 +87,7 @@ authRouter.post('/federated-login', async (c) => {
   const fullName = verified.name ? String(verified.name).slice(0, 80).trim() : null;
   
   // Security fix: Provider is derived exclusively from cryptographically verified token claims, NOT client body
-  const provider = verified.firebase?.sign_in_provider || (phone ? 'phone' : (email ? 'google.com' : 'federated'));
+  const provider = verified.firebase?.sign_in_provider || (phone ? 'phone' : 'federated');
 
   // Priority 1: Match existing user by sovereign firebase_uid
   let userRow: any = null;
@@ -116,20 +126,30 @@ authRouter.post('/federated-login', async (c) => {
 
   if (userRow) {
     // Preserve existing role / status (e.g. 'ADMIN' or 'PARTICIPANT')
+    const nowIso = new Date().toISOString();
     await c.env.DB
       .prepare(`
         UPDATE users 
         SET firebase_uid = COALESCE(firebase_uid, ?),
             phone = COALESCE(phone, ?),
             auth_provider = COALESCE(auth_provider, ?),
-            full_name = COALESCE(full_name, ?)
+            full_name = COALESCE(full_name, ?),
+            email_verified = CASE WHEN ? = 1 THEN 1 ELSE email_verified END,
+            email_verified_at = CASE WHEN ? = 1 THEN COALESCE(email_verified_at, ?) ELSE email_verified_at END,
+            phone_verified = CASE WHEN ? = 1 THEN 1 ELSE phone_verified END,
+            phone_verified_at = CASE WHEN ? = 1 THEN COALESCE(phone_verified_at, ?) ELSE phone_verified_at END
         WHERE id = ?
       `)
-      .bind(uid, phone, provider, fullName, userRow.id)
+      .bind(
+        uid, phone, provider, fullName,
+        emailVerified ? 1 : 0, emailVerified ? 1 : 0, nowIso,
+        phone ? 1 : 0, phone ? 1 : 0, nowIso,
+        userRow.id
+      )
       .run();
 
     userRow = await c.env.DB
-      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE id = ?')
+      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid, email_verified, phone_verified FROM users WHERE id = ?')
       .bind(userRow.id)
       .first();
   } else {
@@ -138,25 +158,32 @@ authRouter.post('/federated-login', async (c) => {
       return c.json({ error: 'Email address is not verified by authentication provider.' }, 401);
     }
 
+    const nowIso = new Date().toISOString();
     // Insert new federated user with race condition protection
     try {
       await c.env.DB
         .prepare(`
-          INSERT INTO users (email, password, full_name, status, phone, auth_provider, firebase_uid)
-          VALUES (?, NULL, ?, 'PARTICIPANT', ?, ?, ?)
+          INSERT INTO users (email, password, full_name, status, phone, auth_provider, firebase_uid, email_verified, phone_verified, email_verified_at, phone_verified_at)
+          VALUES (?, NULL, ?, 'PARTICIPANT', ?, ?, ?, ?, ?, CASE WHEN ? = 1 THEN ? ELSE NULL END, CASE WHEN ? = 1 THEN ? ELSE NULL END)
         `)
-        .bind(email, fullName, phone, provider, uid)
+        .bind(
+          email, fullName, phone, provider, uid,
+          emailVerified ? 1 : 0,
+          phone ? 1 : 0,
+          emailVerified ? 1 : 0, nowIso,
+          phone ? 1 : 0, nowIso
+        )
         .run();
 
       userRow = await c.env.DB
-        .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE firebase_uid = ?')
+        .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid, email_verified, phone_verified FROM users WHERE firebase_uid = ?')
         .bind(uid)
         .first();
     } catch (err: any) {
       if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
         // Handle concurrent insert race condition gracefully
         userRow = await c.env.DB
-          .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE firebase_uid = ? OR (email IS NOT NULL AND email = ?) OR (phone IS NOT NULL AND phone = ?)')
+          .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid, email_verified, phone_verified FROM users WHERE firebase_uid = ? OR (email IS NOT NULL AND email = ?) OR (phone IS NOT NULL AND phone = ?)')
           .bind(uid, email, phone)
           .first();
         if (!userRow) {
@@ -184,7 +211,9 @@ authRouter.post('/federated-login', async (c) => {
       phone: userRow.phone || undefined,
       full_name: userRow.full_name || undefined,
       status: userRow.status,
-      auth_provider: userRow.auth_provider || provider
+      auth_provider: userRow.auth_provider || provider,
+      email_verified: userRow.email_verified ?? 0,
+      phone_verified: userRow.phone_verified ?? 0
     }
   });
 });
@@ -196,7 +225,7 @@ authRouter.post('/register', async (c) => {
   const fullName = (body.full_name || '').trim();
 
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
-  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
+  const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for') || '127.0.0.1') : '127.0.0.1');
   const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
   if (!turnstileValid) {
     return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
@@ -224,7 +253,7 @@ authRouter.post('/register', async (c) => {
   const hashedPassword = await hashPassword(password);
   try {
     await c.env.DB
-      .prepare('INSERT INTO users (email, password, full_name, status) VALUES (?, ?, ?, ?)')
+      .prepare('INSERT INTO users (email, password, full_name, status, email_verified, phone_verified, email_verified_at) VALUES (?, ?, ?, ?, 1, 0, CURRENT_TIMESTAMP)')
       .bind(email, hashedPassword, fullName || null, 'PARTICIPANT')
       .run();
   } catch (err: any) {
@@ -250,7 +279,7 @@ authRouter.post('/register', async (c) => {
   }
 
   return c.json({
-    user: { email, status: 'PARTICIPANT' },
+    user: { email, status: 'PARTICIPANT', email_verified: 1, phone_verified: 0 },
     token
   });
 });
@@ -261,7 +290,7 @@ authRouter.post('/login', async (c) => {
   const password = body.password;
 
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
-  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
+  const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for') || '127.0.0.1') : '127.0.0.1');
   const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
   if (!turnstileValid) {
     return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
@@ -272,9 +301,9 @@ authRouter.post('/login', async (c) => {
   }
 
   const user = await c.env.DB
-    .prepare('SELECT email, password, status, full_name FROM users WHERE email = ?')
+    .prepare('SELECT email, password, status, full_name, email_verified, phone_verified FROM users WHERE email = ?')
     .bind(email)
-    .first<{ email: string; password: string; status: string; full_name: string }>();
+    .first<{ email: string; password: string; status: string; full_name: string; email_verified?: number; phone_verified?: number }>();
 
   if (!user) {
     return c.json({ detail: 'Invalid credentials' }, 401);
@@ -289,7 +318,12 @@ authRouter.post('/login', async (c) => {
   const token = await createToken(user.email, user.status, secret);
 
   return c.json({
-    user: { email: user.email, status: user.status },
+    user: {
+      email: user.email,
+      status: user.status,
+      email_verified: user.email_verified ?? 0,
+      phone_verified: user.phone_verified ?? 0
+    },
     token
   });
 });
@@ -299,7 +333,7 @@ authRouter.post('/forgot-password', async (c) => {
   const email = (body.email || '').trim().toLowerCase();
 
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
-  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
+  const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for') || '127.0.0.1') : '127.0.0.1');
   const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
   if (!turnstileValid) {
     return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
@@ -430,9 +464,9 @@ authRouter.post('/reset-password', async (c) => {
 authRouter.get('/me', requireAuth, async (c) => {
   const user = c.get('user');
   const row = await c.env.DB
-    .prepare('SELECT email, full_name, status, phone, auth_provider FROM users WHERE email = ? OR phone = ?')
+    .prepare('SELECT email, full_name, status, phone, auth_provider, email_verified, phone_verified FROM users WHERE email = ? OR phone = ?')
     .bind(user.email, user.email)
-    .first<{ email: string; full_name: string; status: string; phone?: string; auth_provider?: string }>();
+    .first<{ email: string; full_name: string; status: string; phone?: string; auth_provider?: string; email_verified?: number; phone_verified?: number }>();
 
   if (!row) {
     return c.json({ detail: 'User not found.' }, 404);

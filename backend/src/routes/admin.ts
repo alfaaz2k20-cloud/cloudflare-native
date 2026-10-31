@@ -438,8 +438,101 @@ adminRouter.get('/exhibitions/:id/registration', async (c) => {
 
 // ── Users & Submissions ───────────────────────────────────────────────────────
 adminRouter.get('/users', async (c) => {
-  const users = await c.env.DB.prepare('SELECT email, full_name, status FROM users ORDER BY id ASC').all();
-  return c.json(users.results || []);
+  // 1. Fetch all users
+  const users = await c.env.DB.prepare(`
+    SELECT id, email, full_name, status, phone, auth_provider, email_verified, phone_verified, created_at 
+    FROM users 
+    ORDER BY id ASC
+  `).all();
+
+  // 2. Fetch all club applications
+  const clubs = await c.env.DB.prepare(`
+    SELECT id, user_email, club_name, status, created_at
+    FROM club_applications
+    ORDER BY created_at DESC
+  `).all();
+
+  // 3. Fetch all event registrations with joined event details
+  const events = await c.env.DB.prepare(`
+    SELECT r.id, r.user_email, r.event_id, r.created_at,
+           e.name as event_name, e.event_date as event_date
+    FROM event_registrations r
+    LEFT JOIN events e ON r.event_id = e.id
+    ORDER BY r.created_at DESC
+  `).all();
+
+  // 4. Fetch all exhibition applications (past & present) with fee details
+  const exhibitions = await c.env.DB.prepare(`
+    SELECT a.id, a.user_email, a.exhibition_cycle, a.status, a.registration_status,
+           a.payment_proof_url, a.payment_confirmed_at, a.created_at,
+           e.registration_fee
+    FROM exhibition_applications a
+    LEFT JOIN exhibitions_list e ON a.exhibition_cycle = e.title
+    ORDER BY a.created_at DESC
+  `).all();
+
+  // 5. Aggregate by user email (and phone fallback) into full activity ledger
+  const roster = (users.results || []).map((u: any) => {
+    const uEmail = (u.email || '').toLowerCase();
+    const uPhone = u.phone || '';
+
+    const userClubs = (clubs.results || []).filter((c: any) =>
+      (c.user_email && c.user_email.toLowerCase() === uEmail) || (uPhone && c.user_email === uPhone)
+    );
+
+    const userEvents = (events.results || []).filter((e: any) =>
+      (e.user_email && e.user_email.toLowerCase() === uEmail) || (uPhone && e.user_email === uPhone)
+    );
+
+    const userExhibitions = (exhibitions.results || []).filter((x: any) =>
+      (x.user_email && x.user_email.toLowerCase() === uEmail) || (uPhone && x.user_email === uPhone)
+    );
+
+    const userFees = userExhibitions
+      .filter((x: any) => x.registration_status && x.registration_status !== 'NONE')
+      .map((x: any) => ({
+        exhibition_cycle: x.exhibition_cycle,
+        registration_status: x.registration_status,
+        registration_fee: x.registration_fee || 'Standard Fee',
+        payment_proof_url: x.payment_proof_url,
+        payment_confirmed_at: x.payment_confirmed_at
+      }));
+
+    return {
+      id: u.id,
+      email: u.email,
+      full_name: u.full_name,
+      status: u.status,
+      phone: u.phone,
+      auth_provider: u.auth_provider,
+      email_verified: u.email_verified ?? 0,
+      phone_verified: u.phone_verified ?? 0,
+      created_at: u.created_at,
+      clubs: userClubs.map((c: any) => ({
+        id: c.id,
+        club_name: c.club_name,
+        status: c.status,
+        created_at: c.created_at
+      })),
+      events: userEvents.map((e: any) => ({
+        id: e.id,
+        event_name: e.event_name || 'Community Event',
+        event_date: e.event_date,
+        created_at: e.created_at
+      })),
+      exhibitions: userExhibitions.map((x: any) => ({
+        id: x.id,
+        exhibition_cycle: x.exhibition_cycle,
+        status: x.status,
+        registration_status: x.registration_status,
+        payment_confirmed_at: x.payment_confirmed_at,
+        created_at: x.created_at
+      })),
+      fees: userFees
+    };
+  });
+
+  return c.json(roster);
 });
 
 adminRouter.delete('/users/:email', async (c) => {

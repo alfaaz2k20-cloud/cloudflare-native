@@ -19,6 +19,8 @@
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
   
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script type="module" src="src/login.js"></script>
   <style>
     .auth-card { width: 100%; max-width: 420px; padding: 3.5rem 2.5rem; margin: 6rem auto; position: relative; }
@@ -63,6 +65,32 @@
       color: var(--text-primary);
     }
 
+    /* Phone OTP (Firebase Phone Auth) */
+    .phone-auth-section { margin-bottom: 1.5rem; }
+    .phone-field-row { display: flex; gap: 10px; align-items: flex-end; }
+        .country-prefix-select {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--grid-border);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 0.5rem 0.2rem;
+      border-radius: 0;
+      cursor: pointer;
+      min-width: 84px;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+    .country-prefix-select:focus {
+      border-bottom-color: var(--accent-gold);
+    }
+    .otp-btn { background: transparent; border: 1px solid var(--grid-border); color: var(--text-primary); font-family: var(--font-body); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 0.5rem 0.9rem; border-radius: 3px; cursor: pointer; white-space: nowrap; transition: all 0.25s ease; }
+    .otp-btn:hover:not(:disabled) { border-color: var(--accent-gold); color: var(--accent-gold-text); }
+    .otp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .otp-btn.primary { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
+    .otp-btn.primary:hover:not(:disabled) { background: var(--accent-gold); border-color: var(--accent-gold); color: #fff; }
+
     .input-group { margin-bottom: 1.5rem; }
     .auth-input { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; padding: 0.5rem 0; transition: border-color 0.3s ease; }
     .auth-input:focus { outline: none; border-bottom-color: var(--accent-gold); }
@@ -102,31 +130,31 @@
     }
     .social-badge-btn {
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 6px;
       background: var(--bg-secondary);
-      border: 1px dashed var(--grid-border);
-      color: var(--text-secondary);
-      padding: 0.65rem 0.3rem;
+      border: 1px solid var(--grid-border);
+      color: var(--text-primary);
+      padding: 0.65rem 0.4rem;
       border-radius: 4px;
       font-family: var(--font-body);
-      font-size: 10px;
+      font-size: 11px;
       letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .social-badge-btn:hover:not(:disabled) {
+      border-color: var(--text-primary);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .social-badge-btn:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
-      opacity: 0.75;
-      position: relative;
     }
     .social-badge-btn svg {
-      opacity: 0.6;
-    }
-    .badge-pill {
-      font-size: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--accent-gold-text);
-      line-height: 1;
+      flex-shrink: 0;
     }
 
     .toggle-auth { margin-top: 2rem; text-align: center; font-size: 11px; color: var(--text-secondary); }
@@ -159,11 +187,83 @@
     </h1>
     <p class="auth-subtitle" id="authSubtitle">Join the collective</p>
 
-    <!-- Primary, Working Authentication Form: Email & Password -->
+    <!-- 1. Phone Authentication (registration + login via SMS OTP) -->
+    <div class="phone-auth-section" style="margin-top: 1.5rem;">
+      <div class="input-group">
+        <label class="input-label" for="phoneInput">Mobile Phone Number</label>
+        <div class="phone-field-row">
+          <select id="countryPrefix" class="country-prefix-select" aria-label="Country Code">
+            <option value="+91" selected>IN +91</option>
+            <option value="+92">PK +92</option>
+            <option value="+1">US/CA +1</option>
+            <option value="+44">UK +44</option>
+            <option value="+971">AE +971</option>
+            <option value="+966">SA +966</option>
+            <option value="+880">BD +880</option>
+            <option value="+49">DE +49</option>
+            <option value="+33">FR +33</option>
+            <option value="+61">AU +61</option>
+            <option value="+">Other (+)</option>
+          </select>
+          <input type="tel" id="phoneInput" class="auth-input" placeholder="9876543210" autocomplete="tel">
+          <button type="button" id="sendOtpBtn" class="otp-btn">Send OTP</button>
+        </div>
+        <div id="phoneHint" class="forgot-hint" role="status" aria-live="polite"></div>
+      </div>
+
+      <div id="otpVerificationGroup" class="input-group" style="display: none;">
+        <label class="input-label" for="otpCode">6-Digit SMS Code</label>
+        <div class="phone-field-row">
+          <input type="text" id="otpCode" class="auth-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="123456" autocomplete="one-time-code">
+          <button type="button" id="verifyOtpBtn" class="otp-btn primary">Verify</button>
+        </div>
+      </div>
+
+      <!-- Invisible reCAPTCHA verifier container for Firebase Phone Auth -->
+      <div id="recaptcha-container"></div>
+    </div>
+
+    <!-- 2. One-Tap Social App Integrations (Google, Apple, Meta) -->
+    <div class="auth-divider">
+      <span class="auth-divider-line"></span>
+      <span class="auth-divider-text">or continue with apps</span>
+      <span class="auth-divider-line"></span>
+    </div>
+
+    <div class="social-buttons-grid">
+      <button type="button" id="btnGoogleAuth" class="social-badge-btn" aria-label="Sign in with Google">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/>
+        </svg>
+        <span>Google</span>
+      </button>
+
+      <button type="button" id="btnAppleAuth" class="social-badge-btn" aria-label="Sign in with Apple">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.45c.61-.75 1.04-1.8 1.01-2.85-.94.04-2.05.63-2.7 1.39-.56.66-1.06 1.73-.93 2.76 1.05.08 2.06-.55 2.62-1.3z"/>
+        </svg>
+        <span>Apple</span>
+      </button>
+
+      <button type="button" id="btnMetaAuth" class="social-badge-btn" aria-label="Sign in with Meta">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+        <span>Meta</span>
+      </button>
+    </div>
+
+    <!-- 3. Primary Email & Password System (as it was earlier) -->
+    <div class="auth-divider">
+      <span class="auth-divider-line"></span>
+      <span class="auth-divider-text">or with email & password</span>
+      <span class="auth-divider-line"></span>
+    </div>
+
     <form id="authForm">
-      <div id="displayNameGroup" class="input-group" style="display: block;">
+      <div id="displayNameGroup" class="input-group" style="">
         <label class="input-label" for="regFullName">Full Name <span style="color:var(--text-secondary); text-transform:lowercase;">(optional)</span></label>
-        <input type="text" id="regFullName" class="auth-input" autocomplete="name" spellcheck="false" placeholder="e.g. Agha Shahid" autofocus>
+        <input type="text" id="regFullName" class="auth-input" autocomplete="name" spellcheck="false" placeholder="e.g. Agha Shahid">
       </div>
 
       <div class="input-group">
@@ -179,61 +279,47 @@
         </div>
       </div>
 
-      <div id="confirmPasswordGroup" class="input-group" style="display: block;">
+      <div id="confirmPasswordGroup" class="input-group" style="">
         <label class="input-label" for="confirmPassword">Confirm Password</label>
         <input type="password" id="confirmPassword" class="auth-input" autocomplete="new-password">
       </div>
 
       <a href="#" id="forgotBtn" class="recovery-link" style="display: none;">Lost Password?</a>
       <div class="forgot-hint" id="forgotHint" role="status" aria-live="polite">↑ Enter your email above, then click "Lost Password?"</div>
-
-      <!-- Security Gatekeeper: Cloudflare Turnstile -->
-      <div id="loginTurnstile" style="margin-top: 1rem; margin-bottom: 1.25rem; display: flex; justify-content: center;"></div>
       
+      
+      <!-- Security Gatekeeper: Cloudflare Turnstile -->
+      <div id="loginTurnstile" style="margin-top: 1rem; margin-bottom: 1.25rem; min-height: 65px; display: flex; justify-content: center;"></div>
       <button type="submit" class="submit-btn" id="submitBtn" style="width: 100%;">Create Account</button>
     </form>
-
-    <!-- Visibly Gated Curated Identity Integrations (Honest UI, zero dead facades) -->
-    <div class="auth-divider">
-      <span class="auth-divider-line"></span>
-      <span class="auth-divider-text">Curated Integrations</span>
-      <span class="auth-divider-line"></span>
-    </div>
-
-    <div class="social-buttons-grid">
-      <button type="button" class="social-badge-btn" disabled title="Google identity integration is under curation">
-        <div style="display: flex; align-items: center; gap: 4px;">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-            <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/>
-          </svg>
-          <span>Google</span>
-        </div>
-        <span class="badge-pill">In Curation</span>
-      </button>
-
-      <button type="button" class="social-badge-btn" disabled title="Apple ID integration is under curation">
-        <div style="display: flex; align-items: center; gap: 4px;">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.45c.61-.75 1.04-1.8 1.01-2.85-.94.04-2.05.63-2.7 1.39-.56.66-1.06 1.73-.93 2.76 1.05.08 2.06-.55 2.62-1.3z"/>
-          </svg>
-          <span>Apple</span>
-        </div>
-        <span class="badge-pill">In Curation</span>
-      </button>
-
-      <button type="button" class="social-badge-btn" disabled title="Meta integration is under curation">
-        <div style="display: flex; align-items: center; gap: 4px;">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-          </svg>
-          <span>Meta</span>
-        </div>
-        <span class="badge-pill">In Curation</span>
-      </button>
-    </div>
-
+    
     <div class="toggle-auth" id="toggleAuthFooter">
       <span id="footerText">Already in the collective?</span> <a href="#" id="footerActionLink">Log In</a>
+    </div>
+
+    <!-- Curatorial Contact Cross-Verification Step (Revealed when email or phone unverified) -->
+    <div id="verificationStep" style="display: none; text-align: center; margin-top: 1.5rem;">
+      <div class="data-label" style="font-size: 11px; color: var(--accent-gold); margin-bottom: 0.5rem;" id="verifStepTitle">Contact Verification</div>
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.25rem;" id="verifStepDesc">To ensure collective integrity, please verify your mobile phone number.</p>
+      
+      <div id="verifTargetGroup" class="input-group" style="text-align: left;">
+        <label class="input-label" id="verifTargetLabel" for="verifTarget">Mobile Phone (E.164)</label>
+        <input type="text" id="verifTarget" class="auth-input" placeholder="+14155552671">
+      </div>
+
+      <div id="verifCodeGroup" class="input-group" style="display: none; text-align: left;">
+        <label class="input-label" for="verifCode">6-Digit Code</label>
+        <input type="text" id="verifCode" class="auth-input" maxlength="6" placeholder="123456" style="letter-spacing: 4px; text-align: center; font-size: 18px;">
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+        <button type="button" class="submit-btn" id="sendCodeBtn" style="flex: 1;">Send Code</button>
+        <button type="button" class="submit-btn gold" id="confirmCodeBtn" style="flex: 1; display: none;">Confirm</button>
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <a href="dashboard.html" id="skipVerifLink" style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; text-decoration: underline;">Skip for now &rarr;</a>
+      </div>
     </div>
   </div>
 
