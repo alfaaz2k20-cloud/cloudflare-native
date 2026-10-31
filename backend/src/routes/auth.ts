@@ -4,6 +4,8 @@ import { hashPassword, verifyPassword, createToken, verifyToken, getJwtSecret } 
 import { requireAuth } from '../middleware/auth';
 import { rateLimiter, verifyTurnstile } from '../middleware/rate_limit';
 import { sendSystemEmail } from '../notifications/email';
+import { verifyFirebaseToken } from '../auth/federated';
+import { checkAndRecordVelocity } from '../services/velocity';
 
 export const authRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
 
@@ -12,6 +14,142 @@ authRouter.use('/register', rateLimiter({ limit: 20, windowMs: 60000 }));
 authRouter.use('/login', rateLimiter({ limit: 20, windowMs: 60000 }));
 authRouter.use('/forgot-password', rateLimiter({ limit: 10, windowMs: 60000 }));
 authRouter.use('/reset-password', rateLimiter({ limit: 10, windowMs: 60000 }));
+authRouter.use('/send-otp', rateLimiter({ limit: 30, windowMs: 60000 }));
+authRouter.use('/federated-login', rateLimiter({ limit: 30, windowMs: 60000 }));
+
+authRouter.post('/send-otp', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+  const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
+
+  // 1. Bot Verification via Cloudflare Turnstile
+  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
+  if (!turnstileValid) {
+    return c.json({ error: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
+  }
+
+  // 2. Strict E.164 Phone Format Validation (+ followed by 7 to 15 digits)
+  if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) {
+    return c.json({ error: 'Invalid phone number format. Must be in E.164 format (e.g., +14155552671).' }, 400);
+  }
+
+  // 3. Velocity and Rate Limit Engine (60s cooldown, 5/24h per phone, 5/24h per IP)
+  const velocity = await checkAndRecordVelocity(c.env.DB, phone, ip);
+  if (!velocity.allowed) {
+    c.header('Retry-After', String(velocity.retryAfter || 60));
+    return c.json({
+      error: velocity.error || velocity.reason,
+      retry_after: velocity.retryAfter
+    }, 429);
+  }
+
+  return c.json({
+    success: true,
+    message: 'OTP challenge authorized. Proceed with SMS verification.'
+  });
+});
+
+authRouter.post('/federated-login', async (c) => {
+  let body: any;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Malformed JSON payload.' }, 400);
+  }
+
+  const idToken = body?.id_token || body?.idToken;
+  if (!idToken || typeof idToken !== 'string') {
+    return c.json({ error: 'ID token is required.' }, 400);
+  }
+
+  const projectId = c.env.FIREBASE_PROJECT_ID || 'alfaaz-collective';
+  const verified = await verifyFirebaseToken(idToken, projectId, c.env.ENV);
+  if (!verified) {
+    return c.json({ error: 'Invalid or expired authentication token.' }, 401);
+  }
+
+  const uid = verified.user_id || verified.sub;
+  const email = verified.email ? verified.email.toLowerCase().trim() : null;
+  const phone = verified.phone_number ? verified.phone_number.trim() : null;
+  const fullName = verified.name ? String(verified.name).slice(0, 80).trim() : null;
+  const provider = body.provider || verified.firebase?.sign_in_provider || 'federated';
+
+  // Find existing user by email, phone, or firebase_uid
+  let userRow: any = null;
+  if (email) {
+    userRow = await c.env.DB
+      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE email = ?')
+      .bind(email)
+      .first();
+  }
+  if (!userRow && phone) {
+    userRow = await c.env.DB
+      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE phone = ?')
+      .bind(phone)
+      .first();
+  }
+  if (!userRow && uid) {
+    userRow = await c.env.DB
+      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE firebase_uid = ?')
+      .bind(uid)
+      .first();
+  }
+
+  if (userRow) {
+    // Preserve existing role / status (e.g. 'ADMIN' or 'PARTICIPANT')
+    await c.env.DB
+      .prepare(`
+        UPDATE users 
+        SET firebase_uid = COALESCE(firebase_uid, ?),
+            phone = COALESCE(phone, ?),
+            auth_provider = COALESCE(auth_provider, ?),
+            full_name = COALESCE(full_name, ?)
+        WHERE id = ?
+      `)
+      .bind(uid, phone, provider, fullName, userRow.id)
+      .run();
+
+    userRow = await c.env.DB
+      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE id = ?')
+      .bind(userRow.id)
+      .first();
+  } else {
+    // Insert new federated user
+    await c.env.DB
+      .prepare(`
+        INSERT INTO users (email, password, full_name, status, phone, auth_provider, firebase_uid)
+        VALUES (?, NULL, ?, 'PARTICIPANT', ?, ?, ?)
+      `)
+      .bind(email, fullName, phone, provider, uid)
+      .run();
+
+    userRow = await c.env.DB
+      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE firebase_uid = ? OR (email IS NOT NULL AND email = ?) OR (phone IS NOT NULL AND phone = ?)')
+      .bind(uid, email, phone)
+      .first();
+  }
+
+  const secret = getJwtSecret(c.env);
+  const token = await createToken(
+    { email: userRow.email || userRow.phone || uid, status: userRow.status },
+    secret,
+    undefined,
+    7 * 86400
+  );
+
+  return c.json({
+    token,
+    user: {
+      id: userRow.id,
+      email: userRow.email || undefined,
+      phone: userRow.phone || undefined,
+      full_name: userRow.full_name || undefined,
+      status: userRow.status,
+      auth_provider: userRow.auth_provider || provider
+    }
+  });
+});
 
 authRouter.post('/register', async (c) => {
   const body = await c.req.json().catch(() => ({}));
@@ -254,9 +392,9 @@ authRouter.post('/reset-password', async (c) => {
 authRouter.get('/me', requireAuth, async (c) => {
   const user = c.get('user');
   const row = await c.env.DB
-    .prepare('SELECT email, full_name, status FROM users WHERE email = ?')
-    .bind(user.email)
-    .first<{ email: string; full_name: string; status: string }>();
+    .prepare('SELECT email, full_name, status, phone, auth_provider FROM users WHERE email = ? OR phone = ?')
+    .bind(user.email, user.email)
+    .first<{ email: string; full_name: string; status: string; phone?: string; auth_provider?: string }>();
 
   if (!row) {
     return c.json({ detail: 'User not found.' }, 404);

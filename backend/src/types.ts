@@ -12,6 +12,7 @@ export interface Env {
   JWT_SECRET?: string;
   PHANTOM_SECRET_TOKEN?: string;
   TURNSTILE_SECRET_KEY?: string;
+  FIREBASE_PROJECT_ID?: string;
 
   // Email Configuration
   EMAIL_PROVIDER?: 'dev' | 'webhook' | 'cloudflare';

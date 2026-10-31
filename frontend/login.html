@@ -13,21 +13,193 @@
   <meta name="apple-mobile-web-app-title" content="Alfaaz">
   <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
-  <title>Login — ALFAAZ Collective</title>
+  <title>Authentication — ALFAAZ Collective</title>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script src="https://cdn.tailwindcss.com" defer></script>
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
   
-  
   <script type="module" src="src/login.js"></script>
   <style>
-    .auth-card { width: 100%; max-width: 420px; padding: 4rem 3rem; margin: 8rem auto; position: relative; }
-    .auth-title { font-family: var(--font-heading); font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem; font-weight: 400; }
+    .auth-card { width: 100%; max-width: 420px; padding: 3.5rem 2.5rem; margin: 6rem auto; position: relative; }
+    .auth-title { font-family: var(--font-heading); font-size: 2.25rem; text-align: center; margin-bottom: 0.35rem; font-weight: 400; }
     .auth-title.ur-hover { display: flex; align-items: center; justify-content: center; }
     .auth-title.ur-hover::before { font-family: var(--font-urdu); font-size: 1.15em; color: var(--text-primary); top: 48%; }
-    .auth-subtitle { font-family: var(--font-body); font-size: 10px; color: var(--text-secondary); letter-spacing: 2px; text-align: center; margin-bottom: 3rem; text-transform: uppercase; }
-    .input-group { margin-bottom: 2rem; }
+    .auth-subtitle { font-family: var(--font-body); font-size: 10px; color: var(--text-secondary); letter-spacing: 2px; text-align: center; margin-bottom: 2rem; text-transform: uppercase; }
+
+    /* 50% / 50% Segmented Dual Toggle */
+    .auth-segmented-nav {
+      display: flex;
+      width: 100%;
+      border: 1px solid var(--grid-border);
+      border-radius: 6px;
+      background: rgba(45, 49, 46, 0.04);
+      padding: 3px;
+      margin-bottom: 2rem;
+    }
+    .auth-segmented-btn {
+      flex: 1 1 50%;
+      padding: 0.65rem 0;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.25s var(--transition-smooth);
+      text-align: center;
+    }
+    .auth-segmented-btn.active {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      font-weight: 600;
+    }
+    .auth-segmented-btn:hover:not(.active) {
+      color: var(--text-primary);
+    }
+
+    /* Primary Phone Number & OTP Section */
+    .phone-auth-section { margin-bottom: 1.5rem; }
+    .phone-field-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .country-prefix {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-secondary);
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--grid-border);
+      min-width: 44px;
+      text-align: center;
+    }
+    .otp-btn {
+      background: transparent;
+      border: 1px solid var(--grid-border);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 0.5rem 0.9rem;
+      border-radius: 3px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.25s ease;
+    }
+    .otp-btn:hover:not(:disabled) {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold-text);
+    }
+    .otp-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .otp-btn.primary {
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      border-color: var(--text-primary);
+    }
+    .otp-btn.primary:hover:not(:disabled) {
+      background: var(--accent-gold);
+      border-color: var(--accent-gold);
+      color: #fff;
+    }
+
+    /* Curatorial Luxury Social Buttons */
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      margin: 1.75rem 0 1.25rem;
+      gap: 12px;
+    }
+    .auth-divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--grid-border);
+    }
+    .auth-divider-text {
+      font-family: var(--font-body);
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .social-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 1.75rem;
+    }
+    .social-badge-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--grid-border);
+      color: var(--text-primary);
+      padding: 0.65rem 0.4rem;
+      border-radius: 4px;
+      font-family: var(--font-body);
+      font-size: 11px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .social-badge-btn:hover {
+      border-color: var(--text-primary);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .social-badge-btn svg {
+      flex-shrink: 0;
+    }
+
+    /* Secondary Email Accordion */
+    .email-accordion {
+      border-top: 1px solid var(--grid-border);
+      padding-top: 1.25rem;
+      margin-top: 1rem;
+    }
+    .email-accordion summary {
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      transition: color 0.2s ease;
+    }
+    .email-accordion summary::-webkit-details-marker {
+      display: none;
+    }
+    .email-accordion summary:hover {
+      color: var(--text-primary);
+    }
+    .email-accordion[open] summary {
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+    }
+    .email-accordion-arrow {
+      font-size: 12px;
+      transition: transform 0.25s ease;
+    }
+    .email-accordion[open] .email-accordion-arrow {
+      transform: rotate(180deg);
+    }
+
+    .input-group { margin-bottom: 1.5rem; }
     .auth-input { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; padding: 0.5rem 0; transition: border-color 0.3s ease; }
     .auth-input:focus { outline: none; border-bottom-color: var(--accent-gold); }
     .password-wrap { position: relative; }
@@ -36,7 +208,7 @@
     .toggle-pw:hover { color: var(--accent-gold); }
     .forgot-hint { font-size: 10px; color: var(--text-secondary); margin-top: 6px; opacity: 0; transform: translateY(-4px); transition: opacity 0.3s ease, transform 0.3s ease; }
     .forgot-hint.visible { opacity: 1; transform: translateY(0); }
-    .recovery-link { display: block; text-align: right; font-size: 10px; color: var(--text-secondary); text-decoration: none; margin-top: 0.5rem; margin-bottom: 2rem; transition: color 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }
+    .recovery-link { display: block; text-align: right; font-size: 10px; color: var(--text-secondary); text-decoration: none; margin-top: 0.5rem; margin-bottom: 1.5rem; transition: color 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }
     .recovery-link:hover { color: var(--accent-gold); }
     .toggle-auth { margin-top: 2rem; text-align: center; font-size: 11px; color: var(--text-secondary); }
     .toggle-auth a { color: var(--accent-gold-text); text-decoration: none; transition: color 0.3s ease; }
@@ -45,7 +217,7 @@
 </head>
 <body>
   
-    <nav id="navbar" style="justify-content: space-between;">
+  <nav id="navbar" style="justify-content: space-between;">
     <a href="index.html" class="logo ur-hover" data-ur="الفاظ">
       <span class="en-text">ALFAAZ</span>
     </a>
@@ -57,28 +229,114 @@
   </nav>
 
   <div class="auth-card panel">
-    <h1 class="auth-title ur-hover" data-ur="داخلہ">
-      <span class="en-text">Login</span>
+    <!-- Equal-sized 50%/50% Segmented Dual Toggle -->
+    <div class="auth-segmented-nav" role="tablist" aria-label="Authentication Mode">
+      <button type="button" id="tabLogin" class="auth-segmented-btn active" role="tab" aria-selected="true">Log In</button>
+      <button type="button" id="tabRegister" class="auth-segmented-btn" role="tab" aria-selected="false">Register</button>
+    </div>
+
+    <h1 class="auth-title ur-hover" data-ur="داخلہ" id="authTitle">
+      <span class="en-text" id="authTitleEn">Login</span>
     </h1>
-    <p class="auth-subtitle">Access your account</p>
-    <form id="authForm">
+    <p class="auth-subtitle" id="authSubtitle">Access your account</p>
+
+    <!-- 1. Primary Authentication: Mobile Phone & OTP -->
+    <div class="phone-auth-section">
       <div class="input-group">
-        <label class="input-label" for="email">Email Address</label>
-        <input type="email" id="email" class="auth-input" required autocomplete="email" spellcheck="false" autofocus>
+        <label class="input-label" for="phoneInput">Mobile Phone Number</label>
+        <div class="phone-field-row">
+          <span class="country-prefix">+91</span>
+          <input type="tel" id="phoneInput" class="auth-input" placeholder="9876543210" autocomplete="tel-national">
+          <button type="button" id="sendOtpBtn" class="otp-btn">Send OTP</button>
+        </div>
+        <div id="otpStatusHint" class="forgot-hint" role="status" aria-live="polite"></div>
       </div>
-      <div class="input-group">
-        <label class="input-label" for="password">Password</label>
-        <div class="password-wrap">
-          <input type="password" id="password" class="auth-input" required autocomplete="current-password">
-          <button type="button" class="toggle-pw" id="togglePw" tabindex="-1">show</button>
+
+      <div id="otpVerificationGroup" class="input-group" style="display: none;">
+        <label class="input-label" for="otpCode">6-Digit SMS Verification Code</label>
+        <div class="phone-field-row">
+          <input type="text" id="otpCode" class="auth-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="123456" autocomplete="one-time-code">
+          <button type="button" id="verifyOtpBtn" class="otp-btn primary">Verify</button>
         </div>
       </div>
-      <a href="#" id="forgotBtn" class="recovery-link">Lost Password?</a>
-      <div class="forgot-hint" id="forgotHint" role="status" aria-live="polite">↑ Enter your email above, then click "Lost Password?"</div>
-      <div id="loginTurnstile" style="margin-top: 1rem; margin-bottom: 1rem; display: flex; justify-content: center;"></div>
-      <button type="submit" class="submit-btn" style="width: 100%;">Log In</button>
-    </form>
-    <div class="toggle-auth">New to the collective? <a href="register.html">Register here</a></div>
+    </div>
+
+    <!-- Security Gatekeeper: Cloudflare Turnstile -->
+    <div id="loginTurnstile" style="margin-top: 1rem; margin-bottom: 1.25rem; display: flex; justify-content: center;"></div>
+    <!-- Invisible recaptcha container for Firebase Phone Auth -->
+    <div id="recaptcha-container"></div>
+
+    <!-- 2. One-Tap Social Providers (Google, Apple, Meta) -->
+    <div class="auth-divider">
+      <span class="auth-divider-line"></span>
+      <span class="auth-divider-text">or continue with</span>
+      <span class="auth-divider-line"></span>
+    </div>
+
+    <div class="social-buttons-grid">
+      <button type="button" id="btnGoogleAuth" class="social-badge-btn" aria-label="Sign in with Google">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/>
+        </svg>
+        <span>Google</span>
+      </button>
+
+      <button type="button" id="btnAppleAuth" class="social-badge-btn" aria-label="Sign in with Apple">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.45c.61-.75 1.04-1.8 1.01-2.85-.94.04-2.05.63-2.7 1.39-.56.66-1.06 1.73-.93 2.76 1.05.08 2.06-.55 2.62-1.3z"/>
+        </svg>
+        <span>Apple</span>
+      </button>
+
+      <button type="button" id="btnMetaAuth" class="social-badge-btn" aria-label="Sign in with Meta">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+        <span>Meta</span>
+      </button>
+    </div>
+
+    <!-- 3. Secondary Traditional Email & Password (Accordion) -->
+    <details class="email-accordion" id="emailAccordion">
+      <summary>
+        <span id="accordionSummaryText">Or use email &amp; password</span>
+        <span class="email-accordion-arrow">↓</span>
+      </summary>
+
+      <form id="authForm" style="margin-top: 1.25rem;">
+        <div id="displayNameGroup" class="input-group" style="display: none;">
+          <label class="input-label" for="regFullName">Full Name <span style="color:var(--text-secondary); text-transform:lowercase;">(optional)</span></label>
+          <input type="text" id="regFullName" class="auth-input" autocomplete="name" spellcheck="false" placeholder="e.g. Agha Shahid">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="email">Email Address</label>
+          <input type="email" id="email" class="auth-input" autocomplete="email" spellcheck="false">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="password">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="password" class="auth-input" autocomplete="current-password">
+            <button type="button" class="toggle-pw" id="togglePw" tabindex="-1">show</button>
+          </div>
+        </div>
+
+        <div id="confirmPasswordGroup" class="input-group" style="display: none;">
+          <label class="input-label" for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" class="auth-input" autocomplete="new-password">
+        </div>
+
+        <a href="#" id="forgotBtn" class="recovery-link">Lost Password?</a>
+        <div class="forgot-hint" id="forgotHint" role="status" aria-live="polite">↑ Enter your email above, then click "Lost Password?"</div>
+        
+        <button type="submit" class="submit-btn" id="submitBtn" style="width: 100%;">Log In</button>
+      </form>
+    </details>
+
+    <div class="toggle-auth" id="toggleAuthFooter">
+      <span id="footerText">New to the collective?</span> <a href="#" id="footerActionLink">Register here</a>
+    </div>
   </div>
 
 </body>

@@ -7,10 +7,22 @@ import * as path from 'node:path';
 export function createMockD1(schemaPath?: string, seedPath?: string) {
   const sqlite = new DatabaseSync(':memory:');
 
-  const defaultSchemaPath = schemaPath || path.resolve(process.cwd(), 'database/migrations/0001_initial_schema.sql');
-  if (fs.existsSync(defaultSchemaPath)) {
-    const schemaSql = fs.readFileSync(defaultSchemaPath, 'utf8');
-    sqlite.exec(schemaSql);
+  if (schemaPath) {
+    if (fs.existsSync(schemaPath)) {
+      const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+      sqlite.exec(schemaSql);
+    }
+  } else {
+    const migrationsDir = path.resolve(process.cwd(), 'database/migrations');
+    if (fs.existsSync(migrationsDir)) {
+      const migrationFiles = fs.readdirSync(migrationsDir)
+        .filter((file) => file.endsWith('.sql'))
+        .sort();
+      for (const file of migrationFiles) {
+        const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+        sqlite.exec(sql);
+      }
+    }
   }
 
   const defaultSeedPath = seedPath || path.resolve(process.cwd(), 'database/seeds/0001_dev_seed.sql');
