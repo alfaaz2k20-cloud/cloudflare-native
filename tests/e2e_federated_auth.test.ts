@@ -1662,5 +1662,73 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       const subData = await subsequentLoginRes.json();
       expect(subData.token).toBeDefined();
     });
+
+    it('T4_S18: Turnstile Bottom Placement & Form Validation Flow Invariants', async () => {
+      const loginHtml = fs.readFileSync(path.resolve(process.cwd(), 'frontend/login.html'), 'utf8');
+      const registerHtml = fs.readFileSync(path.resolve(process.cwd(), 'frontend/register.html'), 'utf8');
+      const loginJs = fs.readFileSync(path.resolve(process.cwd(), 'frontend/src/login.js'), 'utf8');
+
+      // 1. Explicit Turnstile API script present in head of both pages
+      expect(loginHtml).toContain('https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit');
+      expect(registerHtml).toContain('https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit');
+
+      // 2. Verified placement at the bottom of the form directly before submit button
+      const loginFormMatch = loginHtml.match(/<form id="authForm">([\s\S]*?)<\/form>/);
+      expect(loginFormMatch).toBeTruthy();
+      const loginFormContent = loginFormMatch![1];
+      const turnstileIdx = loginFormContent.indexOf('id="loginTurnstile"');
+      const submitBtnIdx = loginFormContent.indexOf('id="submitBtn"');
+      expect(turnstileIdx).toBeGreaterThan(0);
+      expect(submitBtnIdx).toBeGreaterThan(turnstileIdx); // Directly before submit button
+
+      const regFormMatch = registerHtml.match(/<form id="authForm">([\s\S]*?)<\/form>/);
+      expect(regFormMatch).toBeTruthy();
+      const regFormContent = regFormMatch![1];
+      const regTurnstileIdx = regFormContent.indexOf('id="loginTurnstile"');
+      const regSubmitBtnIdx = regFormContent.indexOf('id="submitBtn"');
+      expect(regTurnstileIdx).toBeGreaterThan(0);
+      expect(regSubmitBtnIdx).toBeGreaterThan(regTurnstileIdx);
+
+      // 3. Client checks turnstileToken before dispatch and resets on error
+      expect(loginJs).toMatch(/if\s*\(!turnstileToken\s*&&\s*window\.turnstile/);
+      expect(loginJs).toMatch(/window\.turnstile\.reset\(\)/);
+
+      // 4. Backend registration flow strictly rejects missing token with 403
+      const enforcedEnv = getTestEnv({
+        ENV: 'production',
+        TURNSTILE_SECRET_KEY: '0x4AAAAAAtest_enforced_turnstile_secret'
+      });
+
+      const regFailRes = await app.request('/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.99' },
+        body: JSON.stringify({
+          email: 'turnstile_test@alfaaz.local',
+          password: 'Password123!',
+          full_name: 'Turnstile Candidate',
+          phone: '+919876543299'
+          // No turnstile_token
+        })
+      }, enforcedEnv);
+
+      expect(regFailRes.status).toBe(403);
+      const regFailData = await regFailRes.json();
+      expect(regFailData.detail || regFailData.error).toMatch(/Turnstile/i);
+
+      // 5. Backend login flow strictly rejects missing token with 403
+      const loginFailRes = await app.request('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.99' },
+        body: JSON.stringify({
+          email: 'turnstile_test@alfaaz.local',
+          password: 'Password123!'
+          // No turnstile_token
+        })
+      }, enforcedEnv);
+
+      expect(loginFailRes.status).toBe(403);
+      const loginFailData = await loginFailRes.json();
+      expect(loginFailData.detail || loginFailData.error).toMatch(/Turnstile/i);
+    });
   });
 });

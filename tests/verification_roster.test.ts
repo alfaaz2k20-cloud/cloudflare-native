@@ -442,6 +442,107 @@ describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite',
       expect(poetEntry.fees[0].payment_proof_url).toBe('https://example.com/receipt.jpg');
       expect(poetEntry.fees[0].payment_confirmed_at).not.toBeNull();
     });
+
+    it('R_04: GET /admin/users tracks participant every step (chronological timeline, vault submissions, stats) without recruitment leak', async () => {
+      const adminEmail = 'super_curator@alfaaz.local';
+      await mockDb.prepare('INSERT INTO users (email, password, full_name, status, email_verified, phone_verified) VALUES (?, ?, ?, ?, 1, 1)')
+        .bind(adminEmail, await hashPassword('AdminPass123!'), 'Super Curator', 'ADMIN')
+        .run();
+      const adminToken = await createToken({ email: adminEmail, status: 'ADMIN' }, jwtSecret);
+
+      const candidateEmail = 'candidate_step_tracker@alfaaz.local';
+      const candidatePhone = '+919876543210';
+      await mockDb.prepare('INSERT INTO users (email, phone, full_name, status, auth_provider, email_verified, phone_verified) VALUES (?, ?, ?, ?, ?, 1, 1)')
+        .bind(candidateEmail, candidatePhone, 'Step Tracker Participant', 'PARTICIPANT', 'google')
+        .run();
+
+      // Seed Storage Vault Submission
+      await mockDb.prepare(`
+        INSERT INTO submissions (submission_type, title, file_url, note, author_email)
+        VALUES ('audio', 'Chinar Breeze Recitation', 'https://storage.alfaaz.org/vault/recitation.mp3', 'Recorded at sunset', ?)
+      `)
+        .bind(candidateEmail)
+        .run();
+
+      // Seed Event RSVP
+      await mockDb.prepare('INSERT INTO events (id, name, description, event_date, registration_open) VALUES (?, ?, ?, ?, 1)')
+        .bind(992, 'Autumn Ghazal Evening', 'Outdoor reading', '2026-11-20')
+        .run();
+      await mockDb.prepare('INSERT INTO event_registrations (event_id, user_email, whatsapp_number) VALUES (?, ?, ?)')
+        .bind(992, candidateEmail, candidatePhone)
+        .run();
+
+      // Seed Circle Application
+      await mockDb.prepare('INSERT INTO club_applications (user_email, club_name, note, status, admin_note) VALUES (?, ?, ?, ?, ?)')
+        .bind(candidateEmail, 'Calligraphy Circle', 'Practicing Nastaliq for 3 years', 'APPROVED', 'Welcome!')
+        .run();
+
+      // Seed Exhibition Application with terms and payment proof
+      await mockDb.prepare('INSERT INTO exhibitions_list (id, title, registration_fee, is_active) VALUES (?, ?, ?, 1)')
+        .bind(882, 'Kaamil IV', '₹600')
+        .run();
+      await mockDb.prepare(`
+        INSERT INTO exhibition_applications 
+          (user_email, exhibition_cycle, full_name, age, address, whatsapp, genre, medium, portfolio_url, status, registration_status, agreed_to_tnc, payment_proof_url, participant_note_reg, payment_confirmed_at)
+        VALUES 
+          (?, 'Kaamil IV', 'Step Tracker Participant', 22, 'Srinagar', ?, 'Visual', 'Ink on Wasli', 'https://example.com/portfolio.pdf', 'APPROVED', 'CONFIRMED', 1, 'https://example.com/fee_receipt.jpg', 'Transferred via UPI', CURRENT_TIMESTAMP)
+      `)
+        .bind(candidateEmail, candidatePhone)
+        .run();
+
+      // Seed unrelated recruitment session in recruit_sessions and applicant_identities
+      // (must NOT be leaked in /admin/users roster)
+      const testSessionId = 'test-session-recruitment-123';
+      await mockDb.prepare(`
+        INSERT INTO recruit_sessions (session_id, status, current_screen) VALUES (?, 'COMPLETE', 'complete')
+      `).bind(testSessionId).run();
+      await mockDb.prepare(`
+        INSERT INTO applicant_identities (session_id, full_name, email, phone_or_contact) VALUES (?, 'Step Tracker Participant', ?, ?)
+      `).bind(testSessionId, candidateEmail, candidatePhone).run();
+
+      const res = await app.request('/admin/users', {
+        headers: { 'Authorization': `Bearer ${adminToken}` }
+      }, getTestEnv());
+
+      expect(res.status).toBe(200);
+      const roster = await res.json();
+      const entry = roster.find((u: any) => u.email === candidateEmail);
+      expect(entry).toBeDefined();
+
+      // 1. Storage Vault Submissions wired
+      expect(entry.submissions).toHaveLength(1);
+      expect(entry.submissions[0].title).toBe('Chinar Breeze Recitation');
+      expect(entry.submissions[0].submission_type).toBe('audio');
+      expect(entry.submissions[0].file_url).toBe('https://storage.alfaaz.org/vault/recitation.mp3');
+
+      // 2. Timeline step-by-step provenance
+      expect(Array.isArray(entry.timeline)).toBe(true);
+      expect(entry.timeline.length).toBeGreaterThanOrEqual(6);
+
+      const stepTypes = entry.timeline.map((s: any) => s.step_type);
+      expect(stepTypes).toContain('ACCOUNT_CREATED');
+      expect(stepTypes).toContain('EMAIL_VERIFIED');
+      expect(stepTypes).toContain('PHONE_VERIFIED');
+      expect(stepTypes).toContain('EVENT_RSVP');
+      expect(stepTypes).toContain('CLUB_APPLICATION');
+      expect(stepTypes).toContain('EXHIBITION_SUBMISSION');
+      expect(stepTypes).toContain('EXHIBITION_PAYMENT_PROOF');
+      expect(stepTypes).toContain('EXHIBITION_PAYMENT_CONFIRMED');
+      expect(stepTypes).toContain('VAULT_SUBMISSION');
+
+      // 3. Stats verified
+      expect(entry.stats).toBeDefined();
+      expect(entry.stats.submissions_count).toBe(1);
+      expect(entry.stats.clubs_count).toBe(1);
+      expect(entry.stats.events_count).toBe(1);
+      expect(entry.stats.exhibitions_count).toBe(1);
+      expect(entry.stats.total_steps).toBe(entry.timeline.length);
+
+      // 4. Invariant: Recruitment sessions are strictly NOT in the collective roster
+      expect(entry.recruit_sessions).toBeUndefined();
+      expect(entry.session_id).toBeUndefined();
+      expect(entry.sjt_responses).toBeUndefined();
+    });
   });
 
   describe('Part 5: Geographic SMS Routing & International Candidate Onboarding', () => {

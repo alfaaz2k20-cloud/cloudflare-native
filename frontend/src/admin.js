@@ -442,9 +442,11 @@ document.addEventListener('DOMContentLoaded', () => {
  window.reviewClub = async function(id, status, btn) { const note = status === 'REJECTED' ? prompt('Note:') : null; btn.textContent = '...'; const res = await window.globalApiFetch('/admin/club-applications/review', { method: 'POST', body: JSON.stringify({ application_id: id, status, admin_note: note }) }); if (res && res.ok) window.loadClubs('ALL'); };
  window.revertClub = async function(id, btn) { if (!confirm('Undo rejection?')) return; btn.textContent = '...'; btn.disabled = true; const res = await window.globalApiFetch(`/admin/club-applications/${id}/revert`, { method: 'PATCH' }); if (res && res.ok) { window.loadClubs('ALL'); window.filterClubs('ALL'); } };
 
- // ========================================= // ==========================================
- // ROSTER LOGIC & ACTIVITY LEDGER
  // ==========================================
+ // ROSTER LOGIC & COMPREHENSIVE PARTICIPANT TRACKER
+ // ==========================================
+ let allRosterUsers = [];
+
  window.toggleActivityDrawer = function(index) {
    const drawer = document.getElementById('drawer-' + index);
    const btn = document.getElementById('drawer-btn-' + index);
@@ -452,49 +454,135 @@ document.addEventListener('DOMContentLoaded', () => {
    const isOpen = drawer.classList.contains('open');
    if (isOpen) {
      drawer.classList.remove('open');
-     if (btn) btn.textContent = 'Activity Ledger ▾';
+     if (btn) btn.textContent = btn.getAttribute('data-closed-text') || 'Participant Journey ▾';
    } else {
      drawer.classList.add('open');
-     if (btn) btn.textContent = 'Activity Ledger ▴';
+     if (btn) btn.textContent = btn.getAttribute('data-open-text') || 'Participant Journey ▴';
    }
  };
 
  window.loadRoster = async function() {
    const container = document.getElementById('rosterContainer');
-   const res = await window.globalApiFetch('/admin/users');
-   if (!res) return;
-   const users = await res.json();
+   if (!container) return;
+   container.innerHTML = '<div class="empty-state">Loading participant roster...</div>';
+   try {
+     const res = await window.globalApiFetch('/admin/users');
+     if (!res) return;
+     allRosterUsers = await res.json();
+     window.filterRoster();
+   } catch (e) {
+     container.innerHTML = `<div class="empty-state">Error loading roster: ${window.escapeHtml(e.message)}</div>`;
+   }
+ };
+
+ window.filterRoster = function() {
+   const searchInput = document.getElementById('rosterSearchInput');
+   const actFilter = document.getElementById('rosterActivityFilter');
+   const roleFilter = document.getElementById('rosterRoleFilter');
+   const countBadge = document.getElementById('rosterCountBadge');
+
+   const query = (searchInput?.value || '').toLowerCase().trim();
+   const act = actFilter?.value || 'ALL';
+   const role = roleFilter?.value || 'ALL';
+
+   const filtered = allRosterUsers.filter(u => {
+     // Role filter
+     if (role !== 'ALL' && u.status !== role) return false;
+
+     // Participation filter
+     if (act === 'WITH_EXHIBITIONS' && (!u.exhibitions || u.exhibitions.length === 0)) return false;
+     if (act === 'WITH_CLUBS' && (!u.clubs || u.clubs.length === 0)) return false;
+     if (act === 'WITH_EVENTS' && (!u.events || u.events.length === 0)) return false;
+     if (act === 'WITH_SUBMISSIONS' && (!u.submissions || u.submissions.length === 0)) return false;
+     if (act === 'VERIFIED_ONLY' && !(u.email_verified || u.phone_verified)) return false;
+
+     // Search query
+     if (query) {
+       const nameMatch = (u.full_name || '').toLowerCase().includes(query);
+       const emailMatch = (u.email || '').toLowerCase().includes(query);
+       const phoneMatch = (u.phone || '').toLowerCase().includes(query);
+       const provMatch = (u.auth_provider || '').toLowerCase().includes(query);
+       return nameMatch || emailMatch || phoneMatch || provMatch;
+     }
+
+     return true;
+   });
+
+   if (countBadge) {
+     countBadge.textContent = `Showing ${filtered.length} of ${allRosterUsers.length} Participants`;
+   }
+
+   window.renderRoster(filtered);
+ };
+
+ window.renderRoster = function(users) {
+   const container = document.getElementById('rosterContainer');
+   if (!container) return;
    container.innerHTML = '';
+
    if (!users.length) {
-     container.innerHTML = '<div class="empty-state">No users registered yet.</div>';
+     container.innerHTML = '<div class="empty-state">No matching participants found in collective roster.</div>';
      return;
    }
+
    users.forEach((u, i) => {
      const card = document.createElement('div');
      card.className = 'roster-card';
      const safeEmail = window.escapeHtml(u.email || '-');
-     const safePhone = window.escapeHtml(u.phone || '-');
+     const safePhone = window.escapeHtml(u.phone || 'No Phone');
      const safeName = window.escapeHtml(u.full_name || 'Member');
      const safeProvider = window.escapeHtml(u.auth_provider || 'email');
-     const isSelf = u.email === user.email;
+     const isSelf = user && u.email === user.email;
 
      const emailBadge = u.email_verified
        ? '<span class="badge badge-verified">✓ Email</span>'
        : '<span class="badge badge-unverified">Email Pending</span>';
 
      const phoneBadge = u.phone_verified
-       ? '<span class="badge badge-verified">✓ Phone</span>'
-       : (u.phone ? '<span class="badge badge-unverified">Phone Pending</span>' : '<span class="badge badge-closed">No Phone</span>');
+       ? '<span class="badge badge-verified">✓ WhatsApp</span>'
+       : (u.phone ? '<span class="badge badge-unverified">WhatsApp Pending</span>' : '<span class="badge badge-closed">No Phone</span>');
 
      const deleteBtn = (isSelf || u.status === 'ADMIN') ? '' : `
        <button class="action-btn" style="border-color: var(--accent-red); color: var(--accent-red-text); padding:0.6rem 0.8rem; font-size:9px;" data-email="${safeEmail}" onclick="deleteUser(this.getAttribute('data-email'), this)">Purge</button>
      `;
 
+     // 1. Chronological Timeline Steps
+     let timelineHtml = '<div class="activity-empty">No participant steps recorded yet.</div>';
+     if (u.timeline && u.timeline.length) {
+       timelineHtml = u.timeline.map((step) => {
+         const safeTitle = window.escapeHtml(step.title);
+         const safeDetails = window.escapeHtml(step.details || '');
+         const safeTime = step.timestamp ? new Date(step.timestamp).toLocaleString(undefined, {
+           month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+         }) : 'Date TBD';
+         const linkBtn = step.link ? `<a href="${window.escapeHtml(step.link)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:2px 8px; font-size:9px; text-decoration:none;">View ↗</a>` : '';
+         const badgeClass = step.status === 'CONFIRMED' || step.status === 'VERIFIED' || step.status === 'APPROVED' || step.status === 'ACCEPTED'
+           ? 'badge-approved'
+           : (step.status === 'REJECTED' ? 'badge-rejected' : 'badge-pending');
+         return `
+           <div class="timeline-step cat-${window.escapeHtml(step.category || 'AUTH')}">
+             <div class="timeline-time">${safeTime}</div>
+             <div class="timeline-content">
+               <div class="timeline-heading">${safeTitle}</div>
+               <div class="timeline-desc">${safeDetails}</div>
+             </div>
+             <div style="display:flex; gap:0.4rem; align-items:center;">
+               <span class="badge ${badgeClass}">${window.escapeHtml(step.status)}</span>
+               ${linkBtn}
+             </div>
+           </div>
+         `;
+       }).join('');
+     }
+
+     // 2. Circles & Clubs
      let clubsHtml = '<div class="activity-empty">No club applications on record.</div>';
      if (u.clubs && u.clubs.length) {
        clubsHtml = u.clubs.map(c => `
          <div class="activity-item">
            <div style="font-weight: 500;">${window.escapeHtml(c.club_name)}</div>
+           ${c.note ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">"${window.escapeHtml(c.note)}"</div>` : ''}
+           ${c.admin_note ? `<div style="font-size:10px; color:var(--accent-gold-text); margin-top:2px;">Curator: "${window.escapeHtml(c.admin_note)}"</div>` : ''}
            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
              <span class="badge badge-${(c.status || '').toLowerCase()}">${window.escapeHtml(c.status)}</span>
              <span style="font-size:10px; color:var(--text-secondary);">${window.escapeHtml(c.created_at ? c.created_at.slice(0, 10) : '')}</span>
@@ -503,39 +591,53 @@ document.addEventListener('DOMContentLoaded', () => {
        `).join('');
      }
 
+     // 3. Event RSVPs
      let eventsHtml = '<div class="activity-empty">No event registrations on record.</div>';
      if (u.events && u.events.length) {
        eventsHtml = u.events.map(e => `
          <div class="activity-item">
            <div style="font-weight: 500;">${window.escapeHtml(e.event_name)}</div>
            <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Date: ${window.escapeHtml(e.event_date || 'TBD')}</div>
+           ${e.whatsapp_number ? `<div style="font-size:10px; color:var(--text-secondary);">WA: ${window.escapeHtml(e.whatsapp_number)}</div>` : ''}
+           <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">RSVP: ${window.escapeHtml(e.created_at ? e.created_at.slice(0, 10) : '')}</div>
          </div>
        `).join('');
      }
 
+     // 4. Exhibitions
      let exhibitionsHtml = '<div class="activity-empty">No exhibition cycles on record.</div>';
      if (u.exhibitions && u.exhibitions.length) {
-       exhibitionsHtml = u.exhibitions.map(x => `
-         <div class="activity-item">
-           <div style="font-weight: 500;">${window.escapeHtml(x.exhibition_cycle || 'Cycle')}</div>
-           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-             <span class="badge badge-${(x.status || '').toLowerCase()}">Review: ${window.escapeHtml(x.status)}</span>
-             <span style="font-size:10px; color:var(--text-secondary);">Reg: ${window.escapeHtml(x.registration_status || 'NONE')}</span>
+       exhibitionsHtml = u.exhibitions.map(x => {
+         const portfolioBtn = x.portfolio_url ? `<a href="${window.escapeHtml(x.portfolio_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent-gold); font-size:10px; text-decoration:underline;">Portfolio ↗</a>` : '';
+         return `
+           <div class="activity-item">
+             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+               <div style="font-weight: 500;">${window.escapeHtml(x.exhibition_cycle || 'Cycle')}</div>
+               ${portfolioBtn}
+             </div>
+             <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Genre: ${window.escapeHtml(x.genre || '—')} · ${window.escapeHtml(x.medium || '—')}</div>
+             ${x.curator_note ? `<div style="font-size:10px; color:var(--accent-gold-text); margin-top:2px;">Review: "${window.escapeHtml(x.curator_note)}"</div>` : ''}
+             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+               <span class="badge badge-${(x.status || '').toLowerCase()}">Review: ${window.escapeHtml(x.status)}</span>
+               <span style="font-size:10px; color:var(--text-secondary);">Reg: ${window.escapeHtml(x.registration_status || 'NONE')}</span>
+             </div>
            </div>
-         </div>
-       `).join('');
+         `;
+       }).join('');
      }
 
+     // 5. Fee Ledger
      let feesHtml = '<div class="activity-empty">No exhibition fee records.</div>';
      if (u.fees && u.fees.length) {
        feesHtml = u.fees.map(f => {
-         const proofLink = f.payment_proof_url ? `<a href="${window.escapeHtml(f.payment_proof_url)}" target="_blank" rel="noopener" style="color:var(--accent-gold); text-decoration:underline; font-size:11px;">Proof ↗</a>` : '<span style="color:var(--text-secondary); font-size:11px;">No Proof</span>';
+         const proofLink = f.payment_proof_url ? `<a href="${window.escapeHtml(f.payment_proof_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent-gold); text-decoration:underline; font-size:11px;">Proof ↗</a>` : '<span style="color:var(--text-secondary); font-size:11px;">No Proof</span>';
          return `
            <div class="activity-item">
              <div style="display:flex; justify-content:space-between;">
                <span style="font-weight:500;">${window.escapeHtml(f.exhibition_cycle)}</span>
                <span style="font-size:11px;">${window.escapeHtml(f.registration_fee)}</span>
              </div>
+             ${f.participant_note_reg ? `<div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Note: "${window.escapeHtml(f.participant_note_reg)}"</div>` : ''}
              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
                <span class="badge ${f.registration_status === 'CONFIRMED' ? 'badge-approved' : 'badge-pending'}">${window.escapeHtml(f.registration_status)}</span>
                ${proofLink}
@@ -544,6 +646,29 @@ document.addEventListener('DOMContentLoaded', () => {
          `;
        }).join('');
      }
+
+     // 6. Vault Submissions
+     let submissionsHtml = '<div class="activity-empty">No storage vault works uploaded.</div>';
+     if (u.submissions && u.submissions.length) {
+       submissionsHtml = u.submissions.map(s => {
+         const fileLink = s.file_url ? `<a href="${window.escapeHtml(s.file_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent-gold); text-decoration:underline; font-size:11px;">File ↗</a>` : '';
+         return `
+           <div class="activity-item">
+             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+               <div style="font-weight: 500;">${window.escapeHtml(s.title || 'Untitled')}</div>
+               ${fileLink}
+             </div>
+             <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Type: <span class="badge badge-closed">${window.escapeHtml(s.submission_type || 'work')}</span></div>
+             ${s.note ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">"${window.escapeHtml(s.note)}"</div>` : ''}
+             <div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">Uploaded: ${window.escapeHtml(s.created_at ? s.created_at.slice(0, 10) : '')}</div>
+           </div>
+         `;
+       }).join('');
+     }
+
+     const totalSteps = u.stats?.total_steps || (u.timeline ? u.timeline.length : 0);
+     const closedBtnText = `Participant Journey (${totalSteps} Steps) ▾`;
+     const openBtnText = `Participant Journey (${totalSteps} Steps) ▴`;
 
      card.innerHTML = `
        <div class="roster-header">
@@ -555,6 +680,13 @@ document.addEventListener('DOMContentLoaded', () => {
              ${emailBadge}
              ${phoneBadge}
              <span class="badge badge-closed">${safeProvider}</span>
+           </div>
+           <div style="display: flex; gap: 0.4rem; margin-top: 0.6rem; flex-wrap: wrap;">
+             <span class="stat-pill"><strong>${totalSteps}</strong> Steps</span>
+             <span class="stat-pill"><strong>${u.events?.length || 0}</strong> Events</span>
+             <span class="stat-pill"><strong>${u.clubs?.length || 0}</strong> Circles</span>
+             <span class="stat-pill"><strong>${u.exhibitions?.length || 0}</strong> Exhibitions</span>
+             <span class="stat-pill"><strong>${u.submissions?.length || 0}</strong> Vault</span>
            </div>
          </div>
          <div>
@@ -569,26 +701,40 @@ document.addEventListener('DOMContentLoaded', () => {
              <button class="action-btn gold" style="padding:0.6rem 0.8rem; font-size:9px; flex:1;" data-email="${safeEmail}" onclick="updateStatus(this.getAttribute('data-email'), ${i}, this)">Save Role</button>
              ${deleteBtn}
            </div>
-           <button class="activity-toggle-btn" id="drawer-btn-${i}" onclick="toggleActivityDrawer(${i})">Activity Ledger ▾</button>
+           <button class="activity-toggle-btn" id="drawer-btn-${i}" data-closed-text="${closedBtnText}" data-open-text="${openBtnText}" onclick="toggleActivityDrawer(${i})">${closedBtnText}</button>
          </div>
        </div>
        <div class="activity-drawer" id="drawer-${i}">
+         <div class="timeline-wrap">
+           <div class="timeline-title">
+             <span>Participant Lifecycle & Provenance Timeline</span>
+             <span style="font-size: 10px; color: var(--text-secondary);">${totalSteps} Chronological Steps Recorded</span>
+           </div>
+           <div class="timeline-list">
+             ${timelineHtml}
+           </div>
+         </div>
+
          <div class="activity-grid">
            <div>
-             <div class="activity-col-title">Circles & Clubs</div>
+             <div class="activity-col-title">Circles & Clubs (${u.clubs?.length || 0})</div>
              ${clubsHtml}
            </div>
            <div>
-             <div class="activity-col-title">Event RSVPs</div>
+             <div class="activity-col-title">Event RSVPs (${u.events?.length || 0})</div>
              ${eventsHtml}
            </div>
            <div>
-             <div class="activity-col-title">Exhibitions</div>
+             <div class="activity-col-title">Exhibitions (${u.exhibitions?.length || 0})</div>
              ${exhibitionsHtml}
            </div>
            <div>
-             <div class="activity-col-title">Fee Ledger</div>
+             <div class="activity-col-title">Fee Ledger (${u.fees?.length || 0})</div>
              ${feesHtml}
+           </div>
+           <div>
+             <div class="activity-col-title">Storage Vault Works (${u.submissions?.length || 0})</div>
+             ${submissionsHtml}
            </div>
          </div>
        </div>
@@ -597,7 +743,6 @@ document.addEventListener('DOMContentLoaded', () => {
    });
    if (window.refreshGlobalEffects) window.refreshGlobalEffects();
  };
-
  window.deleteUser = async function(email, btn) {
  if (!confirm(`Are you sure you want to completely purge user ${email}? This will delete all their registrations, submissions, and club applications.`)) {
  return;

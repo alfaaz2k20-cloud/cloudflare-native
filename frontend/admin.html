@@ -52,10 +52,28 @@
     .activity-toggle-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
     .activity-drawer { border-top: 1px solid var(--grid-border); padding: 1.5rem 2rem; background: var(--bg-primary); display: none; }
     .activity-drawer.open { display: block; }
-    .activity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+    .activity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.5rem; }
     .activity-col-title { font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.8rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.3rem; }
     .activity-item { padding: 0.6rem 0; border-bottom: 1px dashed var(--grid-border); font-size: 12px; }
     .activity-empty { font-size: 11px; color: var(--text-secondary); font-style: italic; padding: 0.8rem 0; }
+    
+    .timeline-wrap { margin-bottom: 2rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 1.5rem; }
+    .timeline-title { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-gold-text); margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.5rem; }
+    .timeline-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .timeline-step { display: grid; grid-template-columns: 140px 1fr auto; gap: 1rem; align-items: start; padding: 0.8rem 1rem; background: var(--bg-primary); border-left: 3px solid var(--accent-gold); font-size: 12px; }
+    .timeline-step.cat-AUTH { border-left-color: #64748b; }
+    .timeline-step.cat-CONTACT { border-left-color: var(--accent-green); }
+    .timeline-step.cat-EVENT { border-left-color: #0284c7; }
+    .timeline-step.cat-CLUB { border-left-color: #9333ea; }
+    .timeline-step.cat-EXHIBITION { border-left-color: var(--accent-gold); }
+    .timeline-step.cat-PAYMENT { border-left-color: #16a34a; }
+    .timeline-step.cat-VAULT { border-left-color: #ea580c; }
+    .timeline-time { font-size: 10px; color: var(--text-secondary); font-family: var(--font-body); letter-spacing: 0.5px; }
+    .timeline-content { display: flex; flex-direction: column; gap: 2px; }
+    .timeline-heading { font-weight: 500; color: var(--text-primary); }
+    .timeline-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+    .stat-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--grid-border); border-radius: 2px; color: var(--text-secondary); background: var(--bg-primary); }
+    .stat-pill strong { color: var(--text-primary); }
     
     input, select, textarea { background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); padding: 0.8rem 0; width: 100%; font-family: var(--font-body); font-size: 13px; border-radius: 0; transition: border-color 0.3s; } input:focus, select:focus, textarea:focus { outline: none; border-bottom-color: var(--accent-gold); }
     
@@ -210,7 +228,39 @@
     </div>
     
     <div id="tab-roster" class="tab-panel">
-      <div class="section-title">Collective Roster</div>
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+        <div>Collective Roster</div>
+        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;" id="rosterCountBadge">Loading roster...</div>
+      </div>
+      
+      <div class="panel" style="padding: 1.5rem 2rem; margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1.5rem; align-items: center;">
+          <div>
+            <label class="data-label">Search Participant</label>
+            <input type="text" id="rosterSearchInput" placeholder="Filter by name, email, phone, or provider..." oninput="window.filterRoster()">
+          </div>
+          <div>
+            <label class="data-label">Filter By Participation</label>
+            <select id="rosterActivityFilter" onchange="window.filterRoster()" style="margin: 0; font-size: 12px;">
+              <option value="ALL">All Participants</option>
+              <option value="WITH_EXHIBITIONS">Has Exhibitions</option>
+              <option value="WITH_CLUBS">Has Club Applications</option>
+              <option value="WITH_EVENTS">Has Event RSVPs</option>
+              <option value="WITH_SUBMISSIONS">Has Vault Works</option>
+              <option value="VERIFIED_ONLY">Verified Contacts Only</option>
+            </select>
+          </div>
+          <div>
+            <label class="data-label">Role Filter</label>
+            <select id="rosterRoleFilter" onchange="window.filterRoster()" style="margin: 0; font-size: 12px;">
+              <option value="ALL">All Roles</option>
+              <option value="PARTICIPANT">Participants Only</option>
+              <option value="ADMIN">Admins Only</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div id="rosterContainer"><div class="empty-state">Loading roster...</div></div>
     </div>
 
