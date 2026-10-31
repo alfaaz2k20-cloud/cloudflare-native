@@ -1,10 +1,5 @@
-// login.js — Centralized Curatorial Auth Suite
-// Primary, working authentication with 50/50 dual toggle and honest, curated integration gating
-
-// ===== Module-scope Firebase Auth Suite (Phone OTP + One-Tap Social) =====
-let firebaseAuth = null;
-let recaptchaVerifier = null;
-let confirmationResult = null;
+// login.js — Centralized Sovereign Auth Suite
+// Primary Cloudflare-native authentication with 50/50 dual toggle and GIS One-Tap
 
 function normalizeE164Phone(raw, prefixInput = "+91") {
   if (!raw) return null;
@@ -19,23 +14,6 @@ function normalizeE164Phone(raw, prefixInput = "+91") {
   const prefix = prefixInput || "+91";
   const full = (prefix.startsWith("+") ? prefix : "+" + prefix) + digits;
   return /^\+[1-9]\d{6,14}$/.test(full) ? full : null;
-}
-
-function initFirebase() {
-  if (firebaseAuth) return firebaseAuth;
-  if (typeof window.firebase === 'undefined') return null;
-  const cfg = window.ALFAAZ_FIREBASE_CONFIG || {};
-  if (!cfg.apiKey || !cfg.appId) return null;
-  try {
-    if (!window.firebase.apps || window.firebase.apps.length === 0) {
-      window.firebase.initializeApp(cfg);
-    }
-    firebaseAuth = window.firebase.auth();
-  } catch (err) {
-    console.warn('Firebase init failed:', err);
-    firebaseAuth = null;
-  }
-  return firebaseAuth;
 }
 
 async function federatedLogin(idToken, provider) {
@@ -385,72 +363,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 8. Phone Authentication (Firebase Phone Auth) — registration + login in one flow
-  const phoneInput = document.getElementById('phoneInput');
-  const sendOtpBtn = document.getElementById('sendOtpBtn');
-  const phoneHint = document.getElementById('phoneHint');
-  const otpVerificationGroup = document.getElementById('otpVerificationGroup');
-  const otpCodeInput = document.getElementById('otpCode');
-  const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-
-  let phoneCooldownTimer = null;
-  function startPhoneCooldown(seconds) {
-    if (!sendOtpBtn) return;
-    sendOtpBtn.disabled = true;
-    let remaining = seconds;
-    sendOtpBtn.textContent = 'Resend (' + remaining + 's)';
-    if (phoneCooldownTimer) clearInterval(phoneCooldownTimer);
-    phoneCooldownTimer = setInterval(() => {
-      remaining -= 1;
-      if (remaining <= 0) {
-        clearInterval(phoneCooldownTimer);
-        phoneCooldownTimer = null;
-        sendOtpBtn.disabled = false;
-        sendOtpBtn.textContent = 'Send OTP';
-      } else {
-        sendOtpBtn.textContent = 'Resend (' + remaining + 's)';
-      }
-    }, 1000);
-  }
-
-  function setPhoneHint(message, isSuccess = false) {
-    if (!phoneHint) return;
-    phoneHint.textContent = (isSuccess ? '✓ ' : '✗ ') + message;
-    phoneHint.style.color = isSuccess ? 'var(--accent-green-text)' : 'var(--accent-red-text)';
-    phoneHint.classList.add('visible');
-  }
-
-  function highlightInternationalAlternatives() {
-    const socialGrid = document.querySelector(".social-buttons-grid");
-    const emailForm = document.getElementById("authForm");
-    if (socialGrid) {
-      socialGrid.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      socialGrid.style.transition = "outline 0.3s ease";
-      socialGrid.style.outline = "2px solid var(--accent-gold)";
-      setTimeout(() => { socialGrid.style.outline = "none"; }, 2500);
-    }
-    if (emailForm) {
-      emailForm.style.transition = "outline 0.3s ease";
-      emailForm.style.outline = "1px solid var(--accent-gold)";
-      setTimeout(() => { emailForm.style.outline = "none"; }, 2500);
-    }
-  }
-
-  function markAuthSuccess(flow = 'email') {
+  function markAuthSuccess() {
     if (submitBtn) {
       submitBtn.textContent = 'Welcome';
       submitBtn.style.background = 'var(--accent-gold)';
       submitBtn.style.color = '#fff';
       submitBtn.style.borderColor = 'var(--accent-gold)';
-    }
-    if (verifyOtpBtn && flow === 'phone') {
-      verifyOtpBtn.textContent = '✓ Welcome';
-      verifyOtpBtn.style.background = 'var(--accent-gold)';
-      verifyOtpBtn.style.borderColor = 'var(--accent-gold)';
-      verifyOtpBtn.style.color = '#fff';
-    }
-    if (flow === 'phone') {
-      setPhoneHint('Authenticated successfully. Redirecting...', true);
     }
     const authSub = document.getElementById('authSubtitle');
     if (authSub) {
@@ -459,217 +377,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  const countryPrefixEl = document.getElementById("countryPrefix");
-  countryPrefixEl?.addEventListener("change", () => {
-    const prefix = countryPrefixEl.value;
-    if (prefix === "+") {
-      phoneInput?.setAttribute("placeholder", "e.g. 14155552671 or +1...");
-    } else if (prefix === "+91") {
-      phoneInput?.setAttribute("placeholder", "9876543210");
-    } else {
-      phoneInput?.setAttribute("placeholder", "Mobile number");
-    }
-
-    if (prefix !== "+91") {
-      setPhoneHint("International candidate? Please use Google One-Tap or Email below for instant access.", false);
-      highlightInternationalAlternatives();
-    } else if (phoneHint) {
-      phoneHint.classList.remove("visible");
-    }
-  });
-
-  sendOtpBtn?.addEventListener('click', async () => {
-    const prefixEl = document.getElementById("countryPrefix");
-    const selectedPrefix = prefixEl ? prefixEl.value : "+91";
-    const phone = normalizeE164Phone(phoneInput?.value, selectedPrefix);
-    if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) {
-      setPhoneHint(selectedPrefix === "+" ? "Enter your country code and number (e.g. +14155552671)." : "Enter a valid mobile number (e.g. 9876543210).");
-      phoneInput?.focus();
-      return;
-    }
-
-    // Rule: Non-+91 international numbers go to Google One-Tap or Email + Code
-    if (!phone.startsWith("+91")) {
-      setPhoneHint("International candidate: please use Google One-Tap or Email + Code below for instant access.", false);
-      highlightInternationalAlternatives();
-      return;
-    }
-
-    // Turnstile gatekeeper check: ensure verification token is ready if widget loaded
-    if (!turnstileToken && window.turnstile && window.ALFAAZ_TURNSTILE_SITEKEY) {
-      setPhoneHint("Please complete the security verification below.", false);
-      const turnstileEl = document.getElementById("loginTurnstile");
-      if (turnstileEl) {
-        turnstileEl.scrollIntoView({ behavior: "smooth", block: "center" });
-        turnstileEl.style.transition = "outline 0.3s ease";
-        turnstileEl.style.outline = "2px solid var(--accent-gold)";
-        setTimeout(() => { turnstileEl.style.outline = "none"; }, 2500);
-      }
-      return;
-    }
-
-    sendOtpBtn.disabled = true;
-    const originalText = sendOtpBtn.textContent;
-    sendOtpBtn.textContent = "Sending...";
-
-    try {
-      // Edge gatekeeper: Turnstile + velocity (prevents SMS bombing at our boundary)
-      const gateRes = await fetch('/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, turnstile_token: turnstileToken })
-      });
-      const gateData = await gateRes.json().catch(() => ({}));
-      if (!gateRes.ok) {
-        const retry = gateData.retry_after;
-        setPhoneHint(retry ? ('Too many attempts. Try again in ' + retry + 's.') : (gateData.error || 'Unable to send code.'));
-        if (gateRes.status === 403) {
-          if (window.turnstile) { try { window.turnstile.reset(); turnstileToken = ''; } catch (_) {} }
-          setPhoneHint('Security challenge required. Please solve the verification below.', false);
-          const tEl = document.getElementById('loginTurnstile');
-          if (tEl) {
-            tEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            tEl.style.transition = 'outline 0.3s ease';
-            tEl.style.outline = '2px solid var(--accent-gold)';
-            setTimeout(() => { tEl.style.outline = 'none'; }, 2500);
-          }
-          sendOtpBtn.disabled = false;
-          sendOtpBtn.textContent = originalText;
-          return;
-        }
-        if (retry) startPhoneCooldown(retry);
-        else { sendOtpBtn.disabled = false; sendOtpBtn.textContent = originalText; }
-        return;
-      }
-
-      const auth = initFirebase();
-      if (!auth) {
-        throw new Error('Phone verification is not configured yet.');
-      }
-      if (!recaptchaVerifier) {
-        recaptchaVerifier = new window.firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
-      }
-      confirmationResult = await auth.signInWithPhoneNumber(phone, recaptchaVerifier);
-
-      if (window.turnstile) { try { window.turnstile.reset(); turnstileToken = ''; } catch (_) {} }
-      setPhoneHint('Code sent to ' + phone + '.', true);
-      if (otpVerificationGroup) otpVerificationGroup.style.display = 'block';
-      if (otpCodeInput) otpCodeInput.focus();
-      startPhoneCooldown(30);
-    } catch (err) {
-      const errCode = err && err.code;
-      let msg = (err && (err.message || err.code)) || 'Unable to send code.';
-      if (errCode === 'auth/unauthorized-domain') {
-        msg = 'Domain not authorized in Firebase. Add ' + window.location.hostname + ' to Firebase Auth settings.';
-      } else if (errCode === 'auth/operation-not-allowed') {
-        msg = 'Phone Auth is not enabled in Firebase Console. Enable it in Auth > Sign-in method.';
-      } else if (errCode === 'auth/invalid-app-credential') {
-        msg = 'Phone verification credential error. Check Firebase Phone Auth settings.';
-      }
-      setPhoneHint(msg);
-      sendOtpBtn.disabled = false;
-      sendOtpBtn.textContent = originalText;
-    }
-  });
-
-  verifyOtpBtn?.addEventListener('click', async () => {
-    const code = otpCodeInput?.value?.trim() || '';
-    if (!/^\d{6}$/.test(code)) {
-      setPhoneHint('Enter the 6-digit code from your SMS.');
-      otpCodeInput?.focus();
-      return;
-    }
-    if (!confirmationResult) {
-      setPhoneHint('Send a code first.');
-      return;
-    }
-
-    verifyOtpBtn.disabled = true;
-    verifyOtpBtn.textContent = 'Verifying...';
-    try {
-      const cred = await confirmationResult.confirm(code);
-      const idToken = await cred.user.getIdToken();
-      const data = await federatedLogin(idToken, 'phone');
-      markAuthSuccess('phone');
-      finalizeAuth(data, redirectTarget);
-    } catch (err) {
-      verifyOtpBtn.disabled = false;
-      verifyOtpBtn.textContent = 'Verify';
-      const errCode = err && err.code;
-      const msg = errCode === 'auth/invalid-verification-code' ? 'Invalid or expired code.' : ((err && err.message) || 'Verification failed.');
-      setPhoneHint(msg);
-    }
-  });
-
-  // 9. One-Tap Social Sign-In (Google / Apple / Meta)
-  async function handleSocialLogin(providerId) {
-    if (providerId === 'google' && !window.ALFAAZ_GOOGLE_CLIENT_ID && !window.ALFAAZ_FIREBASE_ENABLED) {
-      showSocialHint('Google Sign-In is awaiting Google OAuth Client ID. Please register with your Name, WhatsApp, Email & Password below.');
-      return;
-    }
-
-    const auth = initFirebase();
-    if (!auth) {
-      showSocialHint(providerId === 'google'
-        ? 'Google Sign-In is awaiting Google OAuth Client ID. Please register with your Name, WhatsApp, Email & Password below.'
-        : 'Social sign-in is not configured yet. Please use the form below.'
-      );
-      return;
-    }
-
-    let provider;
-    try {
-      if (providerId === 'google') provider = new window.firebase.auth.GoogleAuthProvider();
-      else if (providerId === 'apple') provider = new window.firebase.auth.OAuthProvider('apple.com');
-      else if (providerId === 'meta') provider = new window.firebase.auth.FacebookAuthProvider();
-      else throw new Error('Unknown provider');
-    } catch (err) {
-      showSocialHint('Social sign-in is not configured yet.');
-      return;
-    }
-
-    try {
-      const result = await auth.signInWithPopup(provider);
-      const idToken = await result.user.getIdToken();
-      const data = await federatedLogin(idToken, providerId);
-      markAuthSuccess('social');
-      finalizeAuth(data, redirectTarget);
-    } catch (err) {
-      const errCode = err && err.code;
-      if (errCode === 'auth/popup-closed-by-user' || errCode === 'auth/cancelled-popup-request') return;
-      if (errCode === 'auth/account-exists-with-different-credential') {
-        showSocialHint('An account already exists with this email. Please log in with that method.');
-      } else if (errCode === 'auth/unauthorized-domain') {
-        showSocialHint('Domain not authorized in Firebase. Add ' + window.location.hostname + ' to Firebase Auth settings, or use the form below.');
-      } else if (errCode === 'auth/operation-not-allowed') {
-        showSocialHint('Google Sign-in is not enabled in Firebase Console. Please register with the form below.');
-      } else {
-        showSocialHint((err && err.message) || 'Social sign-in failed. Please register with the form below.');
-      }
-    }
-  }
-
-  // 10. Native Google Identity Services (GIS) Integration
+  // Google Identity Services (GIS) Native Integration (Zero Firebase)
   function initGoogleIdentity() {
-    if (window.google?.accounts?.id && window.ALFAAZ_GOOGLE_CLIENT_ID) {
-      try {
-        window.google.accounts.id.initialize({
-          client_id: window.ALFAAZ_GOOGLE_CLIENT_ID,
-          callback: async (response) => {
-            if (response && response.credential) {
-              try {
-                const data = await federatedLogin(response.credential, 'google');
-                markAuthSuccess('social');
-                finalizeAuth(data, redirectTarget);
-              } catch (err) {
-                showSocialHint(err.message || 'Google authentication failed.');
+    const googleBtn = document.getElementById('btnGoogleAuth');
+    if (window.ALFAAZ_GOOGLE_CLIENT_ID) {
+      if (googleBtn) {
+        googleBtn.classList.remove('gated');
+        googleBtn.removeAttribute('title');
+      }
+      if (window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: window.ALFAAZ_GOOGLE_CLIENT_ID,
+            callback: async (response) => {
+              if (response && response.credential) {
+                try {
+                  const data = await federatedLogin(response.credential, 'google');
+                  markAuthSuccess();
+                  finalizeAuth(data, redirectTarget);
+                } catch (err) {
+                  showSocialHint(err.message || 'Google authentication failed.');
+                }
               }
             }
-          }
-        });
-        window.google.accounts.id.prompt();
-      } catch (err) {
-        console.warn('GIS init error:', err);
+          });
+          window.google.accounts.id.prompt();
+        } catch (err) {
+          console.warn('GIS init error:', err);
+        }
+      }
+    } else {
+      // Visibly gated per Rule 4: Zero-Facade Engineering
+      if (googleBtn) {
+        googleBtn.classList.add('gated');
+        googleBtn.setAttribute('title', 'Google Sign-In is awaiting Google OAuth Client ID setup (Coming Soon)');
+        if (!googleBtn.querySelector('.gated-pill')) {
+          const pill = document.createElement('span');
+          pill.className = 'gated-pill';
+          pill.textContent = 'Soon';
+          googleBtn.appendChild(pill);
+        }
       }
     }
   }
@@ -681,20 +428,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('btnGoogleAuth')?.addEventListener('click', () => {
-    if (window.google?.accounts?.id && window.ALFAAZ_GOOGLE_CLIENT_ID) {
-      window.google.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Fall back to popup if One-Tap prompt is suppressed
-          handleSocialLogin('google');
-        }
-      });
+    if (window.ALFAAZ_GOOGLE_CLIENT_ID && window.google?.accounts?.id) {
+      window.google.accounts.id.prompt();
     } else {
-      handleSocialLogin('google');
+      showSocialHint('Google Sign-In is awaiting Google OAuth Client ID setup. Please register with your Full Name, WhatsApp, Email & Password below.');
     }
   });
+
   document.getElementById('btnAppleAuth')?.addEventListener('click', () => {
     showSocialHint('Apple Sign-In is in developer onboarding. Please use the form below.');
   });
+
   document.getElementById('btnMetaAuth')?.addEventListener('click', () => {
     showSocialHint('Meta Sign-In is in developer review. Please use the form below.');
   });

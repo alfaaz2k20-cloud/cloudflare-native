@@ -19,9 +19,6 @@
   <script src="https://cdn.tailwindcss.com" defer></script>
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
-  
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script type="module" src="src/login.js"></script>
   <style>
     .auth-card { width: 100%; max-width: 420px; padding: 3.5rem 2.5rem; margin: 6rem auto; position: relative; }
@@ -66,9 +63,7 @@
       color: var(--text-primary);
     }
 
-    /* Phone OTP (Firebase Phone Auth) */
-    .phone-auth-section { margin-bottom: 1.5rem; }
-    .phone-mode-caption { font-family: var(--font-body); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 0.85rem; }
+    /* WhatsApp Field & Country Code Select */
     .phone-field-row { display: flex; gap: 10px; align-items: flex-end; }
         .country-prefix-select {
       background: transparent;

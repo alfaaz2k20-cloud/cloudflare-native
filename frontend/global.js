@@ -22,20 +22,6 @@ window.ALFAAZ_CLOUDINARY = {
 window.ALFAAZ_TURNSTILE_SITEKEY = TURNSTILE_SITEKEY;
 window.ALFAAZ_GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-// Firebase web config is PUBLIC by design (embedded in the client bundle and
-// scoped by authorized domains). Populate via VITE_FIREBASE_* env vars or a
-// frontend/.env file. Never put a server-side secret here.
-const FIREBASE_CONFIG = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'alfaaz-collective',
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
-};
-window.ALFAAZ_FIREBASE_CONFIG = FIREBASE_CONFIG;
-window.ALFAAZ_FIREBASE_ENABLED = Boolean(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.appId);
-
 window.escapeHtml = function(str) {
     if (str == null) return '';
     return String(str)
