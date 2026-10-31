@@ -16,7 +16,7 @@
   <title>Login — ALFAAZ Collective</title>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script src="https://cdn.tailwindcss.com" defer></script>
-  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
   
   
@@ -24,6 +24,8 @@
   <style>
     .auth-card { width: 100%; max-width: 420px; padding: 4rem 3rem; margin: 8rem auto; position: relative; }
     .auth-title { font-family: var(--font-heading); font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem; font-weight: 400; }
+    .auth-title.ur-hover { display: flex; align-items: center; justify-content: center; }
+    .auth-title.ur-hover::before { font-family: var(--font-urdu); font-size: 1.15em; color: var(--text-primary); top: 48%; }
     .auth-subtitle { font-family: var(--font-body); font-size: 10px; color: var(--text-secondary); letter-spacing: 2px; text-align: center; margin-bottom: 3rem; text-transform: uppercase; }
     .input-group { margin-bottom: 2rem; }
     .auth-input { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; padding: 0.5rem 0; transition: border-color 0.3s ease; }
@@ -44,19 +46,25 @@
 <body>
   
     <nav id="navbar" style="justify-content: space-between;">
-    <a href="index.html" class="logo">ALFAAZ</a>
+    <a href="index.html" class="logo ur-hover" data-ur="الفاظ">
+      <span class="en-text">ALFAAZ</span>
+    </a>
     <div class="nav-actions">
-      <a href="index.html" class="" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">Return</a>
+      <a id="returnBtn" href="index.html" class="ur-hover" data-ur="واپسی" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">
+        <span class="en-text">Return</span>
+      </a>
     </div>
   </nav>
 
   <div class="auth-card panel">
-    <h1 class="auth-title">Login</h1>
+    <h1 class="auth-title ur-hover" data-ur="داخلہ">
+      <span class="en-text">Login</span>
+    </h1>
     <p class="auth-subtitle">Access your account</p>
     <form id="authForm">
       <div class="input-group">
         <label class="input-label" for="email">Email Address</label>
-        <input type="email" id="email" class="auth-input" required autocomplete="email" spellcheck="false">
+        <input type="email" id="email" class="auth-input" required autocomplete="email" spellcheck="false" autofocus>
       </div>
       <div class="input-group">
         <label class="input-label" for="password">Password</label>
@@ -66,7 +74,7 @@
         </div>
       </div>
       <a href="#" id="forgotBtn" class="recovery-link">Lost Password?</a>
-      <div class="forgot-hint" id="forgotHint">↑ Enter your email above, then click "Lost Password?"</div>
+      <div class="forgot-hint" id="forgotHint" role="status" aria-live="polite">↑ Enter your email above, then click "Lost Password?"</div>
       <div id="loginTurnstile" style="margin-top: 1rem; margin-bottom: 1rem; display: flex; justify-content: center;"></div>
       <button type="submit" class="submit-btn" style="width: 100%;">Log In</button>
     </form>

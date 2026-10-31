@@ -10,13 +10,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
  if (!form) return;
 
- // Propagate redirect parameter to the registration link
+ // Propagate redirect parameter to the registration link & return button
  const initialParams = new URLSearchParams(window.location.search);
  const initialRedirect = initialParams.get('redirect');
  if (initialRedirect) {
   const regLink = document.querySelector('.toggle-auth a');
   if (regLink && regLink.getAttribute('href')?.startsWith('register.html')) {
    regLink.setAttribute('href', `register.html?redirect=${encodeURIComponent(initialRedirect)}`);
+  }
+  const returnBtn = document.getElementById('returnBtn');
+  if (returnBtn) {
+   const isSafeRelative = /^\/[^/\\]/.test(initialRedirect) || /^[a-zA-Z0-9_-]+\.html(\?.*)?$/.test(initialRedirect);
+   if (isSafeRelative) {
+    returnBtn.setAttribute('href', initialRedirect);
+   }
   }
  }
 
@@ -156,10 +163,14 @@ document.addEventListener('DOMContentLoaded', () => {
  e.preventDefault();
  const emailValue = emailInput.value.trim();
  if (!emailValue) {
- forgotHint.classList.add('visible');
- emailInput.focus();
- setTimeout(() => forgotHint.classList.remove('visible'), 3000);
- return;
+  if (forgotHint) {
+   forgotHint.textContent = '↑ Enter your email above, then click "Lost Password?"';
+   forgotHint.style.color = 'var(--accent-red-text)';
+   forgotHint.classList.add('visible');
+  }
+  emailInput.focus();
+  setTimeout(() => { if (forgotHint) { forgotHint.classList.remove('visible'); forgotHint.style.color = ''; } }, 3500);
+  return;
  }
 
  const original = submitBtn.textContent;
@@ -167,19 +178,37 @@ document.addEventListener('DOMContentLoaded', () => {
  submitBtn.disabled = true;
 
  try {
- const response = await window.globalApiFetch('/auth/forgot-password', {
- method: 'POST',
- body: JSON.stringify({ email: emailValue })
- });
- if (!response) throw new Error("No response from authentication service.");
- const data = await response.json().catch(() => ({}));
- if (response.ok) alert(data.message);
- else alert("Request failed: " + (data.detail || "Unknown error."));
+  const response = await window.globalApiFetch('/auth/forgot-password', {
+   method: 'POST',
+   body: JSON.stringify({ email: emailValue, turnstile_token: turnstileToken })
+  });
+  if (!response) throw new Error("No response from authentication service.");
+  const data = await response.json().catch(() => ({}));
+  if (response.ok) {
+   if (forgotHint) {
+    forgotHint.textContent = '✓ ' + (data.message || 'If registered, a reset link was sent.');
+    forgotHint.style.color = 'var(--accent-green-text)';
+    forgotHint.classList.add('visible');
+   }
+   if (window.turnstile) { try { window.turnstile.reset(); turnstileToken = ''; } catch (_) {} }
+  } else {
+   if (forgotHint) {
+    forgotHint.textContent = '✗ ' + (data.detail || 'Password reset request failed.');
+    forgotHint.style.color = 'var(--accent-red-text)';
+    forgotHint.classList.add('visible');
+    setTimeout(() => { if (forgotHint) { forgotHint.classList.remove('visible'); forgotHint.style.color = ''; } }, 4500);
+   }
+  }
  } catch (error) {
- alert("Cannot reach the server.");
+  if (forgotHint) {
+   forgotHint.textContent = '✗ Cannot reach the server. Please check connection.';
+   forgotHint.style.color = 'var(--accent-red-text)';
+   forgotHint.classList.add('visible');
+   setTimeout(() => { if (forgotHint) { forgotHint.classList.remove('visible'); forgotHint.style.color = ''; } }, 4500);
+  }
  } finally {
- submitBtn.textContent = original;
- submitBtn.disabled = false;
+  submitBtn.textContent = original;
+  submitBtn.disabled = false;
  }
  });
 });

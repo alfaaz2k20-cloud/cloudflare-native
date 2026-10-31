@@ -558,6 +558,46 @@ describe('Error Paths & Defensive Security Integration Test Suite', () => {
       const data: any = await res.json();
       expect(data.token).toBeDefined();
     });
+
+    it('strictly rejects /auth/forgot-password with 403 when TURNSTILE_SECRET_KEY is provisioned but token is missing', async () => {
+      const prodEnvWithTurnstile = {
+        ...getTestEnv(),
+        ENV: 'production',
+        TURNSTILE_SECRET_KEY: '0x4AAAAAAAJ_test_secret_key_123456789'
+      };
+
+      const res = await app.request('/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'volunteer@alfaaz.com'
+        })
+      }, prodEnvWithTurnstile as any);
+
+      expect(res.status).toBe(403);
+      const data: any = await res.json();
+      expect(data.detail).toContain('Turnstile verification failed');
+    });
+
+    it('accepts /auth/forgot-password with valid Turnstile dummy pass key', async () => {
+      const testEnvWithDummyKey = {
+        ...getTestEnv(),
+        TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA'
+      };
+
+      const res = await app.request('/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'volunteer@alfaaz.com',
+          turnstile_token: 'dummy-token'
+        })
+      }, testEnvWithDummyKey as any);
+
+      expect(res.status).toBe(200);
+      const data: any = await res.json();
+      expect(data.message).toContain('reset link has been dispatched');
+    });
   });
 
   describe('10. Curator AI & Scheduled Automation Resilience', () => {
