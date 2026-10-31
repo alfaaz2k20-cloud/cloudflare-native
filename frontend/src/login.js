@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById('submitBtn');
   const forgotBtn = document.getElementById('forgotBtn');
   const forgotHint = document.getElementById('forgotHint');
+  const socialAuthHint = document.getElementById('socialAuthHint');
   const emailInput = document.getElementById('email');
   const pwInput = document.getElementById('password');
   const togglePw = document.getElementById('togglePw');
@@ -250,6 +251,20 @@ document.addEventListener('DOMContentLoaded', () => {
       forgotHint.classList.remove('visible');
       forgotHint.style.color = '';
     }, 6000);
+  }
+
+  function showSocialHint(message, isSuccess = false) {
+    if (!socialAuthHint) {
+      showHint(message, isSuccess);
+      return;
+    }
+    socialAuthHint.textContent = (isSuccess ? '✓ ' : 'ⓘ ') + message;
+    socialAuthHint.style.color = isSuccess ? 'var(--accent-green-text)' : 'var(--accent-gold)';
+    socialAuthHint.style.display = 'block';
+    setTimeout(() => {
+      socialAuthHint.style.display = 'none';
+      socialAuthHint.textContent = '';
+    }, 8000);
   }
 
   // 6. Primary Form Submit (Email & Password + WhatsApp on Register)
@@ -588,9 +603,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 9. One-Tap Social Sign-In (Google / Apple / Meta)
   async function handleSocialLogin(providerId) {
+    if (providerId === 'google' && !window.ALFAAZ_GOOGLE_CLIENT_ID && !window.ALFAAZ_FIREBASE_ENABLED) {
+      showSocialHint('Google Sign-In is awaiting Google OAuth Client ID. Please register with your Name, WhatsApp, Email & Password below.');
+      return;
+    }
+
     const auth = initFirebase();
     if (!auth) {
-      showHint('Social sign-in is not configured yet.');
+      showSocialHint(providerId === 'google'
+        ? 'Google Sign-In is awaiting Google OAuth Client ID. Please register with your Name, WhatsApp, Email & Password below.'
+        : 'Social sign-in is not configured yet. Please use the form below.'
+      );
       return;
     }
 
@@ -601,7 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (providerId === 'meta') provider = new window.firebase.auth.FacebookAuthProvider();
       else throw new Error('Unknown provider');
     } catch (err) {
-      showHint('Social sign-in is not configured yet.');
+      showSocialHint('Social sign-in is not configured yet.');
       return;
     }
 
@@ -615,13 +638,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const errCode = err && err.code;
       if (errCode === 'auth/popup-closed-by-user' || errCode === 'auth/cancelled-popup-request') return;
       if (errCode === 'auth/account-exists-with-different-credential') {
-        showHint('An account already exists with this email. Please log in with that method.');
+        showSocialHint('An account already exists with this email. Please log in with that method.');
       } else if (errCode === 'auth/unauthorized-domain') {
-        showHint('Domain not authorized in Firebase. Add ' + window.location.hostname + ' to Firebase Auth settings.');
+        showSocialHint('Domain not authorized in Firebase. Add ' + window.location.hostname + ' to Firebase Auth settings, or use the form below.');
       } else if (errCode === 'auth/operation-not-allowed') {
-        showHint('Google Sign-in is not enabled in Firebase Console. Enable it in Auth > Sign-in method.');
+        showSocialHint('Google Sign-in is not enabled in Firebase Console. Please register with the form below.');
       } else {
-        showHint((err && err.message) || 'Social sign-in failed.');
+        showSocialHint((err && err.message) || 'Social sign-in failed. Please register with the form below.');
       }
     }
   }
@@ -639,7 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 markAuthSuccess('social');
                 finalizeAuth(data, redirectTarget);
               } catch (err) {
-                showHint(err.message || 'Google authentication failed.');
+                showSocialHint(err.message || 'Google authentication failed.');
               }
             }
           }
@@ -670,10 +693,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   document.getElementById('btnAppleAuth')?.addEventListener('click', () => {
-    showHint('Apple Sign-In is in developer onboarding. Please use Google One-Tap or Email & Password.');
+    showSocialHint('Apple Sign-In is in developer onboarding. Please use the form below.');
   });
   document.getElementById('btnMetaAuth')?.addEventListener('click', () => {
-    showHint('Meta Sign-In is in developer review. Please use Google One-Tap or Email & Password.');
+    showSocialHint('Meta Sign-In is in developer review. Please use the form below.');
   });
 });
 
