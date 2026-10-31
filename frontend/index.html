@@ -26,7 +26,7 @@
   <link rel="preload" as="image" href="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg">
   
   <script src="https://cdn.tailwindcss.com" defer></script>
-  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css?v=alfaaz-clubs">
   <script type="module" src="global.js"></script>
 
@@ -58,20 +58,14 @@
     .video-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-overlay); backdrop-filter: blur(2px); z-index: -1; }
     
     .hero-content { position: relative; z-index: 10; text-align: center; padding: 0 2rem; }
+    .hero-title { opacity: 0; transform: translateY(24px); transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
+    .hero-title.visible { opacity: 1; transform: translateY(0); }
     .hero-subtitle { font-size: clamp(0.75rem, 1.2vw, 0.95rem); letter-spacing: 6px; text-transform: uppercase; color: var(--text-secondary); opacity: 0; transform: translateY(20px); transition: opacity 1s ease 0.5s, transform 1s ease 0.5s; margin-top: 1.5rem; margin-bottom: 2rem; }
     .hero-subtitle.visible { opacity: 0.9; transform: translateY(0); }
     .hero-scroll { position: absolute; bottom: 3rem; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.5rem; z-index: 10; }
     .hero-scroll span { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary); opacity: 0.8; }
     .scroll-line { width: 1px; height: 50px; background: linear-gradient(to bottom, var(--text-primary), transparent); animation: scrollPulse 2s ease-in-out infinite; }
     @keyframes scrollPulse { 0%, 100% { opacity: 0.3; transform: scaleY(0.5); } 50% { opacity: 1; transform: scaleY(1); } }
-
-    /* LAYOUT COMPONENTS */
-    .marquee-section { padding: 2.5rem 0; background: var(--bg-secondary); border-top: 1px solid var(--grid-border); border-bottom: 1px solid var(--grid-border); overflow: hidden; }
-    .marquee { display: flex; animation: marqueeScroll 30s linear infinite; }
-    .marquee-content { display: flex; align-items: center; gap: 4rem; padding-right: 4rem; flex-shrink: 0; }
-    .marquee-item { font-family: var(--font-heading); font-size: 2rem; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; color: var(--text-primary); }
-    .marquee-dot { width: 4px; height: 4px; background: var(--accent-gold); border-radius: 50%; }
-    @keyframes marqueeScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
     .updates-section { padding: 6rem 3rem; background: transparent; border-top: 1px solid var(--grid-border); }
     .section-header { margin-bottom: 3.5rem; text-align: center; padding-top: 0.5rem; }
@@ -198,11 +192,11 @@
       <a href="#about" class="ur-hover" data-ur="تعارف">
         <span class="en-text">About</span>
       </a>
-      <a href="#journey" class="ur-hover" data-ur="حواشی">
-        <span class="en-text">Margins</span>
-      </a>
       <a href="#clubs" class="ur-hover" data-ur="حلقے">
         <span class="en-text">Clubs</span>
+      </a>
+      <a href="#journey" class="ur-hover" data-ur="حواشی">
+        <span class="en-text">Margins</span>
       </a>
       <a href="blogs.html" class="ur-hover" data-ur="جریدہ">
         <span class="en-text">Journal</span>
@@ -232,7 +226,7 @@
 
   <main>
     <section id="home" class="hero">
-      <video class="bg-video" autoplay loop muted playsinline preload="auto">
+      <video class="bg-video" autoplay loop muted playsinline preload="metadata">
         <source src="https://res.cloudinary.com/dmqwjpmjk/video/upload/v1761507594/portal-bg_oribvr.mp4" type="video/mp4">
       </video>
       <div class="video-overlay"></div>
@@ -279,7 +273,7 @@
         <div class="about-content fade-in">
           <p class="section-label">Our Mission</p>
           <h2 class="section-title ur-hover" style="margin-bottom: 2.5rem; font-size: clamp(2rem, 3.5vw, 3rem);" data-ur="ہماری بات">
-            <span class="en-text">In Their Words</span>
+            <span class="en-text">In Our Words</span>
           </h2>
           <p class="about-text">Alfaaz is a collective dedicated to fostering spaces where creativity meets collaboration. We celebrate artists and writers through exhibitions, curated showcases, and open dialogue.</p>
           <a href="https://linktr.ee/alfaaz2k20" target="_blank" class="cta-btn">View Archives</a>
@@ -442,8 +436,7 @@
       "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-01-14_ac2gyf.jpg",
       "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652936/photo_2026-05-01_21-21-08_wnmv0b.jpg",
       "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-03-59_snoeqr.jpg",
-      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652831/photo_2026-05-01_21-41-21_abvman.jpg",
-      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg"
+      "https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_800,q_auto,f_auto/v1777652831/photo_2026-05-01_21-41-21_abvman.jpg"
     ];
 
     if (flashImg && flashImages.length > 0) {
