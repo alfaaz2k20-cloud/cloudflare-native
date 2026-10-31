@@ -1535,5 +1535,132 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       expect(indexTs).toMatch(/img-src[^;]*https:\/\/www\.gstatic\.com/);
       expect(indexTs).toMatch(/img-src[^;]*https:\/\/ssl\.gstatic\.com/);
     });
+
+    it('T4_S15: WhatsApp Capture Post-GIS Profile Completion (Zero OTP Flow)', () => {
+      const loginHtml = fs.readFileSync(path.resolve(process.cwd(), 'frontend/login.html'), 'utf8');
+      const registerHtml = fs.readFileSync(path.resolve(process.cwd(), 'frontend/register.html'), 'utf8');
+      const loginJs = fs.readFileSync(path.resolve(process.cwd(), 'frontend/src/login.js'), 'utf8');
+
+      // 1. Dedicated WhatsApp input group and button in verification step
+      expect(loginHtml).toContain('id="verifPhoneGroup"');
+      expect(loginHtml).toContain('id="verifCountryPrefix"');
+      expect(loginHtml).toContain('id="verifPhoneInput"');
+      expect(loginHtml).toContain('id="saveWhatsAppBtn"');
+      expect(registerHtml).toContain('id="verifPhoneGroup"');
+      expect(registerHtml).toContain('id="saveWhatsAppBtn"');
+
+      // 2. Client-side login.js handles whatsapp mode with direct PATCH /auth/me without OTP
+      expect(loginJs).toMatch(/showVerificationStep\(data\.user,\s*data\.token,\s*finalDest,\s*['"]whatsapp['"]\)/);
+      expect(loginJs).toMatch(/getApiUrl\(['"]\/auth\/me['"]\)/);
+      expect(loginJs).toMatch(/body:\s*JSON\.stringify\({\s*phone:\s*fullNumber\s*}\)/);
+      expect(loginJs).not.toContain('Google One-Tap is unavailable');
+    });
+
+    it('T4_S16: PATCH /auth/me WhatsApp Number Update & Uniqueness Enforcement', async () => {
+      const email = 'gis_whatsapp_user@alfaaz.local';
+      await mockDb
+        .prepare('INSERT INTO users (email, full_name, status, email_verified, phone_verified) VALUES (?, ?, ?, 1, 0)')
+        .bind(email, 'WhatsApp Poet', 'PARTICIPANT')
+        .run();
+
+      const token = await createToken(email, 'PARTICIPANT', jwtSecret);
+
+      // 1. Invalid phone format rejected with 400
+      const invalidRes = await app.request('/auth/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ phone: '12345' })
+      }, getTestEnv());
+      expect(invalidRes.status).toBe(400);
+
+      // 2. Valid E.164 WhatsApp number successfully saved without OTP
+      const validPhone = '+919876543210';
+      const validRes = await app.request('/auth/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ phone: validPhone })
+      }, getTestEnv());
+      expect(validRes.status).toBe(200);
+      const validData = await validRes.json();
+      expect(validData.status).toBe('SUCCESS');
+      expect(validData.phone).toBe(validPhone);
+      expect(validData.phone_verified).toBe(1);
+
+      // Verify stored in D1 database
+      const row = await mockDb.prepare('SELECT phone, phone_verified FROM users WHERE email = ?').bind(email).first();
+      expect(row.phone).toBe(validPhone);
+      expect(row.phone_verified).toBe(1);
+
+      // 3. Duplicate phone on different user rejected with 409
+      const secondEmail = 'another_user@alfaaz.local';
+      await mockDb
+        .prepare('INSERT INTO users (email, full_name, status, email_verified, phone_verified) VALUES (?, ?, ?, 1, 0)')
+        .bind(secondEmail, 'Second Poet', 'PARTICIPANT')
+        .run();
+      const secondToken = await createToken(secondEmail, 'PARTICIPANT', jwtSecret);
+
+      const dupRes = await app.request('/auth/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${secondToken}`
+        },
+        body: JSON.stringify({ phone: validPhone })
+      }, getTestEnv());
+      expect(dupRes.status).toBe(409);
+    });
+
+    it('T4_S17: Distinct Log In vs Register Mode Enforcement for Federated Auth', async () => {
+      const email = 'new_unregistered_google_user@alfaaz.local';
+      const uid = 'google_sub_unregistered_123';
+      const idToken = await createMockFirebaseToken({
+        uid,
+        email,
+        name: 'Unregistered Poet',
+        iss: 'https://accounts.google.com',
+        email_verified: true
+      });
+
+      // 1. In 'login' mode, if account does not exist, reject with 404 ACCOUNT_NOT_FOUND
+      const loginAttemptRes = await app.request('/auth/federated-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.95' },
+        body: JSON.stringify({ id_token: idToken, provider: 'google', mode: 'login' })
+      }, getTestEnv());
+
+      expect(loginAttemptRes.status).toBe(404);
+      const loginErr = await loginAttemptRes.json();
+      expect(loginErr.code).toBe('ACCOUNT_NOT_FOUND');
+      expect(loginErr.error).toMatch(/No account found/i);
+
+      // 2. In 'register' mode, successfully create new account
+      const registerRes = await app.request('/auth/federated-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.95' },
+        body: JSON.stringify({ id_token: idToken, provider: 'google', mode: 'register' })
+      }, getTestEnv());
+
+      expect(registerRes.status).toBe(200);
+      const registerData = await registerRes.json();
+      expect(registerData.token).toBeDefined();
+      expect(registerData.user.email).toBe(email);
+
+      // 3. Now that account exists, 'login' mode succeeds
+      const subsequentLoginRes = await app.request('/auth/federated-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.95' },
+        body: JSON.stringify({ id_token: idToken, provider: 'google', mode: 'login' })
+      }, getTestEnv());
+
+      expect(subsequentLoginRes.status).toBe(200);
+      const subData = await subsequentLoginRes.json();
+      expect(subData.token).toBeDefined();
+    });
   });
 });

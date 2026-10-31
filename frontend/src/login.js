@@ -22,15 +22,18 @@ function getApiUrl(endpoint) {
   return `${base}${path}`;
 }
 
-async function federatedLogin(idToken, provider) {
+async function federatedLogin(idToken, provider, mode) {
   const res = await fetch(getApiUrl('/auth/federated-login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id_token: idToken, provider })
+    body: JSON.stringify({ id_token: idToken, provider, mode })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.token) {
-    throw new Error(data.error || data.detail || 'Provider authentication failed.');
+    const err = new Error(data.error || data.detail || 'Provider authentication failed.');
+    err.status = res.status;
+    err.code = data.code;
+    throw err;
   }
   return data;
 }
@@ -43,10 +46,16 @@ function finalizeAuth(data, redirectTarget) {
   const finalDest = redirectTarget || defaultDest;
 
   const isAdmin = data.user?.status === 'ADMIN' || data.user?.role === 'ADMIN';
-  const needsCrossVerification = !isAdmin && data.user && (!data.user.email_verified || !data.user.phone_verified);
-  if (needsCrossVerification && document.getElementById('verificationStep')) {
+  const isMissingPhone = !isAdmin && data.user && !data.user.phone;
+  const isMissingEmail = !isAdmin && data.user && !data.user.email_verified && !data.user.auth_provider?.includes('google');
+
+  if (isMissingPhone && document.getElementById('verificationStep')) {
     setTimeout(() => {
-      showVerificationStep(data.user, data.token, finalDest);
+      showVerificationStep(data.user, data.token, finalDest, 'whatsapp');
+    }, 400);
+  } else if (isMissingEmail && document.getElementById('verificationStep')) {
+    setTimeout(() => {
+      showVerificationStep(data.user, data.token, finalDest, 'email');
     }, 400);
   } else {
     setTimeout(() => {
@@ -449,7 +458,12 @@ document.addEventListener('DOMContentLoaded', () => {
         gisContainer.style.display = 'none';
         gisContainer.innerHTML = '';
       }
+      const socialGrid = document.querySelector('.social-buttons-grid');
+      if (socialGrid) {
+        socialGrid.classList.remove('has-active-google');
+      }
       if (googleBtn) {
+        googleBtn.style.display = '';
         googleBtn.classList.add('gated');
         googleBtn.setAttribute('title', 'Google Sign-In is awaiting Google OAuth Client ID setup (Coming Soon)');
         googleBtn.setAttribute('aria-label', currentMode === 'register' ? 'Sign up with Google (Coming Soon)' : 'Sign in with Google (Coming Soon)');
@@ -463,13 +477,18 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Configured state: un-gate the social badge button
+    // Configured state: hide redundant fake button in grid and show official Google button
+    const socialGrid = document.querySelector('.social-buttons-grid');
     if (googleBtn) {
+      googleBtn.style.display = 'none';
       googleBtn.classList.remove('gated');
       googleBtn.removeAttribute('title');
       const pill = googleBtn.querySelector('.gated-pill');
       if (pill) pill.remove();
       googleBtn.setAttribute('aria-label', currentMode === 'register' ? 'Sign up with Google' : 'Sign in with Google');
+    }
+    if (socialGrid) {
+      socialGrid.classList.add('has-active-google');
     }
 
     if (!window.google?.accounts?.id || gisInitialized) {
@@ -486,13 +505,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (submitBtn) submitBtn.disabled = true;
             try {
               showSocialHint('Authenticating with Google...', true);
-              const data = await federatedLogin(response.credential, 'google');
+              const data = await federatedLogin(response.credential, 'google', currentMode);
               markAuthSuccess();
               finalizeAuth(data, redirectTarget);
             } catch (err) {
               isFederatedAuthInProgress = false;
               if (submitBtn) submitBtn.disabled = false;
-              showSocialHint(err.message || 'Google authentication failed.');
+              if (err.status === 404 || err.code === 'ACCOUNT_NOT_FOUND') {
+                setAuthMode('register');
+                showHint(err.message || 'No account found. Please register below with your WhatsApp number to join.');
+                showSocialHint('');
+              } else {
+                showSocialHint(err.message || 'Google authentication failed.');
+              }
             }
           }
         },
@@ -571,20 +596,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const reason = notification.getNotDisplayedReason?.() || notification.getSkippedReason?.() || notification.getDismissedReason?.() || '';
             console.log('GIS One-Tap prompt status:', reason);
             const gisContainer = document.getElementById('googleBtnContainer');
-            if (gisContainer && gisContainer.style.display !== 'none') {
-              showSocialHint('Google One-Tap is unavailable. Please click the Google Sign-In button below or continue with email.');
+            if (gisContainer) {
               gisContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-              showSocialHint(
-                currentMode === 'register'
-                  ? 'Google One-Tap was dismissed or blocked by browser privacy settings. You may also register with your details below.'
-                  : 'Google One-Tap was dismissed or blocked by browser privacy settings. You may also log in with your email below.'
-              );
             }
           }
         });
       } else if (gisLoadFailed) {
-        showSocialHint('Google Sign-In could not be loaded (likely blocked by privacy/ad-blocker settings). Please continue with email below.');
+        showSocialHint('Google Sign-In could not be loaded. Please continue with the form below.');
       } else {
         showSocialHint('Google Identity Services is loading. Please try again in a moment.');
       }
@@ -607,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-  function showVerificationStep(user, token, redirectTarget) {
+  function showVerificationStep(user, token, redirectTarget, mode) {
     const dest = redirectTarget || 'dashboard.html';
     const verifStep = document.getElementById('verificationStep');
     if (!verifStep) {
@@ -640,15 +658,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleFooter) toggleFooter.style.display = 'none';
     const authSub = document.getElementById('authSubtitle');
     if (authSub) {
-      authSub.textContent = 'Account verification required';
+      authSub.textContent = mode === 'whatsapp' ? 'Complete your profile' : 'Account verification required';
       authSub.style.color = 'var(--text-secondary)';
     }
 
     verifStep.style.display = 'block';
 
-    const isMissingEmail = !user.email_verified;
     const titleEl = document.getElementById('verifStepTitle');
     const descEl = document.getElementById('verifStepDesc');
+    const phoneGroup = document.getElementById('verifPhoneGroup');
+    const countryPrefixSelect = document.getElementById('verifCountryPrefix');
+    const phoneInput = document.getElementById('verifPhoneInput');
+    const saveWhatsAppBtn = document.getElementById('saveWhatsAppBtn');
+    const targetGroup = document.getElementById('verifTargetGroup');
     const targetLabel = document.getElementById('verifTargetLabel');
     const targetInput = document.getElementById('verifTarget');
     const sendBtn = document.getElementById('sendCodeBtn');
@@ -661,104 +683,164 @@ document.addEventListener('DOMContentLoaded', () => {
       skipLink.href = dest;
     }
 
-    let purpose = isMissingEmail ? 'email' : 'phone';
-    if (isMissingEmail) {
+    // Determine actual purpose: 'whatsapp' (NO OTP), 'email' (Email OTP)
+    const isWhatsAppMode = mode === 'whatsapp' || !user.phone;
+
+    if (isWhatsAppMode) {
+      // 1. WhatsApp Capture (NO OTP, MANDATORY - Cannot skip)
+      if (titleEl) titleEl.textContent = 'WhatsApp Mobile Number';
+      if (descEl) descEl.textContent = 'WhatsApp contact is mandatory for all Alfaaz Collective members to receive invitations and announcements.';
+      if (phoneGroup) phoneGroup.style.display = 'block';
+      if (targetGroup) targetGroup.style.display = 'none';
+      if (codeGroup) codeGroup.style.display = 'none';
+      if (sendBtn) sendBtn.style.display = 'none';
+      if (confirmBtn) confirmBtn.style.display = 'none';
+      if (skipLink) skipLink.style.display = 'none';
+      const skipContainer = document.getElementById('skipVerifContainer');
+      if (skipContainer) skipContainer.style.display = 'none';
+      if (saveWhatsAppBtn) {
+        saveWhatsAppBtn.style.display = 'block';
+        saveWhatsAppBtn.textContent = 'Save & Continue →';
+        saveWhatsAppBtn.disabled = false;
+        if (phoneInput) {
+          phoneInput.value = user.phone || '';
+          setTimeout(() => phoneInput.focus(), 100);
+        }
+
+        saveWhatsAppBtn.onclick = async () => {
+          const rawNum = phoneInput ? phoneInput.value.trim() : '';
+          const prefix = countryPrefixSelect ? countryPrefixSelect.value : '+91';
+          const fullNumber = rawNum.startsWith('+') ? rawNum : (prefix + rawNum.replace(/\D/g, ''));
+          
+          if (!/^\+[1-9]\d{6,14}$/.test(fullNumber)) {
+            alert('Please enter a valid WhatsApp mobile number in E.164 format (e.g., +919876543210).');
+            return;
+          }
+
+          saveWhatsAppBtn.disabled = true;
+          saveWhatsAppBtn.textContent = 'Saving...';
+
+          try {
+            const res = await fetch(getApiUrl('/auth/me'), {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+              },
+              body: JSON.stringify({ phone: fullNumber })
+            });
+            const resData = await res.json().catch(() => ({}));
+            if (res.ok) {
+              user.phone = fullNumber;
+              user.phone_verified = 1;
+              localStorage.setItem('alfaaz_user', JSON.stringify(user));
+              saveWhatsAppBtn.textContent = 'Saved ✓';
+              saveWhatsAppBtn.style.background = 'var(--accent-green)';
+              saveWhatsAppBtn.style.color = '#fff';
+              setTimeout(() => {
+                window.location.href = dest;
+              }, 500);
+            } else {
+              alert(resData.detail || resData.error || 'Failed to save WhatsApp number.');
+              saveWhatsAppBtn.disabled = false;
+              saveWhatsAppBtn.textContent = 'Save & Continue →';
+            }
+          } catch (e) {
+            alert('Network error saving WhatsApp number: ' + e.message);
+            saveWhatsAppBtn.disabled = false;
+            saveWhatsAppBtn.textContent = 'Save & Continue →';
+          }
+        };
+      }
+    } else {
+      // 2. Email Cross-Verification (Code sent to email)
       if (titleEl) titleEl.textContent = 'Email Cross-Verification';
       if (descEl) descEl.textContent = 'To secure your account, please verify your email address.';
+      if (phoneGroup) phoneGroup.style.display = 'none';
+      if (saveWhatsAppBtn) saveWhatsAppBtn.style.display = 'none';
+      if (targetGroup) targetGroup.style.display = 'block';
       if (targetLabel) targetLabel.textContent = 'Email Address';
       if (targetInput) {
         targetInput.type = 'email';
         targetInput.value = user.email || '';
         targetInput.placeholder = 'you@example.com';
       }
-    } else {
-      if (titleEl) titleEl.textContent = 'Mobile Cross-Verification';
-      if (descEl) descEl.textContent = 'To secure your account, please verify your mobile number.';
-      if (targetLabel) targetLabel.textContent = 'Mobile Number (E.164)';
-      if (targetInput) {
-        targetInput.type = 'tel';
-        targetInput.value = user.phone || '';
-        targetInput.placeholder = '+14155552671';
-      }
-    }
-
-    if (sendBtn) {
-      sendBtn.onclick = async () => {
-        const val = targetInput ? targetInput.value.trim() : '';
-        if (!val) {
-          alert('Please enter a valid ' + purpose + '.');
-          return;
-        }
-        sendBtn.disabled = true;
-        sendBtn.textContent = 'Sending...';
-        try {
-          const endpoint = purpose === 'email' ? '/verification/email/send' : '/verification/phone/send';
-          const body = purpose === 'email' ? { email: val } : { phone: val };
-          const res = await fetch(getApiUrl(endpoint), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify(body)
-          });
-          const resData = await res.json().catch(() => ({}));
-          if (res.ok) {
-            sendBtn.textContent = 'Code Sent';
-            sendBtn.style.display = 'none';
-            if (codeGroup) codeGroup.style.display = 'block';
-            if (confirmBtn) confirmBtn.style.display = 'block';
-            if (codeInput) codeInput.focus();
-          } else {
-            alert(resData.error || 'Failed to dispatch verification code.');
+      if (sendBtn) {
+        sendBtn.style.display = 'block';
+        sendBtn.onclick = async () => {
+          const val = targetInput ? targetInput.value.trim() : '';
+          if (!val) {
+            alert('Please enter a valid email address.');
+            return;
+          }
+          sendBtn.disabled = true;
+          sendBtn.textContent = 'Sending...';
+          try {
+            const res = await fetch(getApiUrl('/verification/email/send'), {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+              },
+              body: JSON.stringify({ email: val })
+            });
+            const resData = await res.json().catch(() => ({}));
+            if (res.ok) {
+              sendBtn.textContent = 'Code Sent';
+              sendBtn.style.display = 'none';
+              if (codeGroup) codeGroup.style.display = 'block';
+              if (confirmBtn) confirmBtn.style.display = 'block';
+              if (codeInput) codeInput.focus();
+            } else {
+              alert(resData.error || 'Failed to dispatch verification code.');
+              sendBtn.disabled = false;
+              sendBtn.textContent = 'Send Code';
+            }
+          } catch (e) {
+            alert('Error dispatching code: ' + e.message);
             sendBtn.disabled = false;
             sendBtn.textContent = 'Send Code';
           }
-        } catch (e) {
-          alert('Error dispatching code: ' + e.message);
-          sendBtn.disabled = false;
-          sendBtn.textContent = 'Send Code';
-        }
-      };
-    }
+        };
+      }
 
-    if (confirmBtn) {
-      confirmBtn.onclick = async () => {
-        const code = codeInput ? codeInput.value.trim() : '';
-        if (code.length !== 6) {
-          alert('Please enter a 6-digit code.');
-          return;
-        }
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Verifying...';
-        try {
-          const endpoint = purpose === 'email' ? '/verification/email/confirm' : '/verification/phone/confirm';
-          const res = await fetch(getApiUrl(endpoint), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({ code })
-          });
-          const resData = await res.json().catch(() => ({}));
-          if (res.ok) {
-            confirmBtn.textContent = 'Verified ✓';
-            confirmBtn.style.background = 'var(--accent-green)';
-            confirmBtn.style.color = '#fff';
-            setTimeout(() => {
-              window.location.href = dest;
-            }, 800);
-          } else {
-            alert(resData.error || 'Invalid or expired verification code.');
+      if (confirmBtn) {
+        confirmBtn.onclick = async () => {
+          const code = codeInput ? codeInput.value.trim() : '';
+          if (code.length !== 6) {
+            alert('Please enter a 6-digit code.');
+            return;
+          }
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Verifying...';
+          try {
+            const res = await fetch(getApiUrl('/verification/email/confirm'), {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+              },
+              body: JSON.stringify({ code })
+            });
+            const resData = await res.json().catch(() => ({}));
+            if (res.ok) {
+              confirmBtn.textContent = 'Verified ✓';
+              confirmBtn.style.background = 'var(--accent-green)';
+              confirmBtn.style.color = '#fff';
+              setTimeout(() => {
+                window.location.href = dest;
+              }, 800);
+            } else {
+              alert(resData.error || 'Invalid or expired verification code.');
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = 'Confirm';
+            }
+          } catch (e) {
+            alert('Error verifying code: ' + e.message);
             confirmBtn.disabled = false;
             confirmBtn.textContent = 'Confirm';
           }
-        } catch (e) {
-          alert('Error verifying code: ' + e.message);
-          confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Confirm';
-        }
-      };
+        };
+      }
     }
   }

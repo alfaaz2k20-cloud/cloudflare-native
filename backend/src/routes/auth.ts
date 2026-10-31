@@ -153,6 +153,15 @@ authRouter.post('/federated-login', async (c) => {
       .bind(userRow.id)
       .first();
   } else {
+    // If client is in 'login' mode, do not auto-create an account: prompt them to register
+    const mode = body.mode;
+    if (mode === 'login') {
+      return c.json({
+        error: 'No account found with this Google email. Please register to join Alfaaz Collective.',
+        code: 'ACCOUNT_NOT_FOUND'
+      }, 404);
+    }
+
     // New account creation: If user has email but no phone, email must be verified
     if (email && !phone && !emailVerified) {
       return c.json({ error: 'Email address is not verified by authentication provider.' }, 401);
@@ -497,6 +506,9 @@ authRouter.patch('/me', requireAuth, async (c) => {
   const user = c.get('user');
   const body = await c.req.json().catch(() => ({}));
 
+  let updatedName: string | undefined;
+  let updatedPhone: string | undefined;
+
   if (body.full_name !== undefined) {
     const name = String(body.full_name || '').trim();
     if (name.length > 80) {
@@ -506,10 +518,33 @@ authRouter.patch('/me', requireAuth, async (c) => {
       .prepare('UPDATE users SET full_name = ? WHERE email = ? OR phone = ?')
       .bind(name || null, user.email, user.email)
       .run();
-    return c.json({ status: 'SUCCESS', full_name: name });
+    updatedName = name;
   }
 
-  return c.json({ status: 'SUCCESS' });
+  if (body.phone !== undefined || body.whatsapp !== undefined) {
+    const rawPhone = String(body.phone || body.whatsapp || '').trim();
+    if (!rawPhone || !/^\+[1-9]\d{6,14}$/.test(rawPhone)) {
+      return c.json({ detail: 'A valid WhatsApp mobile number in E.164 format (e.g., +919876543210) is required.' }, 400);
+    }
+    const existing = await c.env.DB
+      .prepare('SELECT id FROM users WHERE phone = ? AND (email != ? OR email IS NULL)')
+      .bind(rawPhone, user.email || '')
+      .first();
+    if (existing) {
+      return c.json({ detail: 'This WhatsApp number is already in use by another account.' }, 409);
+    }
+    await c.env.DB
+      .prepare('UPDATE users SET phone = ?, phone_verified = 1 WHERE email = ? OR phone = ?')
+      .bind(rawPhone, user.email, user.email)
+      .run();
+    updatedPhone = rawPhone;
+  }
+
+  return c.json({
+    status: 'SUCCESS',
+    ...(updatedName !== undefined ? { full_name: updatedName } : {}),
+    ...(updatedPhone !== undefined ? { phone: updatedPhone, phone_verified: 1 } : {})
+  });
 });
 
 export default authRouter;

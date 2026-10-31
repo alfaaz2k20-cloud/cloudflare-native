@@ -125,6 +125,9 @@
       gap: 8px;
       margin-bottom: 1.5rem;
     }
+    .social-buttons-grid.has-active-google {
+      grid-template-columns: repeat(2, 1fr);
+    }
     .social-badge-btn {
       display: flex;
       align-items: center;
@@ -302,11 +305,30 @@
       <span id="footerText">New to the collective?</span> <a href="#" id="footerActionLink">Register here</a>
     </div>
 
-    <!-- Curatorial Contact Cross-Verification Step (Revealed when email or phone unverified) -->
+    <!-- Curatorial Contact Cross-Verification Step (Revealed when email unverified or capturing WhatsApp) -->
     <div id="verificationStep" style="display: none; text-align: center; margin-top: 1.5rem;">
       <div class="data-label" style="font-size: 11px; color: var(--accent-gold); margin-bottom: 0.5rem;" id="verifStepTitle">Contact Verification</div>
       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.25rem;" id="verifStepDesc">To ensure collective integrity, please verify your mobile phone number.</p>
       
+      <div id="verifPhoneGroup" class="input-group" style="display: none; text-align: left;">
+        <label class="input-label" for="verifPhoneInput">WhatsApp Mobile Number</label>
+        <div class="phone-field-row" style="display: flex; gap: 0.5rem;">
+          <select id="verifCountryPrefix" class="country-prefix-select" aria-label="Country Code" style="width: 110px; flex-shrink: 0;">
+            <option value="+91" selected>IN +91</option>
+            <option value="+1">US/CA +1</option>
+            <option value="+44">UK +44</option>
+            <option value="+971">AE +971</option>
+            <option value="+966">SA +966</option>
+            <option value="+880">BD +880</option>
+            <option value="+49">DE +49</option>
+            <option value="+33">FR +33</option>
+            <option value="+61">AU +61</option>
+            <option value="+">Other (+)</option>
+          </select>
+          <input type="tel" id="verifPhoneInput" class="auth-input" placeholder="9876543210" autocomplete="tel" style="flex: 1;">
+        </div>
+      </div>
+
       <div id="verifTargetGroup" class="input-group" style="text-align: left;">
         <label class="input-label" id="verifTargetLabel" for="verifTarget">Mobile Phone (E.164)</label>
         <input type="text" id="verifTarget" class="auth-input" placeholder="+14155552671">
@@ -318,11 +340,12 @@
       </div>
 
       <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+        <button type="button" class="submit-btn gold" id="saveWhatsAppBtn" style="flex: 1; display: none;">Save &amp; Continue &rarr;</button>
         <button type="button" class="submit-btn" id="sendCodeBtn" style="flex: 1;">Send Code</button>
         <button type="button" class="submit-btn gold" id="confirmCodeBtn" style="flex: 1; display: none;">Confirm</button>
       </div>
 
-      <div style="margin-top: 1rem;">
+      <div id="skipVerifContainer" style="margin-top: 1rem; display: none;">
         <a href="dashboard.html" id="skipVerifLink" style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; text-decoration: underline;">Skip for now &rarr;</a>
       </div>
     </div>
