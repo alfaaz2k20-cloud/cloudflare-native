@@ -46,16 +46,23 @@
       font-weight: 400;
       letter-spacing: 0.5px;
       color: var(--text-primary);
-      line-height: 1.2;
+      line-height: 1.25;
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 0.85rem;
+      position: relative;
     }
     .masthead-title.ur-hover::before {
       font-size: 1.15em;
+      top: 36%;
+      line-height: 1.2;
     }
     .masthead-subtitle {
       font-size: 12px;
       color: var(--text-secondary);
       letter-spacing: 1px;
-      margin-top: 6px;
+      margin-top: 0.25rem;
+      line-height: 1.5;
     }
     .display-name {
       font-family: var(--font-heading);
@@ -92,27 +99,135 @@
       .dash-container { margin: 5.5rem auto 3rem; padding: 0 1rem; }
       .masthead-card { padding: 1.75rem 1.25rem; }
       .masthead-title { font-size: 1.8rem; }
-      .display-name { font-size: 1.7rem; }
+      .display-name { font-size: 1.7rem; word-break: break-word; }
       .dropdown-card { padding: 1.5rem 1.25rem; }
       .panel-title { font-size: 1.4rem; }
       .masthead-meta { flex-direction: column; align-items: flex-start; gap: 1rem; }
       .masthead-meta > div:last-child { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
-      .masthead-meta .action-btn { width: 100%; text-align: center; }
+      .masthead-meta .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 40px; }
+      .vault-feature-banner { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .vault-feature-banner > div:last-child { width: 100%; }
+      .vault-feature-banner .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 40px; }
       .stepper-bar { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
       .modal-overlay > div { padding: 2rem 1.25rem !important; }
+
+      /* Prevent iOS Safari auto-zoom on input focus */
+      select, textarea, input[type="text"], input[type="tel"], #curatorInput {
+        font-size: 16px !important;
+      }
+
+      /* Inner card status views */
+      #clubStatusView,
+      #exhibPendingView,
+      #exhibRejectedView,
+      #exhibApprovedView > div,
+      #exhibFinalizedView {
+        padding: 1.5rem 1.15rem !important;
+      }
     }
     @media (max-width: 480px) {
-      .nav-actions { gap: 1rem !important; }
-      .nav-actions a, .nav-actions button { font-size: 10px !important; letter-spacing: 1px !important; }
+      .dash-container { margin: 4.8rem auto 2.5rem; padding: 0 0.85rem; }
+      .masthead-card { padding: 1.5rem 1rem; }
+      .dropdown-card { padding: 1.25rem 1rem; }
+      .panel-title { font-size: 1.3rem; }
+      .card-header-clickable { min-height: 44px; padding-bottom: 1rem; }
+      .nav-actions { gap: 0.75rem !important; }
+      .nav-actions a, .nav-actions button {
+        font-size: 10px !important;
+        letter-spacing: 1px !important;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+      }
       .masthead-title { font-size: 1.5rem; }
+      .display-name { font-size: 1.4rem; }
+      .masthead-top > div:last-child {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+      .masthead-top > div:last-child .action-btn {
+        flex: 1 1 auto;
+        text-align: center;
+        justify-content: center;
+      }
+      #nameEditRow, #phoneEditRow {
+        max-width: 100% !important;
+      }
+      #nameEditRow input, #phoneEditRow input {
+        width: 100% !important;
+        margin-bottom: 0.5rem !important;
+      }
+      #nameEditRow button, #phoneEditRow button {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-height: 38px;
+        text-align: center;
+        justify-content: center;
+      }
       .list-item { flex-direction: column; align-items: flex-start; gap: 1rem; }
       .list-item > div:last-child { width: 100%; align-items: stretch !important; }
-      .list-item .action-btn { width: 100%; text-align: center; }
+      .list-item .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 42px; }
       .ticket-item { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-      .phantom-input-wrapper { flex-direction: column; }
-      .phantom-btn { padding: 0.8rem 1rem; width: 100%; }
-      .phantom-chips { flex-direction: column; }
-      .inquiry-chip { width: 100%; text-align: left; }
+
+      /* Curator AI Mobile Ergonomics */
+      .curator-chips, .phantom-chips { flex-direction: column; width: 100%; gap: 0.4rem; }
+      .inquiry-chip {
+        width: 100%;
+        text-align: left;
+        padding: 0.6rem 0.85rem;
+        font-size: 11px;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+      }
+      .curator-input-wrapper, .phantom-input-wrapper { flex-direction: column; border: 1px solid var(--grid-border); }
+      #curatorInput, #phantomInput {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid var(--grid-border);
+      }
+      .curator-btn, .phantom-btn {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        font-size: 11px;
+        min-height: 42px;
+        text-align: center;
+        justify-content: center;
+      }
+      #curatorOutput, #phantomOutput { height: 210px; padding: 1rem; font-size: 12.5px; }
+
+      /* Stepper Bar on small screens */
+      .stepper-bar { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; padding: 0.5rem; }
+      .step-node { font-size: 8px; letter-spacing: 0.5px; padding: 0.4rem 0.15rem; }
+
+      /* Full width toasts on mobile */
+      #toastContainer {
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+        align-items: center;
+      }
+      .toast {
+        width: 100%;
+        max-width: 100%;
+        text-align: center;
+        transform: translateY(20px);
+      }
+      .toast.show {
+        transform: translateY(0);
+      }
+
+      /* Modal buttons on mobile */
+      #rsvpModal div[style*="justify-content: flex-end"] {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+        width: 100%;
+      }
+      #rsvpModal .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 42px; }
+      #guideModal .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 42px; }
     }
     
     /* Dropdown Tab Card Architecture */
@@ -135,6 +250,15 @@
       padding-bottom: 1.25rem;
       border-bottom: 1px solid var(--grid-border);
       transition: padding 0.3s ease, border-color 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card-header-clickable > div:first-child {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      flex: 1;
+      min-width: 0;
     }
     .dropdown-card.collapsed .card-header-clickable {
       border-bottom: 1px solid transparent;
@@ -390,8 +514,11 @@
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
-      padding: 0;
+      padding: 0.4rem 0.5rem;
       font-weight: 500;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
     }
     .edit-name-btn:hover { text-decoration: underline; }
     
@@ -435,9 +562,6 @@
     </a>
     
     <div class="nav-actions" style="display:flex; align-items:center; gap: 2rem;">
-      <a href="submit.html" class="ur-hover" data-ur="تخلیق" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">
-        <span class="en-text">Submit</span>
-      </a>
       <a href="dashboard.html" class="ur-hover" data-ur="دیوان" style="font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; font-weight: 500;">
         <span class="en-text">Dashboard</span>
       </a>
@@ -467,8 +591,8 @@
       </div>
 
       <div class="data-label">Display Name</div>
-      <div id="nameDisplayRow" style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 0.5rem;">
-        <span id="dashName" class="display-name">—</span>
+      <div id="nameDisplayRow" style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+        <span id="dashName" class="display-name" style="word-break: break-word;">—</span>
         <button class="edit-name-btn" onclick="startEditName()">[Edit Name]</button>
       </div>
       <div id="nameEditRow" style="display:none; align-items:center; gap:0.75rem; margin-bottom:1.25rem; max-width: 420px; flex-wrap: wrap;">
@@ -478,8 +602,8 @@
       </div>
 
       <div class="data-label" style="margin-top: 1rem;">WhatsApp Number</div>
-      <div id="phoneDisplayRow" style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 0.5rem;">
-        <span id="dashPhone" class="display-name" style="font-size: 1.15rem; color: var(--text-secondary);">Not provided</span>
+      <div id="phoneDisplayRow" style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+        <span id="dashPhone" class="display-name" style="font-size: 1.15rem; color: var(--text-secondary); word-break: break-word;">Not provided</span>
         <button class="edit-name-btn" id="btnEditPhone" onclick="startEditPhone()">[Edit Phone]</button>
       </div>
       <div id="phoneEditRow" style="display:none; align-items:center; gap:0.75rem; margin-bottom:1.25rem; max-width: 440px; flex-wrap: wrap;">
@@ -493,15 +617,32 @@
         <div>
           <span class="data-label" style="margin-bottom: 4px;">Registered Email &amp; Account</span>
           <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 2px;">
-            <span id="dashEmail" style="font-size: 13px; color: var(--text-secondary);">Loading...</span>
+            <span id="dashEmail" style="font-size: 13px; color: var(--text-secondary); word-break: break-all;">Loading...</span>
             <span id="dashVerifiedBadge" class="badge badge-green" style="font-size: 9px; display: none;">Verified</span>
             <span id="dashProviderBadge" class="badge badge-gold" style="font-size: 9px;">Email Account</span>
           </div>
         </div>
         <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
           <a href="reset.html" class="action-btn" style="padding: 0.6rem 1.2rem; font-size: 10px; text-decoration: none;">Change Password</a>
-          <a href="submit.html" class="action-btn gold" style="padding: 0.6rem 1.5rem; font-size: 10px;">Submit Manuscript</a>
           <a id="adminLink" href="admin.html" class="action-btn" style="display: none; padding: 0.6rem 1.5rem; font-size: 10px;">Admin Panel</a>
+        </div>
+      </div>
+
+      <!-- CURATORIAL CREATIVE VAULT SUBMISSIONS -->
+      <div class="vault-feature-banner" style="margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px dashed var(--grid-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
+        <div style="max-width: 620px;">
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+            <span class="data-label" style="margin-bottom: 0; color: var(--accent-gold-text); letter-spacing: 1.5px;">Curator's Creative Vault</span>
+            <span class="badge badge-gold" style="font-size: 9px;">Portfolios &amp; Manuscripts</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+            Directly submit your art portfolio, literary manuscript, or project proposal for curatorial review and archive consideration.
+          </p>
+        </div>
+        <div>
+          <a href="submit.html" class="action-btn gold" style="padding: 0.65rem 1.5rem; font-size: 11px; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+            Submit Creative Work &rarr;
+          </a>
         </div>
       </div>
     </div>
@@ -741,7 +882,7 @@
     <div style="max-width: 580px; width: 92%; max-height: 85vh; overflow-y: auto; padding: 3rem 2.5rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); position: relative;">
        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
          <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); font-weight: 400; margin: 0;">How Your Dashboard Works</h3>
-         <button onclick="closeGuideModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0 0.5rem;" aria-label="Close guide">&times;</button>
+         <button onclick="closeGuideModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.6rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;" aria-label="Close guide">&times;</button>
        </div>
        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
          Welcome to your personal account on Alfaaz Collective. Here is a simple explanation of what each section does:

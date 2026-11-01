@@ -286,6 +286,13 @@ h3.ur-hover {
   position: relative;
 }
 
+h1.ur-hover::before,
+h2.ur-hover::before,
+h3.ur-hover::before {
+  top: 38%;
+  line-height: 1.2;
+}
+
 /* Hero title */
 .hero-title {
   font-family: var(--font-heading);

@@ -10,6 +10,11 @@ const memoryStore = new Map<string, { count: number; expiresAt: number }>();
 
 export function rateLimiter(config: RateLimitConfig) {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
+    // Never rate limit CORS preflight OPTIONS requests
+    if (c.req.method === 'OPTIONS') {
+      return next();
+    }
+
     // Trust cf-connecting-ip from the Cloudflare edge; only fall back to the
     // client-supplied x-forwarded-for in the test environment (AGENTS.md invariant 3).
     const rawIp = c.req.header('cf-connecting-ip')

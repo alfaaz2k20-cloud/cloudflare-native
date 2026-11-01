@@ -99,7 +99,7 @@ app.use('*', async (c, next) => {
       return null;
     },
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'cf-turnstile-response'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'cf-turnstile-response', 'Accept', 'Origin'],
     exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
     maxAge: 86400,
     credentials: true

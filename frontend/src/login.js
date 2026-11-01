@@ -23,11 +23,21 @@ function getApiUrl(endpoint) {
 }
 
 async function federatedLogin(idToken, provider, mode) {
-  const res = await fetch(getApiUrl('/auth/federated-login'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id_token: idToken, provider, mode })
-  });
+  const url = getApiUrl('/auth/federated-login');
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token: idToken, provider, mode })
+    });
+  } catch (netErr) {
+    console.error('[FEDERATED AUTH NETWORK ERROR]', netErr, 'URL was:', url);
+    const err = new Error('Could not reach backend auth server. Please ensure local server is running on ' + window.location.origin);
+    err.code = 'NETWORK_ERROR';
+    throw err;
+  }
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.token) {
     const err = new Error(data.error || data.detail || 'Provider authentication failed.');
@@ -515,12 +525,15 @@ document.addEventListener('DOMContentLoaded', () => {
               markAuthSuccess();
               finalizeAuth(data, redirectTarget);
             } catch (err) {
+              console.error('[GIS AUTH HANDLER ERROR]', err);
               isFederatedAuthInProgress = false;
               if (submitBtn) submitBtn.disabled = false;
               if (err.status === 404 || err.code === 'ACCOUNT_NOT_FOUND') {
                 setAuthMode('register');
                 showHint(err.message || 'No account found. Please register below with your WhatsApp number to join.');
                 showSocialHint('');
+              } else if (err.code === 'NETWORK_ERROR' || (err.message && (err.message.includes('reach backend') || err.message.includes('Failed to fetch')))) {
+                showSocialHint(err.message || 'Connection to auth server failed. Please ensure local server is running.');
               } else {
                 showSocialHint(err.message || 'Google authentication failed.');
               }
