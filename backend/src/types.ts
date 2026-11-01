@@ -10,6 +10,7 @@ export interface Env {
   NODE_ENV?: string;
   FRONTEND_URL?: string;
   JWT_SECRET?: string;
+  CURATOR_SECRET_TOKEN?: string;
   PHANTOM_SECRET_TOKEN?: string;
   TURNSTILE_SECRET_KEY?: string;
   FIREBASE_PROJECT_ID?: string;
@@ -28,6 +29,7 @@ export interface Env {
 
   // External AI Keys
   GEMINI_API_KEY?: string;
+  GEMINI_MODEL?: string;
   GROQ_API_KEY?: string;
 }
 

@@ -82,22 +82,35 @@ KNOWLEDGE BASE:
 ${ALFAAZ_KNOWLEDGE}
 `.trim();
 
-export function offlineCuratorResponse(question: string): string {
+export function offlineCuratorResponse(question: string, latestBlog?: { title?: string; excerpt?: string } | null): string {
   const q = (question || '').toLowerCase();
-  if (/tchandervar|sister|offshoot|tch|frame|commercial|decor/.test(q)) {
+  if (/latest|reading|essay|article|journal|blog|contemplat|recent|write|written|publication/.test(q)) {
+    if (latestBlog?.title) {
+      return (
+        `Our latest curatorial reflection in the Journal is "${latestBlog.title}": ${latestBlog.excerpt} ` +
+        `You can explore the complete essay in our Journal at /blogs.html.`
+      );
+    }
+    return (
+      "Our curatorial journal features scholarly reflections on Kashmiri vernacular architecture, geometry, and literature, " +
+      "such as 'The Geometry of Stillness: Pinjrakari, Khatamband, and the Metaphysics of Kashmiri Vernacular Space'. " +
+      "You can read all published essays in our Journal at /blogs.html."
+    );
+  }
+  if (/tchandervar|sister|offshoot|tch|frame|commercial|decor|furniture|woodwork/.test(q)) {
     return (
       "Tchandervar (tch.alfaazcollective.org) is an official initiative and offshoot born out of the Alfaaz Collective. " +
       "Guided by the ethos 'It belongs to where it lives', it connects independent Kashmiri artists directly with residences, " +
       "boutique hotels, cafes, and offices through curated collections and bespoke handcrafted frames honoring Kashmiri architectural woodwork."
     );
   }
-  if (/insta|handle|contact|whatsapp|email|phone|reach/.test(q)) {
+  if (/insta|handle|contact|whatsapp|email|phone|reach|reach out|location|address/.test(q)) {
     return (
       "You can reach the Collective on Instagram @alfaaz.2020, via WhatsApp (+91 70066 13891), or by email at alfaaz2k20@gmail.com. " +
       "Archived open calls and portfolio submissions are also linked via linktr.ee/alfaaz2k20."
     );
   }
-  if (/bayaan|mahatta|nigeen|swan|lal chowk|history|margin|hashiya/.test(q)) {
+  if (/bayaan|mahatta|nigeen|swan|lal chowk|history|margin|hashiya|past/.test(q)) {
     return (
       "Our documented milestones span across Srinagar's cultural geography: Harud (Autumn 2020 at Nigeen Club), " +
       "Bayaan (Summer 2023 at Mahatta Art Gallery), Live Performance and Act (Summer 2023 at The Swan), " +
@@ -105,42 +118,57 @@ export function offlineCuratorResponse(question: string): string {
       "Each gathering is preserved in 'The Margins' archive on our home page."
     );
   }
-  if (/poet|rumi|shahid|habba|sepehri|lal ded|khatoon|faiz|verse/.test(q)) {
+  if (/poet|rumi|shahid|habba|sepehri|lal ded|khatoon|faiz|verse|ghazal/.test(q)) {
     return (
       "Our cultural conscience draws from the syncretic poetic traditions of the valley—from Lal Ded and Habba Khatoon " +
       "to modern voices like Agha Shahid Ali, along with philosophical companions like Sohrab Sepehri, Faiz, and Rumi. " +
       "As Sepehri wrote: 'Eyes must be washed, one must see differently; umbrellas must be closed, one must walk under the rain.'"
     );
   }
-  if (/recruit|apply|test|game|assessment|score|pass|volunteer/.test(q)) {
+  if (/recruit|apply|test|game|assessment|score|pass|volunteer|candidate/.test(q)) {
     return (
       "The Alfaaz candidate assessment is an immersive 11 to 13 minute creative journey combining 14 visual games " +
       "and situational scenarios. We seek authentic perspective, nuance, and intuition rather than formulas. " +
       "You may participate at your own pace through the recruitment portal."
     );
   }
-  if (/kaamil|khayaal|harud|exhibition|event/.test(q)) {
+  if (/exhibition|artwork|submit work|submission|guideline|rule|steps|fee|terms|payment/.test(q)) {
     return (
-      "Alfaaz has curated landmark gatherings including Kaamil, our annual multidisciplinary showcase, " +
-      "Khayaal for poetry, and Harud for the quiet harvest of autumn. Current open cycles and submission details " +
-      "are accessible via the Exhibition page."
+      "Exhibition submissions follow four straightforward stages: 1) Submit your artwork portfolio via the Exhibition tab; " +
+      "2) Curatorial review by our panel; 3) Review Terms & complete the nominal registration fee via UPI/QR; " +
+      "4) Upload your payment screenshot for accession confirmation. Check the Exhibition section of your dashboard to track your live status."
     );
   }
-  if (/club|film|photo|philosophy|literature|art/.test(q)) {
+  if (/event|gathering|poetry|reading|rsvp|pass|ticket|calendar|attend|harud|kaamil|khayaal/.test(q)) {
+    return (
+      "Alfaaz hosts regular contemplative gatherings across Srinagar, including Harud (autumn reflections), " +
+      "Kaamil (multidisciplinary arts showcase), Khayaal (poetry and spoken word), and Bayaan. " +
+      "You can browse upcoming dates and click 'Reserve Spot' directly in the Upcoming Events panel of your dashboard to receive your digital pass."
+    );
+  }
+  if (/club|film|photo|philosophy|literature|art|craft|circle|halqa/.test(q)) {
     return (
       "Our active circles span Art and Crafts, Film Club, Photography, Philosophy, and Literature. " +
-      "Members collaborate on workshops, photowalks, and collective projects through their dashboard."
+      "To join, select any circle in the Creative Clubs section of your dashboard, submit your expression of interest, " +
+      "and our circle lead will coordinate with you for upcoming workshops and sessions."
     );
   }
-  if (/who are you|what is alfaaz|about/.test(q)) {
+  if (/dashboard|how it works|guide|tutorial|profile|help|feature/.test(q)) {
+    return (
+      "Your Alfaaz Dashboard is divided into 5 simple dropdown areas: 1) Creative Clubs (join literature, film, photography, philosophy, or art circles); " +
+      "2) Art Exhibition (track your submission from review to confirmed spot); 3) Upcoming Events (browse and RSVP for passes); " +
+      "4) My Event Passes (view and verify your active reservations); and 5) Curator AI (ask questions anytime). Click the '[How It Works]' button at the top for an interactive guide."
+    );
+  }
+  if (/who are you|what is alfaaz|about|mission|vision/.test(q)) {
     return (
       "I am Curator AI of the Alfaaz Collective (الفاظ). We are an art, literature, and cultural movement founded in 2020 in Srinagar, " +
       "anchored in Himalayan and Kashmiri roots while conversing with global thought. Welcome to our space."
     );
   }
   return (
-    "Welcome to the Alfaaz Collective. As Curator AI, I guide our archives of exhibitions, literature, and art. " +
-    "How may I orient you through our current programming?"
+    "Welcome to the Alfaaz Collective. As Curator AI, I can assist you with details regarding our creative circles (Film, Literature, Photography, Art, Philosophy), " +
+    "exhibition submission guidelines, upcoming Srinagar gatherings, or our poetic archives. What would you like to explore?"
   );
 }
 
@@ -150,7 +178,26 @@ export async function askCuratorAi(
   history: Array<{ role: string; content: string }> = []
 ): Promise<string> {
   const cleanQ = (question || '').trim();
-  if (!cleanQ) return offlineCuratorResponse('');
+
+  // Retrieve latest published journal reflection from D1 to ground the Curator in current discourse
+  let latestBlog: { title?: string; excerpt?: string } | null = null;
+  if (env.DB && typeof env.DB.prepare === 'function') {
+    try {
+      latestBlog = await env.DB.prepare(
+        'SELECT title, excerpt FROM blogs WHERE is_published = 1 ORDER BY created_at DESC LIMIT 1'
+      ).first<{ title: string; excerpt: string }>();
+    } catch {
+      // In test fixtures or before blogs table seeded, fall back gracefully
+    }
+  }
+
+  if (!cleanQ) return offlineCuratorResponse('', latestBlog);
+
+  const blogContext = latestBlog?.title
+    ? `\nCURRENT PUBLISHED JOURNAL ESSAY IN OUR ARCHIVES:\nTitle: "${latestBlog.title}"\nExcerpt: "${latestBlog.excerpt}"\n(When asked about current readings, essays, or journal publications, reference this work and guide the user to /blogs.html).`
+    : '';
+
+  const activeSystemPrompt = `${CURATOR_SYSTEM_PROMPT}${blogContext}`;
 
   // 1. Google Gemini REST (if key configured)
   if (env.GEMINI_API_KEY) {
@@ -161,7 +208,10 @@ export async function askCuratorAi(
       }));
       contents.push({ role: 'user', parts: [{ text: cleanQ.slice(0, 800) }] });
 
-      const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+      const model = env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const encodedKey = encodeURIComponent(env.GEMINI_API_KEY);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodedKey}`;
+
       const res = await fetch(url, {
         method: 'POST',
         headers: {
@@ -169,7 +219,7 @@ export async function askCuratorAi(
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: CURATOR_SYSTEM_PROMPT }] },
+          system_instruction: { parts: [{ text: activeSystemPrompt }] },
           contents,
           generationConfig: {
             temperature: 0.6,
@@ -182,9 +232,12 @@ export async function askCuratorAi(
         const data: any = await res.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) return text.trim();
+      } else {
+        const errText = await res.text().catch(() => '');
+        console.error(`[CURATOR AI] Gemini API returned status ${res.status}:`, errText);
       }
     } catch (err) {
-      console.warn('[CURATOR AI] Gemini invocation failed:', err);
+      console.error('[CURATOR AI] Gemini invocation failed:', err);
     }
   }
 
@@ -192,7 +245,7 @@ export async function askCuratorAi(
   if (env.GROQ_API_KEY) {
     try {
       const messages = [
-        { role: 'system', content: CURATOR_SYSTEM_PROMPT },
+        { role: 'system', content: activeSystemPrompt },
         ...history.slice(-8).map(h => ({ role: h.role, content: h.content.slice(0, 800) })),
         { role: 'user', content: cleanQ.slice(0, 800) }
       ];
@@ -204,7 +257,7 @@ export async function askCuratorAi(
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
+          model: 'llama-3.3-70b-versatile',
           messages,
           temperature: 0.6,
           max_tokens: 450
@@ -215,14 +268,17 @@ export async function askCuratorAi(
         const data: any = await res.json();
         const text = data?.choices?.[0]?.message?.content;
         if (text) return text.trim();
+      } else {
+        const errText = await res.text().catch(() => '');
+        console.error(`[CURATOR AI] Groq API returned status ${res.status}:`, errText);
       }
     } catch (err) {
-      console.warn('[CURATOR AI] Groq fallback failed:', err);
+      console.error('[CURATOR AI] Groq fallback failed:', err);
     }
   }
 
   // 3. Grounded local offline synthesizer
-  return offlineCuratorResponse(cleanQ);
+  return offlineCuratorResponse(cleanQ, latestBlog);
 }
 
 export async function generateCuratorEssay(env: Env, topic?: string): Promise<{ title: string; excerpt: string; content: string }> {
@@ -248,7 +304,10 @@ OUTPUT REQUIREMENTS:
 
   if (env.GEMINI_API_KEY) {
     try {
-      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent', {
+      const model = env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const encodedKey = encodeURIComponent(env.GEMINI_API_KEY);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodedKey}`;
+      const res = await fetch(url, {
         method: 'POST',
         headers: {
           'x-goog-api-key': env.GEMINI_API_KEY,
@@ -271,6 +330,9 @@ OUTPUT REQUIREMENTS:
         if (rawText) {
           return JSON.parse(rawText);
         }
+      } else {
+        const errText = await res.text().catch(() => '');
+        console.error(`[CURATOR ESSAY] Gemini API returned status ${res.status}:`, errText);
       }
     } catch (err) {
       console.error('[CURATOR ESSAY] Gemini generation error:', err);

@@ -3,8 +3,12 @@ import { Env, JwtUserPayload } from '../types';
 import { requireAuth } from '../middleware/auth';
 import { sendSystemEmail } from '../notifications/email';
 import { sendSms } from '../notifications/sms';
+import { timingSafeEqual } from '../auth/crypto';
+import { rateLimiter } from '../middleware/rate_limit';
 
 const verificationRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
+
+verificationRouter.use('*', rateLimiter({ limit: 20, windowMs: 60 * 1000 }));
 
 function generateVerificationCode(): string {
   const array = new Uint32Array(1);
@@ -159,7 +163,7 @@ verificationRouter.post('/email/confirm', requireAuth, async (c) => {
     .run();
 
   const inputHash = await hashCode(code);
-  if (inputHash !== active.code_hash) {
+  if (!timingSafeEqual(inputHash, active.code_hash)) {
     return c.json({ error: 'Invalid verification code.' }, 400);
   }
 
@@ -308,7 +312,7 @@ verificationRouter.post('/phone/confirm', requireAuth, async (c) => {
     .run();
 
   const inputHash = await hashCode(code);
-  if (inputHash !== active.code_hash) {
+  if (!timingSafeEqual(inputHash, active.code_hash)) {
     return c.json({ error: 'Invalid verification code.' }, 400);
   }
 

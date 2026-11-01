@@ -14,241 +14,762 @@
   <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
   <title>Dashboard — ALFAAZ</title>
-  <script src="https://cdn.tailwindcss.com" defer></script>
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
   
-  
   <script type="module" src="src/dashboard.js"></script>
   <style>
-    .dash-container { max-width: 1200px; margin: 8rem auto 4rem; padding: 0 2rem; }
+    .dash-container { max-width: 1200px; margin: 7rem auto 4rem; padding: 0 2rem; }
     
-    /* Improved UI Layout */
-    .grid-layout { display: grid; grid-template-columns: 1.1fr 1fr; gap: 2.5rem; margin-bottom: 3rem; align-items: start; }
-    @media (max-width: 900px) { .grid-layout { grid-template-columns: 1fr; } }
+    /* Masthead Card */
+    .masthead-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--grid-border);
+      padding: 3rem 3rem 2.5rem;
+      margin-bottom: 2.5rem;
+      box-shadow: var(--shadow-base);
+      position: relative;
+    }
+    .masthead-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      border-bottom: 1px solid var(--grid-border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .masthead-title {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+    .masthead-title.ur-hover::before {
+      font-size: 1.15em;
+    }
+    .masthead-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      letter-spacing: 1px;
+      margin-top: 6px;
+    }
+    .display-name {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      color: var(--text-primary);
+      font-weight: 400;
+      letter-spacing: 0.5px;
+    }
+    .masthead-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed var(--grid-border);
+    }
     
-    /* Standardized Panels */
-    .panel { padding: 3.5rem 3rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-base); }
-    .panel-title { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; letter-spacing: 1px; margin-bottom: 2rem; color: var(--text-primary); border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem; }
+    /* 2-Column Symmetric Grid */
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .grid-layout { grid-template-columns: 1fr; }
+      .masthead-card { padding: 2rem 1.5rem; }
+      .masthead-top { flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 768px) {
+      .dash-container { margin: 5.5rem auto 3rem; padding: 0 1rem; }
+      .masthead-card { padding: 1.75rem 1.25rem; }
+      .masthead-title { font-size: 1.8rem; }
+      .display-name { font-size: 1.7rem; }
+      .dropdown-card { padding: 1.5rem 1.25rem; }
+      .panel-title { font-size: 1.4rem; }
+      .masthead-meta { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .masthead-meta > div:last-child { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+      .masthead-meta .action-btn { width: 100%; text-align: center; }
+      .stepper-bar { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+      .modal-overlay > div { padding: 2rem 1.25rem !important; }
+    }
+    @media (max-width: 480px) {
+      .nav-actions { gap: 1rem !important; }
+      .nav-actions a, .nav-actions button { font-size: 10px !important; letter-spacing: 1px !important; }
+      .masthead-title { font-size: 1.5rem; }
+      .list-item { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .list-item > div:last-child { width: 100%; align-items: stretch !important; }
+      .list-item .action-btn { width: 100%; text-align: center; }
+      .ticket-item { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+      .phantom-input-wrapper { flex-direction: column; }
+      .phantom-btn { padding: 0.8rem 1rem; width: 100%; }
+      .phantom-chips { flex-direction: column; }
+      .inquiry-chip { width: 100%; text-align: left; }
+    }
     
-    .data-value { font-size: 15px; margin-bottom: 2rem; color: var(--text-primary); font-weight: 400; display: flex; align-items: center; gap: 1rem; }
+    /* Dropdown Tab Card Architecture */
+    .dropdown-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--grid-border);
+      box-shadow: var(--shadow-base);
+      padding: 2.25rem 2.25rem;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    .dropdown-card:hover {
+      box-shadow: var(--shadow-float);
+    }
+    .card-header-clickable {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--grid-border);
+      transition: padding 0.3s ease, border-color 0.3s ease;
+    }
+    .dropdown-card.collapsed .card-header-clickable {
+      border-bottom: 1px solid transparent;
+      padding-bottom: 0;
+    }
+    .panel-title {
+      font-family: var(--font-heading);
+      font-size: 1.7rem;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .chevron-indicator {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--text-secondary);
+      border: 1px solid var(--grid-border);
+      width: 28px;
+      height: 28px;
+      transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+    }
+    .dropdown-card:hover .chevron-indicator {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold-text);
+    }
+    .dropdown-card.collapsed .chevron-indicator {
+      transform: rotate(-90deg);
+    }
+    .card-body {
+      margin-top: 1.5rem;
+      transition: opacity 0.3s ease;
+    }
+    .dropdown-card.collapsed .card-body {
+      display: none;
+    }
     
-    .badge { display: inline-block; padding: 0.4rem 1rem; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; border: 1px solid; border-radius: 2px; font-weight: 500; }
-    .badge-gold { background: rgba(184, 134, 11, 0.05); color: var(--accent-gold-text); border-color: var(--accent-gold); }
-    .badge-green { background: rgba(22, 163, 74, 0.05); color: var(--accent-green-text); border-color: var(--accent-green); }
-    .badge-red { background: rgba(220, 38, 38, 0.05); color: var(--accent-red-text); border-color: var(--accent-red); }
+    /* Lay Language Purpose Banner */
+    .card-purpose-banner {
+      background: var(--bg-primary);
+      border-left: 3px solid var(--accent-gold);
+      padding: 0.85rem 1.2rem;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    .card-purpose-banner strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    
+    /* Editorial Badges & Stamps */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.85rem;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border: 1px solid;
+      border-radius: 0;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .badge-gold {
+      background: rgba(189, 111, 93, 0.08);
+      color: var(--accent-gold-text);
+      border-color: var(--accent-gold);
+    }
+    .badge-green {
+      background: rgba(122, 143, 124, 0.1);
+      color: var(--accent-green-text);
+      border-color: var(--accent-green);
+    }
+    .badge-red {
+      background: rgba(201, 107, 101, 0.1);
+      color: var(--accent-red-text);
+      border-color: var(--accent-red);
+    }
     
     /* Clean Inputs */
-    select, textarea, input[type="text"], input[type="file"] { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); font-family: var(--font-body); font-size: 13px; padding: 0.8rem 0; margin-bottom: 1.5rem; transition: border-color 0.3s ease; border-radius: 0; }
-    select:focus, textarea:focus, input[type="text"]:focus { outline: none; border-bottom-color: var(--accent-gold); }
+    select, textarea, input[type="text"], input[type="file"] {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--grid-border);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 0.75rem 0;
+      margin-bottom: 1.5rem;
+      transition: border-color 0.3s ease;
+      border-radius: 0;
+    }
+    select:focus, textarea:focus, input[type="text"]:focus {
+      outline: none;
+      border-bottom-color: var(--accent-gold);
+    }
     
-    input[type="file"]::file-selector-button { background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--grid-border); padding: 0.6rem 1.2rem; margin-right: 1rem; font-family: var(--font-body); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.3s; border-radius: 0; }
-    input[type="file"]::file-selector-button:hover { background: var(--text-primary); color: #fff; }
+    input[type="file"]::file-selector-button {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border: 1px solid var(--grid-border);
+      padding: 0.5rem 1.2rem;
+      margin-right: 1rem;
+      font-family: var(--font-body);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-radius: 0;
+    }
+    input[type="file"]::file-selector-button:hover {
+      background: var(--text-primary);
+      color: #fff;
+    }
 
-    /* Lists & Items */
-    .list-item { padding: 1.5rem; border: 1px solid var(--grid-border); background: transparent; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; transition: border-color 0.3s ease; }
-    .list-item:hover { border-color: var(--accent-gold); }
+    /* Event & Ticket List Items */
+    .list-item {
+      padding: 1.5rem;
+      border: 1px solid var(--grid-border);
+      background: var(--bg-primary);
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      transition: border-color 0.3s ease, background 0.3s ease;
+    }
+    .list-item:hover {
+      border-color: var(--accent-gold);
+      background: #faf8f5;
+    }
     
-    /* Phantom Terminal Polish */
-    #phantomTerminal { margin-top: 4rem; border: 1px solid var(--grid-border); background: var(--bg-secondary); padding: 3rem; box-shadow: var(--shadow-float); }
-    .phantom-header { border-bottom: 1px dashed var(--grid-border); padding-bottom: 1rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: baseline;}
-    #phantomOutput { background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.5rem; height: 250px; overflow-y: auto; font-size: 13px; margin-bottom: 1.5rem; }
-    .phantom-input-wrapper { display: flex; border: 1px solid var(--grid-border); }
-    #phantomInput { flex: 1; padding: 1rem; border: none; outline: none; font-size: 13px; margin-bottom: 0; background: transparent;}
-    .phantom-btn { background: var(--text-primary); color: var(--bg-secondary); padding: 0 2rem; font-family: var(--font-body); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; border: none; cursor: pointer; transition: background 0.3s ease; }
-    .phantom-btn:hover { background: var(--accent-gold); }
+    .ticket-item {
+      border-left: 3px solid var(--accent-green);
+      background: var(--bg-primary);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
     
-    .edit-name-btn { background: none; border: none; font-size: 10px; color: var(--accent-gold-text); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; padding: 0;}
+    /* Exhibition Stepper */
+    .stepper-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      background: var(--bg-primary);
+      padding: 0.85rem;
+      border: 1px solid var(--grid-border);
+    }
+    .step-node {
+      text-align: center;
+      font-size: 9px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      padding: 0.5rem 0.25rem;
+      border-bottom: 2px solid var(--grid-border);
+      transition: all 0.3s ease;
+    }
+    .step-node.active {
+      color: var(--accent-gold-text);
+      border-bottom-color: var(--accent-gold);
+      font-weight: 600;
+    }
+    .step-node.done {
+      color: var(--accent-green-text);
+      border-bottom-color: var(--accent-green);
+      font-weight: 500;
+    }
+    
+    /* Curator AI Desk */
+    #curatorTerminal, #phantomTerminal {
+      margin-top: 0;
+      margin-bottom: 3rem;
+    }
+    #curatorOutput, #phantomOutput {
+      background: var(--bg-primary);
+      border: 1px solid var(--grid-border);
+      padding: 1.5rem;
+      height: 260px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+    .curator-chips, .phantom-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .inquiry-chip {
+      background: var(--bg-primary);
+      border: 1px solid var(--grid-border);
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.25s ease;
+    }
+    .inquiry-chip:hover {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold-text);
+    }
+    .curator-input-wrapper, .phantom-input-wrapper {
+      display: flex;
+      border: 1px solid var(--grid-border);
+    }
+    #curatorInput, #phantomInput {
+      flex: 1;
+      padding: 0.9rem 1.2rem;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      margin-bottom: 0;
+      background: transparent;
+      color: var(--text-primary);
+    }
+    .curator-btn, .phantom-btn {
+      background: var(--text-primary);
+      color: var(--bg-secondary);
+      padding: 0 2rem;
+      font-family: var(--font-body);
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .curator-btn:hover, .phantom-btn:hover { background: var(--accent-gold); }
+    
+    .edit-name-btn {
+      background: none;
+      border: none;
+      font-size: 10px;
+      color: var(--accent-gold-text);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 0;
+      font-weight: 500;
+    }
+    .edit-name-btn:hover { text-decoration: underline; }
     
     /* Toasts */
-    #toastContainer { position: fixed; bottom: 2rem; right: 2rem; z-index: 20000; display: flex; flex-direction: column; gap: 0.75rem; pointer-events: none; }
-    .toast { padding: 1rem 1.5rem; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; border-left: 3px solid; background: rgba(255,255,255,0.97); backdrop-filter: blur(12px); opacity: 0; transform: translateX(20px); transition: opacity 0.3s ease, transform 0.3s ease; box-shadow: var(--shadow-float); }
+    #toastContainer {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 20000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 0.9rem 1.4rem;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border-left: 3px solid;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      box-shadow: var(--shadow-float);
+    }
     .toast.show { opacity: 1; transform: translateX(0); }
     .toast.success { border-color: var(--accent-green); color: var(--accent-green-text); }
     .toast.error   { border-color: var(--accent-red);   color: var(--accent-red-text);   }
-
-    @media (max-width: 768px) { 
-        nav { padding: 1rem 1.5rem; } 
-        .nav-login { display: none !important; }
-        .mobile-only-link { display: block; } 
-        .panel { padding: 2.5rem 1.5rem; }
-    }
   </style>
 </head>
 <body>
   
   <div id="toastContainer"></div>
 
-    <nav id="navbar" style="justify-content: space-between;">
-    <a href="index.html" class="logo">ALFAAZ</a>
+  <!-- NAVIGATION -->
+  <nav id="navbar" style="justify-content: space-between;">
+    <a href="index.html" class="logo ur-hover" data-ur="الفاظ">
+      <span class="en-text">ALFAAZ</span>
+    </a>
     
-    <div class="nav-actions" style="gap: 2rem;">
-      <a href="dashboard.html" style="font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">Dashboard</a>
-      <button id="logoutBtn" style="background: transparent; border: none; color: var(--text-secondary); font-family: var(--font-body); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: color 0.3s ease;">Log Out</button>
+    <div class="nav-actions" style="display:flex; align-items:center; gap: 2rem;">
+      <a href="submit.html" class="ur-hover" data-ur="تخلیق" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">
+        <span class="en-text">Submit</span>
+      </a>
+      <a href="dashboard.html" class="ur-hover" data-ur="دیوان" style="font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; font-weight: 500;">
+        <span class="en-text">Dashboard</span>
+      </a>
+      <button id="logoutBtn" style="background: transparent; border: none; color: var(--text-secondary); font-family: var(--font-body); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: color 0.3s ease;">
+        Log Out
+      </button>
     </div>
   </nav>
 
   <div class="dash-container">
+    
+    <!-- MASTHEAD CARD -->
+    <div class="masthead-card">
+      <div class="masthead-top">
+        <div>
+          <h1 class="masthead-title ur-hover" data-ur="دیوان">
+            <span class="en-text">Member Dashboard</span>
+          </h1>
+          <p class="masthead-subtitle">Welcome back. Manage your profile, event passes, and applications.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+          <button type="button" onclick="openGuideModal()" class="action-btn gold" style="padding: 0.55rem 1.25rem; font-size: 10px; cursor: pointer;">
+            How It Works (Guide)
+          </button>
+          <span class="badge badge-gold" id="dashStatus">Loading...</span>
+        </div>
+      </div>
+
+      <div class="data-label">Display Name</div>
+      <div id="nameDisplayRow" style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 0.5rem;">
+        <span id="dashName" class="display-name">—</span>
+        <button class="edit-name-btn" onclick="startEditName()">[Edit Name]</button>
+      </div>
+      <div id="nameEditRow" style="display:none; align-items:center; gap:0.75rem; margin-bottom:1.25rem; max-width: 420px; flex-wrap: wrap;">
+        <input type="text" id="nameEditInput" style="margin:0; padding:0.5rem 0;" placeholder="Your full name">
+        <button class="action-btn gold" style="padding: 0.5rem 1.2rem; font-size: 9px;" onclick="saveEditName()">Save</button>
+        <button class="action-btn" style="padding: 0.5rem 1.2rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: transparent;" onclick="cancelEditName()">Cancel</button>
+      </div>
+
+      <div class="data-label" style="margin-top: 1rem;">WhatsApp Number</div>
+      <div id="phoneDisplayRow" style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 0.5rem;">
+        <span id="dashPhone" class="display-name" style="font-size: 1.15rem; color: var(--text-secondary);">Not provided</span>
+        <button class="edit-name-btn" id="btnEditPhone" onclick="startEditPhone()">[Edit Phone]</button>
+      </div>
+      <div id="phoneEditRow" style="display:none; align-items:center; gap:0.75rem; margin-bottom:1.25rem; max-width: 440px; flex-wrap: wrap;">
+        <input type="tel" id="phoneEditInput" style="margin:0; padding:0.5rem 0;" placeholder="+919876543210">
+        <button class="action-btn gold" style="padding: 0.5rem 1.2rem; font-size: 9px;" onclick="saveEditPhone()">Save</button>
+        <button class="action-btn" style="padding: 0.5rem 1.2rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: transparent;" onclick="cancelEditPhone()">Cancel</button>
+        <div style="font-size: 11px; color: var(--text-secondary); width: 100%; margin-top: 2px;">Include country code with plus sign, e.g. +919876543210</div>
+      </div>
+
+      <div class="masthead-meta">
+        <div>
+          <span class="data-label" style="margin-bottom: 4px;">Registered Email &amp; Account</span>
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 2px;">
+            <span id="dashEmail" style="font-size: 13px; color: var(--text-secondary);">Loading...</span>
+            <span id="dashVerifiedBadge" class="badge badge-green" style="font-size: 9px; display: none;">Verified</span>
+            <span id="dashProviderBadge" class="badge badge-gold" style="font-size: 9px;">Email Account</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          <a href="reset.html" class="action-btn" style="padding: 0.6rem 1.2rem; font-size: 10px; text-decoration: none;">Change Password</a>
+          <a href="submit.html" class="action-btn gold" style="padding: 0.6rem 1.5rem; font-size: 10px;">Submit Manuscript</a>
+          <a id="adminLink" href="admin.html" class="action-btn" style="display: none; padding: 0.6rem 1.5rem; font-size: 10px;">Admin Panel</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2-COLUMN SYMMETRIC DROPDOWN TABS -->
     <div class="grid-layout">
       
       <!-- LEFT COLUMN -->
-      <div style="display:flex; flex-direction:column; gap:2.5rem;">
+      <div style="display:flex; flex-direction:column; gap:2rem;">
         
-        <!-- PROFILE PANEL -->
-        <div class="panel">
-          <h2 class="panel-title">Your Profile</h2>
-          <div class="data-label">Display Name</div>
-          <div id="nameDisplayRow" class="data-value">
-            <span id="dashName" style="font-family: var(--font-heading); font-size: 1.8rem;">—</span>
-            <button class="edit-name-btn" onclick="startEditName()">[Edit]</button>
-          </div>
-          <div id="nameEditRow" style="display:none; align-items:center; gap:0.5rem; margin-bottom:1.5rem;">
-            <input type="text" id="nameEditInput" style="margin:0; padding:0.5rem; flex:1;">
-            <button class="edit-name-btn" onclick="saveEditName()">[Save]</button>
-            <button class="edit-name-btn" onclick="cancelEditName()" style="color:var(--text-secondary);">[Cancel]</button>
+        <!-- CARD 1: CREATIVE CLUBS -->
+        <div class="dropdown-card" id="cardClubs">
+          <div class="card-header-clickable" onclick="toggleCard('cardClubs')" role="button" tabindex="0" aria-expanded="true">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <h2 class="panel-title">Creative Clubs</h2>
+              <span class="badge badge-gold">Affiliation</span>
+            </div>
+            <span class="chevron-indicator">▼</span>
           </div>
           
-          <div class="data-label">Registered Email</div>
-          <div class="data-value" id="dashEmail" style="color: var(--text-secondary);">Loading...</div>
-          
-          <div class="data-label">Account Role</div>
-          <div class="data-value"><span class="badge badge-gold" id="dashStatus">Loading...</span></div>
-          <a id="adminLink" href="admin.html" class="action-btn gold" style="display: none; margin-top: 1rem; text-align: center;">Administration Panel</a>
+          <div class="card-body">
+            <div class="card-purpose-banner">
+              <strong>What this is for:</strong> Apply to join specialized creative groups (Literature, Art &amp; Craft, Film, Photography, Philosophy) to collaborate with other artists and receive guidance from our team.
+            </div>
+
+            <div id="clubStatusView" style="display: none; padding: 2rem; background: var(--bg-primary); border: 1px dashed var(--grid-border); text-align: center;">
+               <div class="data-label" style="margin-bottom: 12px;">Your Assigned Club</div>
+               <div style="font-family: var(--font-heading); font-size: 2.2rem; color: var(--text-primary); line-height: 1.1;" id="myClubName"></div>
+               <div id="myClubBadge" style="margin-top: 15px;"></div>
+               <p id="myClubNote" style="font-size: 12px; color: var(--text-secondary); margin-top: 20px; font-style: italic; border-top: 1px solid var(--grid-border); padding-top: 15px; line-height: 1.6;"></p>
+            </div>
+            
+            <div id="clubApplyView" style="display: none;">
+              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">Choose the club that best fits your creative practice:</p>
+              <div class="data-label">Select Club</div>
+              <select id="clubSelect">
+                <option value="Art & Craft">Art &amp; Craft (Visual Arts &amp; Pinjrakari)</option>
+                <option value="Film Club">Film Club (Cinema &amp; Video)</option>
+                <option value="Photography">Photography (Lens &amp; Documentary)</option>
+                <option value="Philosophy">Philosophy (Discourse &amp; Discussion)</option>
+                <option value="Literature">Literature (Prose &amp; Poetry)</option>
+              </select>
+              <div class="data-label">Introduce Yourself (Optional)</div>
+              <textarea id="clubNote" rows="3" placeholder="Tell us briefly about your interests or recent work..."></textarea>
+              <button id="clubSubmitBtn" class="action-btn gold" style="width: 100%;" onclick="submitClubApplication()">Apply to Join Club</button>
+              <div id="clubMsg" style="font-size: 10px; margin-top: 15px; letter-spacing: 2px; text-transform: uppercase; text-align: center;"></div>
+            </div>
+          </div>
         </div>
 
-        <!-- EXHIBITION PANEL -->
-        <div class="panel" id="exhibitionPanel" style="display: none;">
-          <h2 class="panel-title">Exhibition Portal</h2>
-          
-          <!-- State 1: Apply -->
-          <div id="exhibApplyView" style="display: none;">
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2rem;">Submit your portfolio directly to the Curator's Storage for the upcoming major exhibition.</p>
-            <a href="exhibition.html" class="action-btn gold" style="display: block; text-align: center;">Submit Application</a>
-          </div>
-          
-          <!-- State 2: Pending -->
-          <div id="exhibPendingView" style="display: none; padding: 2rem; background: var(--bg-primary); border: 1px dashed var(--grid-border); text-align: center;">
-            <div class="data-label" style="margin-bottom: 15px;">Review Status</div>
-            <span class="badge badge-gold">Under Review</span>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 20px; font-style: italic;">Your portfolio is currently under review by the Curator.</p>
-          </div>
-          
-          <!-- State 3: Rejected -->
-          <div id="exhibRejectedView" style="display: none; padding: 2rem; background: rgba(201, 107, 101, 0.05); border: 1px solid var(--accent-red); text-align: center;">
-            <span class="badge badge-red" style="margin-bottom: 15px;">Not Selected</span>
-            <p id="exhibRejectedNote" style="font-size: 12px; color: var(--text-secondary); margin-top: 10px; font-style: italic;"></p>
+        <!-- CARD 2: ART EXHIBITION SUBMISSIONS -->
+        <div class="dropdown-card" id="cardExhib" style="display: block;">
+          <div class="card-header-clickable" onclick="toggleCard('cardExhib')" role="button" tabindex="0" aria-expanded="true">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <h2 class="panel-title">Art Exhibition</h2>
+              <span class="badge badge-gold">Submissions</span>
+            </div>
+            <span class="chevron-indicator">▼</span>
           </div>
 
-          <!-- State 4: Approved (Needs Payment & T&C) -->
-          <div id="exhibApprovedView" style="display: none;">
-            <div style="border: 1px solid var(--accent-green); padding: 2rem; background: rgba(22, 163, 74, 0.05); margin-bottom: 2rem;">
-              <span class="badge badge-green" style="margin-bottom: 1rem;">Approved</span>
-              <p style="font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); margin-bottom: 0.5rem;">Congratulations.</p>
-              <p id="exhibApprovedNote" style="font-size:12px; color:var(--text-secondary); font-style:italic; border-left: 2px solid var(--accent-gold); padding-left: 1rem; margin-bottom: 2rem;"></p>
+          <div class="card-body">
+            <div class="card-purpose-banner">
+              <strong>What this is for:</strong> Track your exhibition artwork submission through 4 simple steps: Portfolio Submission, Review, Terms &amp; Payment Proof, and Final Confirmation.
+            </div>
+
+            <!-- Stepper Indicator -->
+            <div class="stepper-bar" id="exhibStepper">
+              <div class="step-node" id="step1">1. Submission</div>
+              <div class="step-node" id="step2">2. Review</div>
+              <div class="step-node" id="step3">3. Payment</div>
+              <div class="step-node" id="step4">4. Confirmed</div>
+            </div>
+
+            <div id="exhibitionPanel" style="display: none;">
+              <!-- State 1: Apply -->
+              <div id="exhibApplyView" style="display: none;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">The exhibition call is currently open. Submit your portfolio to be considered for the upcoming exhibition.</p>
+                <a href="exhibition.html" class="action-btn gold" style="display: block; text-align: center;">Submit Artwork to Exhibition</a>
+              </div>
               
-              <div style="border-top: 1px dashed var(--accent-green); padding-top: 1.5rem;">
-                <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-green-text); margin-bottom: 1rem; font-weight: 600;">Finalize Registration</p>
-                
-                <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
-                  <a id="btnTcLink" href="#" target="_blank" class="action-btn" style="text-align: center; text-decoration: none; padding: 0.8rem;">1. Read Terms & Conditions</a>
-                  <a id="btnPaymentLink" href="#" target="_blank" class="action-btn gold" style="text-align: center; text-decoration: none; padding: 0.8rem;">2. Complete Payment (UPI/QR)</a>
-                  <div id="paymentDetails" style="display:none; font-size: 11px; color: var(--text-secondary); line-height: 1.6; border-left: 2px solid var(--accent-gold); padding-left: 1rem;"></div>
-                </div>
+              <!-- State 2: Pending Review -->
+              <div id="exhibPendingView" style="display: none; padding: 2rem; background: var(--bg-primary); border: 1px dashed var(--grid-border); text-align: center;">
+                <div class="data-label" style="margin-bottom: 12px;">Submission Status</div>
+                <span class="badge badge-gold">Under Review</span>
+                <p style="font-size: 12px; color: var(--text-secondary); margin-top: 15px; font-style: italic; line-height: 1.6;">Your artwork submission is currently being reviewed by our curatorial team. We will update you here soon.</p>
+              </div>
+              
+              <!-- State 3: Not Selected -->
+              <div id="exhibRejectedView" style="display: none; padding: 2rem; background: rgba(201, 107, 101, 0.05); border: 1px solid var(--accent-red); text-align: center;">
+                <span class="badge badge-red" style="margin-bottom: 12px;">Not Selected</span>
+                <p id="exhibRejectedNote" style="font-size: 12px; color: var(--text-secondary); margin-top: 10px; font-style: italic; line-height: 1.6;"></p>
+              </div>
 
-                <form id="paymentProofForm">
-                  <div class="data-label" style="color: var(--text-primary);">3. Upload Payment Screenshot</div>
-                  <input type="file" id="paymentScreenshot" required style="margin-bottom: 1rem;">
+              <!-- State 4: Approved (Awaiting Payment Proof & T&C) -->
+              <div id="exhibApprovedView" style="display: none;">
+                <div style="border: 1px solid var(--accent-green); padding: 2rem; background: rgba(122, 143, 124, 0.06); margin-bottom: 1.5rem;">
+                  <span class="badge badge-green" style="margin-bottom: 1rem;">Selected!</span>
+                  <p style="font-family: var(--font-heading); font-size: 1.6rem; color: var(--text-primary); margin-bottom: 0.5rem;">Congratulations, your work is selected.</p>
+                  <p id="exhibApprovedNote" style="font-size:12px; color:var(--text-secondary); font-style:italic; border-left: 2px solid var(--accent-gold); padding-left: 1rem; margin-bottom: 1.5rem; line-height: 1.6;"></p>
                   
-                  <label style="display: flex; align-items: flex-start; gap: 0.8rem; cursor: pointer; margin-bottom: 2rem;">
-                    <input type="checkbox" id="tcCheckbox" required style="width: auto; margin-top: 4px;">
-                    <span style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">I confirm that I have read and agree to adhere to the Terms & Conditions of the exhibition.</span>
-                  </label>
+                  <div style="border-top: 1px dashed var(--accent-green); padding-top: 1.5rem;">
+                    <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-green-text); margin-bottom: 1rem; font-weight: 600;">Final Step: Complete Registration</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
+                      <a id="btnTcLink" href="#" target="_blank" class="action-btn" style="text-align: center; text-decoration: none; padding: 0.8rem;">1. Read Terms &amp; Conditions</a>
+                      <a id="btnPaymentLink" href="#" target="_blank" class="action-btn gold" style="text-align: center; text-decoration: none; padding: 0.8rem;">2. Pay Registration Fee (UPI / QR)</a>
+                      <div id="paymentDetails" style="display:none; font-size: 11px; color: var(--text-secondary); line-height: 1.6; border-left: 2px solid var(--accent-gold); padding-left: 1rem;"></div>
+                    </div>
 
-                  <button type="submit" id="finalizeExhibBtn" class="submit-btn" style="width: 100%;">Finalize Registration</button>
-                  <div id="finalizeMsg" style="font-size: 11px; margin-top: 1rem; text-align: center; text-transform: uppercase; letter-spacing: 1px;"></div>
-                </form>
+                    <form id="paymentProofForm">
+                      <div class="data-label" style="color: var(--text-primary);">3. Upload Payment Screenshot</div>
+                      <input type="file" id="paymentScreenshot" required style="margin-bottom: 1rem;">
+                      
+                      <label style="display: flex; align-items: flex-start; gap: 0.8rem; cursor: pointer; margin-bottom: 1.5rem;">
+                        <input type="checkbox" id="tcCheckbox" required style="width: auto; margin-top: 4px;">
+                        <span style="font-size: 11px; color: var(--text-secondary); line-height: 1.5;">I have read and agree to the Terms &amp; Conditions of the exhibition.</span>
+                      </label>
+
+                      <button type="submit" id="finalizeExhibBtn" class="submit-btn" style="width: 100%;">Submit Payment Proof</button>
+                      <div id="finalizeMsg" style="font-size: 10px; margin-top: 1rem; text-align: center; text-transform: uppercase; letter-spacing: 1px;"></div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- State 5: Accession Finalized -->
+              <div id="exhibFinalizedView" style="display: none; padding: 2.5rem 2rem; background: var(--bg-primary); border: 1px solid var(--grid-border); text-align: center;">
+                <span class="badge badge-green" style="margin-bottom: 12px;">Registration Confirmed</span>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; line-height: 1.6;">Your payment proof is received. Your spot in the exhibition is secured. We look forward to seeing your work in person!</p>
               </div>
             </div>
           </div>
-          
-          <!-- State 5: Finalized -->
-          <div id="exhibFinalizedView" style="display: none; padding: 3rem 2rem; background: var(--bg-primary); border: 1px solid var(--grid-border); text-align: center;">
-            <span class="badge badge-green" style="margin-bottom: 15px;">Registration Complete</span>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">Your payment has been logged. See you at the exhibition.</p>
-          </div>
+        </div>
 
-        </div>
-        
-        <!-- CLUBS PANEL -->
-        <div class="panel">
-          <h2 class="panel-title">Collective Affiliation</h2>
-          <div id="clubStatusView" style="display: none; padding: 2rem; background: var(--bg-primary); border: 1px dashed var(--grid-border); text-align: center;">
-             <div class="data-label" style="margin-bottom: 15px;">Current Assignment</div>
-             <div style="font-family: var(--font-heading); font-size: 2.5rem; color: var(--text-primary); line-height: 1;" id="myClubName"></div>
-             <div id="myClubBadge" style="margin-top: 15px;"></div>
-             <p id="myClubNote" style="font-size: 11px; color: var(--text-secondary); margin-top: 20px; font-style: italic; border-top: 1px solid var(--grid-border); padding-top: 15px;"></p>
-          </div>
-          <div id="clubApplyView" style="display: none;">
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.6;">Request placement in one of the active collectives.</p>
-            <div class="data-label">Select Collective</div>
-            <select id="clubSelect">
-              <option value="Art & Craft">Art & Craft (Visual Arts)</option>
-              <option value="Film Club">Film Club (Cinema)</option>
-              <option value="Photography">Photography (Lens)</option>
-              <option value="Philosophy">Philosophy (Discourse)</option>
-              <option value="Literature">Literature (Prose & Poetry)</option>
-            </select>
-            <div class="data-label">Curator's Note (Optional)</div>
-            <textarea id="clubNote" rows="3" placeholder="Brief pitch defining your intent..."></textarea>
-            <button id="clubSubmitBtn" class="action-btn gold" style="width: 100%;" onclick="submitClubApplication()">Submit Application</button>
-            <div id="clubMsg" style="font-size: 10px; margin-top: 15px; letter-spacing: 2px; text-transform: uppercase; text-align: center;"></div>
-          </div>
-        </div>
       </div>
 
       <!-- RIGHT COLUMN -->
-      <div style="display:flex; flex-direction:column; gap:2.5rem;">
+      <div style="display:flex; flex-direction:column; gap:2rem;">
         
-        <!-- UPCOMING EVENTS -->
-        <div class="panel">
-          <h2 class="panel-title">Upcoming Events</h2>
-          <div id="activeEventsContainer"><p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Looking for upcoming events...</p></div>
+        <!-- CARD 3: UPCOMING EVENTS -->
+        <div class="dropdown-card" id="cardEvents">
+          <div class="card-header-clickable" onclick="toggleCard('cardEvents')" role="button" tabindex="0" aria-expanded="true">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <h2 class="panel-title">Upcoming Events</h2>
+              <span class="badge badge-gold">Calendar</span>
+            </div>
+            <span class="chevron-indicator">▼</span>
+          </div>
+
+          <div class="card-body">
+            <div class="card-purpose-banner">
+              <strong>What this is for:</strong> Browse open community events, poetry sessions, and workshops. Click "Reserve Spot" to secure your attendance.
+            </div>
+            <div id="activeEventsContainer">
+              <p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Looking for upcoming events...</p>
+            </div>
+          </div>
         </div>
 
-        <!-- MY REGISTRATIONS -->
-        <div class="panel">
-          <h2 class="panel-title">My Registrations</h2>
-          <div id="myTicketsContainer"><p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Loading schedule...</p></div>
+        <!-- CARD 4: MY EVENT PASSES -->
+        <div class="dropdown-card" id="cardTickets">
+          <div class="card-header-clickable" onclick="toggleCard('cardTickets')" role="button" tabindex="0" aria-expanded="true">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <h2 class="panel-title">My Event Passes</h2>
+              <span class="badge badge-gold">Tickets</span>
+            </div>
+            <span class="chevron-indicator">▼</span>
+          </div>
+
+          <div class="card-body">
+            <div class="card-purpose-banner">
+              <strong>What this is for:</strong> Here are your confirmed bookings. Show this pass at the entrance when attending the gathering.
+            </div>
+            <div id="myTicketsContainer">
+              <p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Retrieving your passes...</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- CARD 5: CURATOR AI (FULL-WIDTH DROPDOWN) -->
+    <div class="dropdown-card" id="cardAssistant" style="margin-bottom: 3rem;">
+      <div class="card-header-clickable" onclick="toggleCard('cardAssistant')" role="button" tabindex="0" aria-expanded="true">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <h2 class="panel-title">Curator AI Assistant</h2>
+          <span class="badge badge-gold">Curator AI</span>
+        </div>
+        <span class="chevron-indicator">▼</span>
+      </div>
+
+      <div class="card-body">
+        <div class="card-purpose-banner">
+          <strong>What this is for:</strong> Have questions about how events work, exhibition guidelines, creative clubs, or Kashmiri arts and literature? Chat with Curator AI anytime.
+        </div>
+
+        <div id="curatorTerminal" class="curator-terminal" style="border:none; padding:0; box-shadow:none;">
+          <div class="curator-chips">
+            <button type="button" class="inquiry-chip" onclick="setInquiry('What is the latest curatorial essay in the journal?')">Latest Reading</button>
+            <button type="button" class="inquiry-chip" onclick="setInquiry('Tell me about upcoming poetry readings and gatherings')">Poetry Gatherings</button>
+            <button type="button" class="inquiry-chip" onclick="setInquiry('What are the rules and guidelines for submitting artwork?')">Exhibition Rules</button>
+            <button type="button" class="inquiry-chip" onclick="setInquiry('How do creative clubs work at Alfaaz?')">How Clubs Work</button>
+          </div>
+
+          <div id="curatorOutput" class="curator-output">
+            <div style="color: var(--text-secondary); margin-bottom: 1rem; font-style: italic;">Welcome to Alfaaz Collective. Ask Curator AI anything about our upcoming events, exhibition submissions, or creative clubs.</div>
+          </div>
+          
+          <div class="curator-input-wrapper">
+            <input type="text" id="curatorInput" placeholder="Type your question for Curator AI here...">
+            <button onclick="askCurator()" class="curator-btn">Ask</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- CURATOR AI TERMINAL -->
-    <div id="phantomTerminal">
-      <div class="phantom-header">
-        <h2 style="font-family: var(--font-heading); font-size: 2.2rem; color: var(--text-primary); font-weight: 400; margin: 0;">Curator AI Desk</h2>
-        <span style="font-size: 10px; color: var(--accent-gold-text); letter-spacing: 2px; text-transform: uppercase;">Collective Intelligence</span>
-      </div>
-      <div id="phantomOutput">
-        <div style="color: var(--text-secondary); margin-bottom: 1rem;">Welcome. I am Curator AI. Ask me about our artists, exhibitions, recruitment journey, or collective philosophy.</div>
-      </div>
-      <div class="phantom-input-wrapper">
-        <input type="text" id="phantomInput" placeholder="Ask Curator AI about exhibitions, recruitment, or art...">
-        <button onclick="askPhantom()" class="phantom-btn">Inquire</button>
-      </div>
-    </div>
   </div>
   
   <!-- RSVP MODAL -->
-  <div class="modal-overlay" id="rsvpModal" style="display: none; position: fixed; inset: 0; background: rgba(248, 246, 240, 0.95); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div style="max-width: 400px; width: 90%; padding: 3rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float);">
-       <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin-bottom: 1rem; font-weight: 400;">Event Registration</h3>
-       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">Provide your active WhatsApp number. Your spot will be instantly secured.</p>
-       <label class="data-label">WhatsApp Number</label>
-       <input type="text" id="rsvpWhatsapp" placeholder="+91..." required>
-       <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
-          <button onclick="closeRsvpModal()" class="action-btn" style="background:transparent; color:var(--text-secondary); border-color:transparent; padding: 0.8rem 1.5rem;">Cancel</button>
-          <button id="confirmRsvpBtn" onclick="submitRsvp()" class="action-btn gold" style="padding: 0.8rem 1.5rem;">Secure Spot</button>
+  <div class="modal-overlay" id="rsvpModal" style="display: none; position: fixed; inset: 0; background: rgba(244, 241, 234, 0.94); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="max-width: 440px; width: 90%; padding: 3rem 2.5rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float);">
+       <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 400;">Reserve Your Spot</h3>
+       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">Enter your active WhatsApp number so we can confirm your pass and send event details.</p>
+       <label class="data-label" for="rsvpWhatsapp">WhatsApp Contact Number</label>
+       <input type="text" id="rsvpWhatsapp" placeholder="+91 94190 00000" required>
+       <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+          <button onclick="closeRsvpModal()" class="action-btn" style="background:transparent; color:var(--text-secondary); border-color:transparent; padding: 0.7rem 1.2rem; font-size: 10px;">Cancel</button>
+          <button id="confirmRsvpBtn" onclick="submitRsvp()" class="action-btn gold" style="padding: 0.7rem 1.8rem; font-size: 10px;">Reserve Spot</button>
+       </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS GUIDE MODAL -->
+  <div class="modal-overlay" id="guideModal" style="display: none; position: fixed; inset: 0; background: rgba(244, 241, 234, 0.94); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="max-width: 580px; width: 92%; max-height: 85vh; overflow-y: auto; padding: 3rem 2.5rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); position: relative;">
+       <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+         <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); font-weight: 400; margin: 0;">How Your Dashboard Works</h3>
+         <button onclick="closeGuideModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0 0.5rem;" aria-label="Close guide">&times;</button>
+       </div>
+       <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
+         Welcome to your personal account on Alfaaz Collective. Here is a simple explanation of what each section does:
+       </p>
+       <div style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 2rem;">
+         <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">1. Display Name &amp; Profile</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">See your registered email and membership status. Click <em>[Edit Name]</em> anytime to change how your name appears on your passes and certificates.</span>
+         </div>
+         <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">2. Creative Clubs</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Apply to join specialized creative groups (Literature, Art &amp; Craft, Cinema, Photography, or Philosophy) to collaborate with other artists.</span>
+         </div>
+         <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">3. Art Exhibition</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Track your exhibition artwork submission through 4 clear steps: Portfolio Submission, Review, Payment Proof, and Confirmed Selection.</span>
+         </div>
+         <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">4. Upcoming Events &amp; My Passes</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Discover poetry readings, cultural gatherings, and workshops. Reserve your spot with WhatsApp, and your entry pass will appear under <em>My Event Passes</em>.</span>
+         </div>
+         <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">5. Ask AI Assistant</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Have questions about guidelines, submission criteria, or Kashmiri poetry? Ask our AI assistant anytime at the bottom of the page.</span>
+         </div>
+       </div>
+       <div style="text-align: right;">
+          <button onclick="closeGuideModal()" class="action-btn gold" style="padding: 0.7rem 1.8rem; font-size: 10px;">Got It, Close Guide</button>
        </div>
     </div>
   </div>

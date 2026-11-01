@@ -67,6 +67,49 @@ describe('Hono Worker Integration Endpoints', () => {
     expect(data.answer.length).toBeGreaterThan(20);
   });
 
+  it('POST /curator/ask unifies inquiry endpoint and returns grounded curatorial responses', async () => {
+    const res = await app.request('/curator/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: 'What are the creative clubs available?'
+      })
+    }, {
+      DB: {} as any
+    });
+
+    expect(res.status).toBe(200);
+    const data: any = await res.json();
+    expect(data.answer).toContain('Literature');
+    expect(data.answer).toContain('Film');
+  });
+
+  it('POST /curator/ask is aware of the latest published journal reflection', async () => {
+    const mockDB = {
+      prepare: (query: string) => ({
+        first: async () => ({
+          title: 'The Poetics of Water and Chinar',
+          excerpt: 'An inquiry into Srinagar waterways and autumnal memory.'
+        })
+      })
+    };
+
+    const res = await app.request('/curator/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: 'What is the latest reading in the journal?'
+      })
+    }, {
+      DB: mockDB as any
+    });
+
+    expect(res.status).toBe(200);
+    const data: any = await res.json();
+    expect(data.answer).toContain('The Poetics of Water and Chinar');
+    expect(data.answer).toContain('/blogs.html');
+  });
+
   it('OPTIONS * returns universal CORS headers for custom domain alfaazcollective.org', async () => {
     const res = await app.request('/api/events', {
       method: 'OPTIONS',

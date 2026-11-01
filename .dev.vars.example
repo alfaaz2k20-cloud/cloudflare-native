@@ -1,9 +1,13 @@
 # Alfaaz Collective — Cloudflare Workers Development Variables Template
 # Copy this file to .dev.vars for local development. Never commit .dev.vars!
 
+# 0. Environment Mode (Overrides wrangler.jsonc "production" during local wrangler dev)
+ENV=development
+
 # 1. Core Authentication & Security
 JWT_SECRET=dev-insecure-secret-key-must-be-changed-in-production-at-least-32-chars
-PHANTOM_SECRET_TOKEN=phantom-dev-token-change-in-prod
+CURATOR_SECRET_TOKEN=curator-dev-token-change-in-prod
+PHANTOM_SECRET_TOKEN=curator-dev-token-change-in-prod
 
 # 2. Email Notification Options
 # Options: "dev" (safe console preview), "webhook" (Make.com relay), "cloudflare" (Cloudflare Email Sending)
@@ -15,9 +19,10 @@ CLOUDFLARE_EMAIL_SENDER=curator@alfaaz.com
 # 3. AI Integrations (Curator AI & Autonomous Essays)
 # If left empty, Curator AI automatically falls back to grounded offline archive mode
 GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
 GROQ_API_KEY=
 
 # 4. Turnstile Bot Protection (Optional in local dev)
-# In development/test, if TURNSTILE_SECRET_KEY is left empty, Turnstile verification passes automatically.
+# In development/test, 1x0000000000000000000000000000000AA is the official Cloudflare dummy pass secret key.
 # In production, set your real Cloudflare Turnstile Secret Key via `npx wrangler secret put TURNSTILE_SECRET_KEY`.
-TURNSTILE_SECRET_KEY=
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA

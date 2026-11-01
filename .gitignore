@@ -1,8 +1,11 @@
 node_modules/
 .wrangler/
 .dev.vars
+.dev.env
 dist/
 .env
+.env.*
+*.env
 *.local
 coverage/
 .DS_Store

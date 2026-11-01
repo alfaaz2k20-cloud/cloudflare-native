@@ -11,8 +11,14 @@ const CLOUDINARY_CLOUD_NAME =
     import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dmqwjpmjk';
 const CLOUDINARY_UPLOAD_PRESET =
     import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'alfaaz_vault';
+const isLocalhost = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '[::1]'
+);
 const TURNSTILE_SITEKEY =
-    import.meta.env.VITE_TURNSTILE_SITEKEY || '0x4AAAAAAFsRHzhKR6YGsXSy';
+    import.meta.env.VITE_TURNSTILE_SITEKEY ||
+    (isLocalhost ? '1x00000000000000000000AA' : '0x4AAAAAAFsRHzhKR6YGsXSy');
 
 window.ALFAAZ_API_URL = API_URL;
 window.ALFAAZ_CLOUDINARY = {

@@ -235,7 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. Cloudflare Turnstile Integration
   function initTurnstile() {
     const container = document.getElementById('loginTurnstile');
-    const sitekey = window.ALFAAZ_TURNSTILE_SITEKEY || '0x4AAAAAAFsRHzhKR6YGsXSy';
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '[::1]';
+    // On localhost, always use 1x00000000000000000000AA to avoid 110200 Domain Mismatch
+    const sitekey = isLocal ? '1x00000000000000000000AA' : (window.ALFAAZ_TURNSTILE_SITEKEY || '0x4AAAAAAFsRHzhKR6YGsXSy');
     if (window.turnstile && container && !container.hasChildNodes()) {
       try {
         window.turnstile.render('#loginTurnstile', {
@@ -243,19 +245,19 @@ document.addEventListener('DOMContentLoaded', () => {
           theme: 'light',
           callback: (token) => {
             turnstileToken = token;
-            if (phoneHint && phoneHint.textContent.includes('security verification')) {
-              setPhoneHint('Security verified. Proceeding with your code...', true);
-              if (sendOtpBtn && !sendOtpBtn.disabled) {
-                setTimeout(() => sendOtpBtn.click(), 400);
-              }
-            }
           },
           'expired-callback': () => { turnstileToken = ''; },
           'error-callback': (code) => {
             console.error('Turnstile verification error:', code);
             const container = document.getElementById('loginTurnstile');
             if (container) {
-              container.innerHTML = '<div style="font-size:11px; color:var(--accent-red-text); line-height:1.4; text-align:center; padding:8px; border:1px dashed var(--accent-red); border-radius:3px;">Security challenge error (code: ' + code + ').<br>If on workers.dev or custom domain, verify hostname in Cloudflare Turnstile settings.</div>';
+              if (isLocal) {
+                // In local dev, gracefully inform developer without blocking submission
+                container.innerHTML = '<div style="font-size:10px; color:var(--text-secondary); line-height:1.4; text-align:center; padding:6px; border:1px dashed var(--grid-border); border-radius:3px;">Local Dev Mode: Turnstile bypassed for localhost.</div>';
+                turnstileToken = 'dummy-local-pass-token';
+              } else {
+                container.innerHTML = '<div style="font-size:11px; color:var(--accent-red-text); line-height:1.4; text-align:center; padding:8px; border:1px dashed var(--accent-red); border-radius:3px;">Security challenge error (code: ' + code + ').<br>If on workers.dev or custom domain, verify hostname in Cloudflare Turnstile settings.</div>';
+              }
             }
           }
         });
@@ -344,7 +346,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    if (!turnstileToken && window.turnstile && window.ALFAAZ_TURNSTILE_SITEKEY) {
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '[::1]';
+    if (!turnstileToken && window.turnstile && !isLocalHost) {
       showHint('Please complete the security challenge below.');
       const tEl = document.getElementById('loginTurnstile');
       if (tEl) {
@@ -360,10 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = true;
 
     const endpoint = currentMode === 'register' ? '/auth/register' : '/auth/login';
+    const effectiveTurnstileToken = turnstileToken || (isLocalHost ? 'dummy-local-pass-token' : '');
     const payload = {
       email: emailValue,
       password: passwordValue,
-      turnstile_token: turnstileToken,
+      turnstile_token: effectiveTurnstileToken,
       ...(currentMode === 'register' ? { full_name: fullNameValue, phone: whatsappNormalized } : {})
     };
 
@@ -411,10 +415,12 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = true;
 
     try {
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '[::1]';
+      const effectiveTurnstileToken = turnstileToken || (isLocalHost ? 'dummy-local-pass-token' : '');
       const response = await fetch(getApiUrl('/auth/forgot-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailValue, turnstile_token: turnstileToken })
+        body: JSON.stringify({ email: emailValue, turnstile_token: effectiveTurnstileToken })
       });
 
       const data = await response.json().catch(() => ({}));
@@ -732,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const resData = await res.json().catch(() => ({}));
             if (res.ok) {
               user.phone = fullNumber;
-              user.phone_verified = 1;
+              user.phone_verified = 0;
               localStorage.setItem('alfaaz_user', JSON.stringify(user));
               saveWhatsAppBtn.textContent = 'Saved ✓';
               saveWhatsAppBtn.style.background = 'var(--accent-green)';
@@ -755,10 +761,13 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       // 2. Email Cross-Verification (Code sent to email)
       if (titleEl) titleEl.textContent = 'Email Cross-Verification';
-      if (descEl) descEl.textContent = 'To secure your account, please verify your email address.';
+      if (descEl) descEl.textContent = 'To secure your account, please verify your email address. You can skip this for now and complete it later.';
       if (phoneGroup) phoneGroup.style.display = 'none';
       if (saveWhatsAppBtn) saveWhatsAppBtn.style.display = 'none';
       if (targetGroup) targetGroup.style.display = 'block';
+      const emailSkipContainer = document.getElementById('skipVerifContainer');
+      if (emailSkipContainer) emailSkipContainer.style.display = 'block';
+      if (skipLink) skipLink.style.display = '';
       if (targetLabel) targetLabel.textContent = 'Email Address';
       if (targetInput) {
         targetInput.type = 'email';

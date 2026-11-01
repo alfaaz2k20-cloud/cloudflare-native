@@ -555,6 +555,7 @@
         pTrig.setAttribute('aria-expanded', 'false'); 
       }
     }
+    window.toggleCurator = togglePhantomMini;
     window.togglePhantomMini = togglePhantomMini;
 
     function clearCuratorPlaceholder() {
@@ -597,7 +598,7 @@
       const history = window.alfaazCuratorMemory?.history?.() || [];
 
       async function attemptFetch() {
-        return await window.globalApiFetch('/phantom/ask', {
+        return await window.globalApiFetch('/curator/ask', {
           method: 'POST',
           body: JSON.stringify({ question: query, history })
         });
@@ -666,8 +667,9 @@
             let safeLink = '';
             if (c.link && !c.disabled) {
                 const rawLink = String(c.link).trim();
-                if (!rawLink.startsWith('javascript:') && !rawLink.startsWith('data:')) {
-                    safeLink = esc(rawLink);
+                const sanitized = window.safeHttpUrl ? window.safeHttpUrl(rawLink) : ((!rawLink.startsWith('javascript:') && !rawLink.startsWith('data:')) ? rawLink : null);
+                if (sanitized) {
+                    safeLink = esc(sanitized);
                 }
             }
 
@@ -766,7 +768,8 @@
         isUpdating = true;
 
         try {
-            let res = await fetch('/api/notices', {
+            const apiUrl = (window.ALFAAZ_API_URL || '') + '/api/notices';
+            let res = await fetch(apiUrl, {
                 cache: 'no-store',
                 headers: { 'Cache-Control': 'no-cache' }
             }).catch(() => null);

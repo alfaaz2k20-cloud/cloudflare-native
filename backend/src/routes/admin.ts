@@ -42,6 +42,7 @@ adminRouter.post('/events/create', async (c) => {
     VALUES (?, ?, ?, ?, 0)
   `).bind(name, description, event_date, capacity).run();
 
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
   await logAudit(c.env.DB, admin.email, 'CREATE_EVENT', 'event', name, `Created event: ${name}`);
   return c.json({ status: 'SUCCESS' });
 });
@@ -57,6 +58,7 @@ adminRouter.patch('/events/:id/toggle', async (c) => {
   const nextStatus = event.registration_open ? 0 : 1;
   await c.env.DB.prepare('UPDATE events SET registration_open = ? WHERE id = ?').bind(nextStatus, id).run();
 
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
   await logAudit(c.env.DB, admin.email, 'TOGGLE_EVENT', 'event', String(id), `Toggled event to ${nextStatus ? 'OPEN' : 'CLOSED'}`);
   return c.json({ status: nextStatus ? 'OPEN' : 'CLOSED' });
 });
@@ -115,6 +117,7 @@ adminRouter.delete('/events/:id', async (c) => {
     c.env.DB.prepare('DELETE FROM events WHERE id = ?').bind(id)
   ]);
 
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
   await logAudit(c.env.DB, admin.email, 'DELETE_EVENT', 'event', String(id), `Deleted event ${id}`);
   return c.json({ status: 'SUCCESS' });
 });
@@ -239,6 +242,7 @@ adminRouter.patch('/exhibitions/:id/activate', async (c) => {
     c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 1 WHERE id = ?').bind(id)
   ]);
 
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
   await logAudit(c.env.DB, admin.email, 'ACTIVATE_EXHIBITION', 'exhibition', String(id), `Activated cycle ${target.title}`);
   return c.json({ status: 'SUCCESS', title: target.title });
 });
@@ -246,6 +250,7 @@ adminRouter.patch('/exhibitions/:id/activate', async (c) => {
 adminRouter.patch('/exhibitions/deactivate-all', async (c) => {
   const admin = c.get('user');
   await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0').run();
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
   await logAudit(c.env.DB, admin.email, 'DEACTIVATE_EXHIBITIONS', 'exhibition', null, 'Deactivated all exhibition cycles');
   return c.json({ status: 'SUCCESS' });
 });

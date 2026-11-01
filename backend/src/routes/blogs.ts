@@ -46,9 +46,9 @@ blogsRouter.get('/:id', async (c) => {
 
 // POST /blogs/generate - Autonomous Curator AI essay generation
 blogsRouter.post('/generate', async (c) => {
-  const expectedToken = c.env.PHANTOM_SECRET_TOKEN;
+  const expectedToken = c.env.CURATOR_SECRET_TOKEN || c.env.PHANTOM_SECRET_TOKEN;
   if (!expectedToken) {
-    console.error('[CURATOR ERROR] PHANTOM_SECRET_TOKEN not configured in environment.');
+    console.error('[CURATOR ERROR] Secret token not configured in environment.');
     return c.json({ error: 'Autonomous generation is unavailable.' }, 503);
   }
 

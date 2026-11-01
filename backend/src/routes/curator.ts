@@ -12,8 +12,8 @@ const curatorLimiter = slidingWindowRateLimit({
   keyPrefix: 'curator_limit'
 });
 
-// POST /phantom/ask - Primary conversational endpoint for Curator AI
-curatorRouter.post('/ask', curatorLimiter, async (c) => {
+// Primary conversational handler for Curator AI
+const handleCuratorInquiry = async (c: any) => {
   try {
     const body = await c.req.json().catch(() => ({}));
     const question = (body.question || '').trim();
@@ -31,6 +31,9 @@ curatorRouter.post('/ask', curatorLimiter, async (c) => {
       answer: 'The Curator is temporarily contemplating in quiet reflection. Please inquire again momentarily.'
     });
   }
-});
+};
+
+curatorRouter.post('/ask', curatorLimiter, handleCuratorInquiry);
+curatorRouter.post('/', curatorLimiter, handleCuratorInquiry);
 
 export default curatorRouter;

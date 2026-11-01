@@ -1590,12 +1590,12 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       const validData = await validRes.json();
       expect(validData.status).toBe('SUCCESS');
       expect(validData.phone).toBe(validPhone);
-      expect(validData.phone_verified).toBe(1);
+      expect(validData.phone_verified).toBe(0);
 
       // Verify stored in D1 database
       const row = await mockDb.prepare('SELECT phone, phone_verified FROM users WHERE email = ?').bind(email).first();
       expect(row.phone).toBe(validPhone);
-      expect(row.phone_verified).toBe(1);
+      expect(row.phone_verified).toBe(0);
 
       // 3. Duplicate phone on different user rejected with 409
       const secondEmail = 'another_user@alfaaz.local';

@@ -53,6 +53,11 @@ export async function verifyTurnstile(
   remoteIp?: string,
   env?: string
 ): Promise<boolean> {
+  // Cloudflare official dummy fail secret key always fails
+  if (secretKey && secretKey.startsWith('2x0000000000000000000000000000000AA')) {
+    return false;
+  }
+
   // Cloudflare official dummy pass secret key is strictly rejected in production (fail-closed)
   if (secretKey && secretKey.startsWith('1x0000000000000000000000000000000AA')) {
     if (env === 'production') {
@@ -71,15 +76,24 @@ export async function verifyTurnstile(
     // In development and test environments without secret key, bypass with a warning
     return true;
   }
-  // When secretKey is provisioned, enforce strict token requirement
-  if (!token) {
+
+  // When secretKey is provisioned, enforce strict token requirement (token must be non-empty)
+  const trimmedToken = (token || '').trim();
+  if (!trimmedToken) {
     return false;
+  }
+
+  // In non-production environments (development / test), permit local dummy pass tokens
+  if (env !== 'production') {
+    if (trimmedToken === 'dummy-local-pass-token' || trimmedToken === 'dummy-token' || trimmedToken === '0x4AAAAAAtestdummytoken') {
+      return true;
+    }
   }
 
   try {
     const formData = new URLSearchParams();
     formData.append('secret', secretKey);
-    formData.append('response', token);
+    formData.append('response', trimmedToken);
 
     // Only forward client IP if it is a valid public IP (never pass loopback or private ranges to Cloudflare siteverify)
     const isPublicIp = remoteIp &&

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'alfaaz-pwa-v2';
+const CACHE_VERSION = 'alfaaz-pwa-v3';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

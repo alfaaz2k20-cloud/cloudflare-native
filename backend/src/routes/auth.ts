@@ -244,6 +244,9 @@ authRouter.post('/register', async (c) => {
   if (!email || !password) {
     return c.json({ detail: 'Email and password required' }, 400);
   }
+  if (typeof password !== 'string' || password.length < 8 || password.length > 128 || password.trim().length === 0) {
+    return c.json({ detail: 'Password must be between 8 and 128 characters long and cannot be only whitespace.' }, 400);
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
     return c.json({ detail: 'A valid email address is required.' }, 400);
   }
@@ -277,13 +280,15 @@ authRouter.post('/register', async (c) => {
   }
 
   const hashedPassword = await hashPassword(password);
+  let createdId: number | null = null;
   try {
-    // Email ownership is NOT proven by password registration; start unverified and
-    // drive it through /verification/email/* (mirrors the federated email_verified gate).
-    await c.env.DB
-      .prepare('INSERT INTO users (email, password, full_name, phone, status, email_verified, phone_verified) VALUES (?, ?, ?, ?, ?, 0, 0)')
-      .bind(email, hashedPassword, fullName, phone, 'PARTICIPANT')
+    // Password registration does NOT prove ownership of the inbox or the handset.
+    // Start unverified and let /verification/email|phone/* establish it honestly.
+    const insertRes = await c.env.DB
+      .prepare('INSERT INTO users (email, password, full_name, phone, status, auth_provider, email_verified, phone_verified) VALUES (?, ?, ?, ?, ?, ?, 0, 0)')
+      .bind(email, hashedPassword, fullName, phone, 'PARTICIPANT', 'email')
       .run();
+    createdId = insertRes.meta.last_row_id || null;
   } catch (err: any) {
     if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
       return c.json({ detail: 'User already registered with this email or WhatsApp number.' }, 400);
@@ -307,7 +312,7 @@ authRouter.post('/register', async (c) => {
   }
 
   return c.json({
-    user: { email, full_name: fullName, phone, status: 'PARTICIPANT', email_verified: 0, phone_verified: 0 },
+    user: { id: createdId || undefined, email, full_name: fullName, phone, auth_provider: 'email', status: 'PARTICIPANT', email_verified: 0, phone_verified: 0 },
     token
   });
 });
@@ -329,9 +334,9 @@ authRouter.post('/login', async (c) => {
   }
 
   const user = await c.env.DB
-    .prepare('SELECT email, password, status, full_name, email_verified, phone_verified FROM users WHERE email = ?')
+    .prepare('SELECT id, email, password, status, full_name, phone, auth_provider, email_verified, phone_verified FROM users WHERE email = ?')
     .bind(email)
-    .first<{ email: string; password: string; status: string; full_name: string; email_verified?: number; phone_verified?: number }>();
+    .first<{ id: number; email: string; password: string; status: string; full_name: string; phone: string | null; auth_provider: string | null; email_verified?: number; phone_verified?: number }>();
 
   if (!user) {
     return c.json({ detail: 'Invalid credentials' }, 401);
@@ -347,7 +352,11 @@ authRouter.post('/login', async (c) => {
 
   return c.json({
     user: {
+      id: user.id,
       email: user.email,
+      full_name: user.full_name || undefined,
+      phone: user.phone || undefined,
+      auth_provider: user.auth_provider || 'email',
       status: user.status,
       email_verified: user.email_verified ?? 0,
       phone_verified: user.phone_verified ?? 0
@@ -403,6 +412,9 @@ authRouter.post('/reset-password', async (c) => {
 
   if (!token || !newPassword) {
     return c.json({ detail: 'Token and new password required' }, 400);
+  }
+  if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128 || newPassword.trim().length === 0) {
+    return c.json({ detail: 'Password must be between 8 and 128 characters long and cannot be only whitespace.' }, 400);
   }
 
   const secret = getJwtSecret(c.env);
@@ -534,7 +546,7 @@ authRouter.patch('/me', requireAuth, async (c) => {
       return c.json({ detail: 'This WhatsApp number is already in use by another account.' }, 409);
     }
     await c.env.DB
-      .prepare('UPDATE users SET phone = ?, phone_verified = 1 WHERE email = ? OR phone = ?')
+      .prepare('UPDATE users SET phone = ?, phone_verified = 0, phone_verified_at = NULL WHERE email = ? OR phone = ?')
       .bind(rawPhone, user.email, user.email)
       .run();
     updatedPhone = rawPhone;
@@ -543,7 +555,7 @@ authRouter.patch('/me', requireAuth, async (c) => {
   return c.json({
     status: 'SUCCESS',
     ...(updatedName !== undefined ? { full_name: updatedName } : {}),
-    ...(updatedPhone !== undefined ? { phone: updatedPhone, phone_verified: 1 } : {})
+    ...(updatedPhone !== undefined ? { phone: updatedPhone, phone_verified: 0 } : {})
   });
 });
 

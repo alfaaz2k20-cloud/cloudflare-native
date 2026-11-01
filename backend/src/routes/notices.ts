@@ -5,6 +5,15 @@ const noticesRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // Handler for live community notices feed
 async function handleNotices(c: Context<{ Bindings: Env; Variables: Variables }>) {
+  // Check KV cache first
+  const cached = await c.env.CACHE_KV?.get('notices_feed');
+  if (cached) {
+    try {
+      c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return c.json(JSON.parse(cached));
+    } catch {}
+  }
+
   // Query active open events
   const eventsResult = await c.env.DB.prepare(`
     SELECT e.id, e.name, e.event_date, e.description, e.capacity,
@@ -59,7 +68,13 @@ async function handleNotices(c: Context<{ Bindings: Env; Variables: Variables }>
   } : null;
 
   c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
-  return c.json({ events, exhibition, latest_blog });
+  const responseData = { events, exhibition, latest_blog };
+  if (c.env.CACHE_KV) {
+    try {
+      await c.env.CACHE_KV.put('notices_feed', JSON.stringify(responseData), { expirationTtl: 60 });
+    } catch {}
+  }
+  return c.json(responseData);
 }
 
 // Support both GET /notices and GET / (when mounted at /notices or /api/notices)

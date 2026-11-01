@@ -116,8 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
  if (window.turnstile && document.getElementById('exhibitionTurnstile')) {
   try {
+   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '[::1]';
+   const defaultSitekey = isLocal ? '1x00000000000000000000AA' : '0x4AAAAAAFsRHzhKR6YGsXSy';
    window.turnstile.render('#exhibitionTurnstile', {
-    sitekey: window.ALFAAZ_TURNSTILE_SITEKEY || '0x4AAAAAAFsRHzhKR6YGsXSy',
+    sitekey: window.ALFAAZ_TURNSTILE_SITEKEY || defaultSitekey,
     theme: 'light'
    });
   } catch (_) {}

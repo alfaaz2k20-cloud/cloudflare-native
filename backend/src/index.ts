@@ -33,8 +33,8 @@ app.use('*', async (c, next) => {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.googleusercontent.com https://graph.facebook.com https://appleid.cdn-apple.com https://www.gstatic.com https://ssl.gstatic.com",
-    "connect-src 'self' https://challenges.cloudflare.com https://api.cloudinary.com https://res.cloudinary.com https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://accounts.google.com",
-    "frame-src 'self' https://challenges.cloudflare.com https://*.firebaseapp.com https://appleid.apple.com https://accounts.google.com",
+    "connect-src 'self' https://challenges.cloudflare.com https://api.cloudinary.com https://res.cloudinary.com https://*.googleapis.com https://accounts.google.com",
+    "frame-src 'self' https://challenges.cloudflare.com https://appleid.apple.com https://accounts.google.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'"
@@ -276,11 +276,11 @@ app.onError((err, c) => {
   }, 500);
 });
 
-// Cloudflare Cron Trigger Handler for Phantom Weekly Writer
+// Cloudflare Cron Trigger Handler for Weekly Curatorial Writer
 (app as any).scheduled = async (event: ScheduledEvent, env: Env, ctx: ExecutionContext) => {
   ctx.waitUntil((async () => {
     try {
-      console.log('[CRON] Phantom Weekly Writer triggered by Cloudflare Cron Trigger.');
+      console.log('[CRON] Weekly Curatorial Writer triggered by Cloudflare Cron Trigger.');
       const generated = await generateCuratorEssay(env);
       const title = generated.title || 'Untitled Reflection';
       const excerpt = generated.excerpt || '';
@@ -306,7 +306,7 @@ app.onError((err, c) => {
       }
       console.log('[CRON] Published weekly blog:', title);
     } catch (err) {
-      console.error('[CRON ERROR] Phantom Writer cron execution failed:', err);
+      console.error('[CRON ERROR] Curator Writer cron execution failed:', err);
     }
   })());
 };
