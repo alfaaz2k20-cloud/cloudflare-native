@@ -21,90 +21,74 @@
   <style>
     .dash-container { max-width: 1200px; margin: 7rem auto 4rem; padding: 0 2rem; }
     
-    /* Masthead Card */
-    .masthead-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--grid-border);
-      padding: 3rem 3rem 2.5rem;
-      margin-bottom: 2.5rem;
-      box-shadow: var(--shadow-base);
-      position: relative;
-    }
-    .masthead-top {
+    /* Navigation Hint Banner */
+    .dash-hint-banner {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: center;
       flex-wrap: wrap;
-      gap: 1.5rem;
-      border-bottom: 1px solid var(--grid-border);
-      padding-bottom: 1.5rem;
-      margin-bottom: 2rem;
+      gap: 1.25rem;
+      padding: 1rem 1.5rem;
+      background: var(--bg-secondary);
+      border: 1px dashed var(--grid-border);
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-base);
     }
-    .masthead-title {
-      font-family: var(--font-heading);
-      font-size: 2.2rem;
-      font-weight: 400;
-      letter-spacing: 0.5px;
-      color: var(--text-primary);
-      line-height: 1.25;
+    .hint-chevron-pill {
       display: inline-flex;
       align-items: center;
-      margin-bottom: 0.85rem;
-      position: relative;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--grid-border);
+      color: var(--accent-gold-text);
+      font-size: 10px;
+      background: var(--bg-primary);
+      flex-shrink: 0;
     }
-    .masthead-title.ur-hover::before {
-      font-size: 1.15em;
-      top: 36%;
-      line-height: 1.2;
+
+    /* Refined Profile Grid */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
     }
-    .masthead-subtitle {
-      font-size: 12px;
-      color: var(--text-secondary);
-      letter-spacing: 1px;
-      margin-top: 0.25rem;
-      line-height: 1.5;
-    }
-    .display-name {
-      font-family: var(--font-heading);
-      font-size: 2.2rem;
-      color: var(--text-primary);
-      font-weight: 400;
-      letter-spacing: 0.5px;
-    }
-    .masthead-meta {
+    .profile-field-block {
+      padding: 1.25rem 1.5rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--grid-border);
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
+      flex-direction: column;
       justify-content: space-between;
-      gap: 1.5rem;
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px dashed var(--grid-border);
+      min-height: 105px;
     }
-    
+    .profile-val {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      font-weight: 500;
+      letter-spacing: 0.25px;
+      line-height: 1.3;
+    }
+
     /* 2-Column Symmetric Grid */
     .grid-layout {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin-bottom: 2rem;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
       align-items: start;
     }
     @media (max-width: 900px) {
       .grid-layout { grid-template-columns: 1fr; }
-      .masthead-card { padding: 2rem 1.5rem; }
-      .masthead-top { flex-direction: column; align-items: flex-start; }
     }
     @media (max-width: 768px) {
       .dash-container { margin: 5.5rem auto 3rem; padding: 0 1rem; }
-      .masthead-card { padding: 1.75rem 1.25rem; }
-      .masthead-title { font-size: 1.8rem; }
-      .display-name { font-size: 1.7rem; word-break: break-word; }
       .dropdown-card { padding: 1.5rem 1.25rem; }
+      .dropdown-card.collapsed { padding: 1.1rem 1.25rem; }
+      .profile-grid { grid-template-columns: 1fr; gap: 1rem; }
       .panel-title { font-size: 1.4rem; }
-      .masthead-meta { flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .masthead-meta > div:last-child { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
-      .masthead-meta .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 40px; }
       .vault-feature-banner { flex-direction: column; align-items: flex-start; gap: 1rem; }
       .vault-feature-banner > div:last-child { width: 100%; }
       .vault-feature-banner .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 40px; }
@@ -112,7 +96,7 @@
       .modal-overlay > div { padding: 2rem 1.25rem !important; }
 
       /* Prevent iOS Safari auto-zoom on input focus */
-      select, textarea, input[type="text"], input[type="tel"], #curatorInput {
+      select, textarea, input {
         font-size: 16px !important;
       }
 
@@ -126,11 +110,13 @@
       }
     }
     @media (max-width: 480px) {
+      nav { padding: 0.85rem 1rem !important; }
       .dash-container { margin: 4.8rem auto 2.5rem; padding: 0 0.85rem; }
-      .masthead-card { padding: 1.5rem 1rem; }
       .dropdown-card { padding: 1.25rem 1rem; }
-      .panel-title { font-size: 1.3rem; }
+      .dropdown-card.collapsed { padding: 0.95rem 1rem; }
+      .panel-title { font-size: 1.25rem; }
       .card-header-clickable { min-height: 44px; padding-bottom: 1rem; }
+      .card-title-group { gap: 0.5rem; }
       .nav-actions { gap: 0.75rem !important; }
       .nav-actions a, .nav-actions button {
         font-size: 10px !important;
@@ -139,31 +125,22 @@
         display: inline-flex;
         align-items: center;
       }
-      .masthead-title { font-size: 1.5rem; }
-      .display-name { font-size: 1.4rem; }
-      .masthead-top > div:last-child {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-      }
-      .masthead-top > div:last-child .action-btn {
-        flex: 1 1 auto;
-        text-align: center;
-        justify-content: center;
-      }
-      #nameEditRow, #phoneEditRow {
-        max-width: 100% !important;
-      }
+      .dash-hint-banner { padding: 0.85rem 1rem; gap: 0.75rem; }
+      .dash-hint-banner .hint-banner-actions { width: 100%; display: flex; gap: 0.5rem; }
+      .dash-hint-banner .hint-banner-actions .action-btn { flex: 1; text-align: center; justify-content: center; min-height: 38px; }
+      .profile-grid { grid-template-columns: 1fr; gap: 1rem; }
+      .profile-field-block { padding: 1rem 1.15rem; min-height: auto; }
+      .profile-val { word-break: break-word; overflow-wrap: break-word; }
+      .edit-name-btn { min-height: 44px; min-width: 44px; }
+      .profile-field-block .action-btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 0.9rem; }
+      #myClubName { font-size: 1.7rem !important; }
       #nameEditRow input, #phoneEditRow input {
         width: 100% !important;
         margin-bottom: 0.5rem !important;
       }
       #nameEditRow button, #phoneEditRow button {
         flex: 1 1 calc(50% - 0.5rem);
-        min-height: 38px;
+        min-height: 42px;
         text-align: center;
         justify-content: center;
       }
@@ -235,8 +212,11 @@
       background: var(--bg-secondary);
       border: 1px solid var(--grid-border);
       box-shadow: var(--shadow-base);
-      padding: 2.25rem 2.25rem;
-      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+      padding: 2rem 2.25rem;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease, padding 0.3s ease;
+    }
+    .dropdown-card.collapsed {
+      padding: 1.25rem 2rem;
     }
     .dropdown-card:hover {
       box-shadow: var(--shadow-float);
@@ -252,7 +232,8 @@
       transition: padding 0.3s ease, border-color 0.3s ease;
       -webkit-tap-highlight-color: transparent;
     }
-    .card-header-clickable > div:first-child {
+    .card-header-clickable > div:first-child,
+    .card-title-group {
       display: flex;
       align-items: center;
       gap: 0.75rem;
@@ -573,76 +554,114 @@
 
   <div class="dash-container">
     
-    <!-- MASTHEAD CARD -->
-    <div class="masthead-card">
-      <div class="masthead-top">
-        <div>
-          <h1 class="masthead-title ur-hover" data-ur="دیوان">
-            <span class="en-text">Member Dashboard</span>
-          </h1>
-          <p class="masthead-subtitle">Welcome back. Manage your profile, event passes, and applications.</p>
+    <!-- DASHBOARD NAVIGATION HINT BANNER -->
+    <div class="dash-hint-banner">
+      <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; flex: 1; min-width: 260px;">
+        <span class="hint-chevron-pill">▼</span>
+        <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+          <strong style="color: var(--text-primary);">Curator's Note:</strong> All dashboard panels are collapsible. Click any section title or the <strong style="color: var(--accent-gold-text);">▼</strong> arrow to reveal details, applications, passes, and actions.
         </div>
-        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-          <button type="button" onclick="openGuideModal()" class="action-btn gold" style="padding: 0.55rem 1.25rem; font-size: 10px; cursor: pointer;">
-            How It Works (Guide)
-          </button>
+      </div>
+      <div class="hint-banner-actions" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+        <button type="button" onclick="openGuideModal();" class="action-btn gold" style="padding: 0.45rem 0.9rem; font-size: 9px; white-space: nowrap; cursor: pointer;">
+          How It Works (Guide)
+        </button>
+        <button type="button" id="toggleAllBtn" onclick="toggleAllCards()" class="action-btn" style="padding: 0.45rem 0.9rem; font-size: 9px; white-space: nowrap; border-color: var(--grid-border); color: var(--text-primary); background: transparent;">
+          Expand All Panels
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 0: MEMBER PROFILE (FULL-WIDTH DROPDOWN) -->
+    <div class="dropdown-card collapsed" id="cardProfile" style="margin-bottom: 1.25rem;">
+      <div class="card-header-clickable" onclick="toggleCard('cardProfile')" role="button" tabindex="0" aria-expanded="false">
+        <div class="card-title-group">
+          <h2 class="panel-title">Member Profile</h2>
           <span class="badge badge-gold" id="dashStatus">Loading...</span>
         </div>
+        <span class="chevron-indicator">▼</span>
       </div>
 
-      <div class="data-label">Display Name</div>
-      <div id="nameDisplayRow" style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
-        <span id="dashName" class="display-name" style="word-break: break-word;">—</span>
-        <button class="edit-name-btn" onclick="startEditName()">[Edit Name]</button>
-      </div>
-      <div id="nameEditRow" style="display:none; align-items:center; gap:0.75rem; margin-bottom:1.25rem; max-width: 420px; flex-wrap: wrap;">
-        <input type="text" id="nameEditInput" style="margin:0; padding:0.5rem 0;" placeholder="Your full name">
-        <button class="action-btn gold" style="padding: 0.5rem 1.2rem; font-size: 9px;" onclick="saveEditName()">Save</button>
-        <button class="action-btn" style="padding: 0.5rem 1.2rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: transparent;" onclick="cancelEditName()">Cancel</button>
-      </div>
+      <div class="card-body">
+        <div class="card-purpose-banner" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <strong>What this is for:</strong> Manage your collective membership details, update your display credentials, and submit manuscripts or portfolios to the Curator's Vault.
+          </div>
+          <button type="button" onclick="openGuideModal();" class="action-btn gold" style="padding: 0.35rem 0.8rem; font-size: 9px; cursor: pointer; white-space: nowrap;">
+            Read Full Guide &rarr;
+          </button>
+        </div>
 
-      <div class="data-label" style="margin-top: 1rem;">WhatsApp Number</div>
-      <div id="phoneDisplayRow" style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
-        <span id="dashPhone" class="display-name" style="font-size: 1.15rem; color: var(--text-secondary); word-break: break-word;">Not provided</span>
-        <button class="edit-name-btn" id="btnEditPhone" onclick="startEditPhone()">[Edit Phone]</button>
-      </div>
-      <div id="phoneEditRow" style="display:none; align-items:center; gap:0.75rem; margin-bottom:1.25rem; max-width: 440px; flex-wrap: wrap;">
-        <input type="tel" id="phoneEditInput" style="margin:0; padding:0.5rem 0;" placeholder="+919876543210">
-        <button class="action-btn gold" style="padding: 0.5rem 1.2rem; font-size: 9px;" onclick="saveEditPhone()">Save</button>
-        <button class="action-btn" style="padding: 0.5rem 1.2rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: transparent;" onclick="cancelEditPhone()">Cancel</button>
-        <div style="font-size: 11px; color: var(--text-secondary); width: 100%; margin-top: 2px;">Include country code with plus sign, e.g. +919876543210</div>
-      </div>
+        <!-- REFINED MODULAR PROFILE FIELDS -->
+        <div class="profile-grid">
+          <!-- 1. Display Name -->
+          <div class="profile-field-block">
+            <div class="data-label">Display Name</div>
+            <div id="nameDisplayRow" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+              <span id="dashName" class="profile-val">—</span>
+              <button class="edit-name-btn" onclick="startEditName()">[Edit Name]</button>
+            </div>
+            <div id="nameEditRow" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.75rem;">
+              <input type="text" id="nameEditInput" placeholder="Your full name" style="margin-bottom: 0.5rem;">
+              <div style="display: flex; gap: 0.5rem; width: 100%;">
+                <button class="action-btn gold" style="padding: 0.45rem 1rem; font-size: 9px; flex: 1;" onclick="saveEditName()">Save</button>
+                <button class="action-btn" style="padding: 0.45rem 1rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: var(--grid-border); flex: 1;" onclick="cancelEditName()">Cancel</button>
+              </div>
+            </div>
+          </div>
 
-      <div class="masthead-meta">
-        <div>
-          <span class="data-label" style="margin-bottom: 4px;">Registered Email &amp; Account</span>
-          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 2px;">
-            <span id="dashEmail" style="font-size: 13px; color: var(--text-secondary); word-break: break-all;">Loading...</span>
-            <span id="dashVerifiedBadge" class="badge badge-green" style="font-size: 9px; display: none;">Verified</span>
-            <span id="dashProviderBadge" class="badge badge-gold" style="font-size: 9px;">Email Account</span>
+          <!-- 2. WhatsApp Number -->
+          <div class="profile-field-block">
+            <div class="data-label">WhatsApp Number</div>
+            <div id="phoneDisplayRow" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+              <span id="dashPhone" class="profile-val" style="color: var(--text-secondary);">Not provided</span>
+              <button class="edit-name-btn" id="btnEditPhone" onclick="startEditPhone()">[Edit Phone]</button>
+            </div>
+            <div id="phoneEditRow" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.75rem;">
+              <input type="tel" id="phoneEditInput" placeholder="+919876543210" style="margin-bottom: 0.25rem;">
+              <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 0.25rem;">Include country code, e.g. +919876543210</div>
+              <div style="display: flex; gap: 0.5rem; width: 100%;">
+                <button class="action-btn gold" style="padding: 0.45rem 1rem; font-size: 9px; flex: 1;" onclick="saveEditPhone()">Save</button>
+                <button class="action-btn" style="padding: 0.45rem 1rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: var(--grid-border); flex: 1;" onclick="cancelEditPhone()">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Account & Security -->
+          <div class="profile-field-block">
+            <div class="data-label">Registered Account</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+              <div style="min-width: 0;">
+                <div id="dashEmail" style="font-size: 13px; color: var(--text-secondary); word-break: break-all;">Loading...</div>
+                <div style="display: flex; gap: 0.4rem; margin-top: 4px; flex-wrap: wrap;">
+                  <span id="dashVerifiedBadge" class="badge badge-green" style="font-size: 8.5px; display: none;">Verified</span>
+                  <span id="dashProviderBadge" class="badge badge-gold" style="font-size: 8.5px;">Email Account</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="reset.html" class="action-btn" style="padding: 0.45rem 0.85rem; font-size: 9px; text-decoration: none;">Change PW</a>
+                <a id="adminLink" href="admin.html" class="action-btn" style="display: none; padding: 0.45rem 0.85rem; font-size: 9px;">Admin Panel</a>
+              </div>
+            </div>
           </div>
         </div>
-        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-          <a href="reset.html" class="action-btn" style="padding: 0.6rem 1.2rem; font-size: 10px; text-decoration: none;">Change Password</a>
-          <a id="adminLink" href="admin.html" class="action-btn" style="display: none; padding: 0.6rem 1.5rem; font-size: 10px;">Admin Panel</a>
-        </div>
-      </div>
 
-      <!-- CURATORIAL CREATIVE VAULT SUBMISSIONS -->
-      <div class="vault-feature-banner" style="margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px dashed var(--grid-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
-        <div style="max-width: 620px;">
-          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
-            <span class="data-label" style="margin-bottom: 0; color: var(--accent-gold-text); letter-spacing: 1.5px;">Curator's Creative Vault</span>
-            <span class="badge badge-gold" style="font-size: 9px;">Portfolios &amp; Manuscripts</span>
+        <!-- CURATORIAL CREATIVE VAULT SUBMISSIONS -->
+        <div class="vault-feature-banner" style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px dashed var(--grid-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
+          <div style="max-width: 620px;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+              <span class="data-label" style="margin-bottom: 0; color: var(--accent-gold-text); letter-spacing: 1.5px;">Curator's Creative Vault</span>
+              <span class="badge badge-gold" style="font-size: 9px;">Portfolios &amp; Manuscripts</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+              Directly submit your art portfolio, literary manuscript, or project proposal for curatorial review and archive consideration.
+            </p>
           </div>
-          <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
-            Directly submit your art portfolio, literary manuscript, or project proposal for curatorial review and archive consideration.
-          </p>
-        </div>
-        <div>
-          <a href="submit.html" class="action-btn gold" style="padding: 0.65rem 1.5rem; font-size: 11px; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
-            Submit Creative Work &rarr;
-          </a>
+          <div>
+            <a href="submit.html" class="action-btn gold" style="padding: 0.65rem 1.5rem; font-size: 11px; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+              Submit Creative Work &rarr;
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -651,12 +670,12 @@
     <div class="grid-layout">
       
       <!-- LEFT COLUMN -->
-      <div style="display:flex; flex-direction:column; gap:2rem;">
+      <div style="display:flex; flex-direction:column; gap:1.25rem;">
         
         <!-- CARD 1: CREATIVE CLUBS -->
-        <div class="dropdown-card" id="cardClubs">
-          <div class="card-header-clickable" onclick="toggleCard('cardClubs')" role="button" tabindex="0" aria-expanded="true">
-            <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="dropdown-card collapsed" id="cardClubs">
+          <div class="card-header-clickable" onclick="toggleCard('cardClubs')" role="button" tabindex="0" aria-expanded="false">
+            <div class="card-title-group">
               <h2 class="panel-title">Creative Clubs</h2>
               <span class="badge badge-gold">Affiliation</span>
             </div>
@@ -694,9 +713,9 @@
         </div>
 
         <!-- CARD 2: ART EXHIBITION SUBMISSIONS -->
-        <div class="dropdown-card" id="cardExhib" style="display: block;">
-          <div class="card-header-clickable" onclick="toggleCard('cardExhib')" role="button" tabindex="0" aria-expanded="true">
-            <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="dropdown-card collapsed" id="cardExhib" style="display: block;">
+          <div class="card-header-clickable" onclick="toggleCard('cardExhib')" role="button" tabindex="0" aria-expanded="false">
+            <div class="card-title-group">
               <h2 class="panel-title">Art Exhibition</h2>
               <span class="badge badge-gold">Submissions</span>
             </div>
@@ -780,12 +799,12 @@
       </div>
 
       <!-- RIGHT COLUMN -->
-      <div style="display:flex; flex-direction:column; gap:2rem;">
+      <div style="display:flex; flex-direction:column; gap:1.25rem;">
         
         <!-- CARD 3: UPCOMING EVENTS -->
-        <div class="dropdown-card" id="cardEvents">
-          <div class="card-header-clickable" onclick="toggleCard('cardEvents')" role="button" tabindex="0" aria-expanded="true">
-            <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="dropdown-card collapsed" id="cardEvents">
+          <div class="card-header-clickable" onclick="toggleCard('cardEvents')" role="button" tabindex="0" aria-expanded="false">
+            <div class="card-title-group">
               <h2 class="panel-title">Upcoming Events</h2>
               <span class="badge badge-gold">Calendar</span>
             </div>
@@ -803,9 +822,9 @@
         </div>
 
         <!-- CARD 4: MY EVENT PASSES -->
-        <div class="dropdown-card" id="cardTickets">
-          <div class="card-header-clickable" onclick="toggleCard('cardTickets')" role="button" tabindex="0" aria-expanded="true">
-            <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="dropdown-card collapsed" id="cardTickets">
+          <div class="card-header-clickable" onclick="toggleCard('cardTickets')" role="button" tabindex="0" aria-expanded="false">
+            <div class="card-title-group">
               <h2 class="panel-title">My Event Passes</h2>
               <span class="badge badge-gold">Tickets</span>
             </div>
@@ -827,9 +846,9 @@
     </div>
 
     <!-- CARD 5: CURATOR AI (FULL-WIDTH DROPDOWN) -->
-    <div class="dropdown-card" id="cardAssistant" style="margin-bottom: 3rem;">
-      <div class="card-header-clickable" onclick="toggleCard('cardAssistant')" role="button" tabindex="0" aria-expanded="true">
-        <div style="display: flex; align-items: center; gap: 1rem;">
+    <div class="dropdown-card collapsed" id="cardAssistant" style="margin-bottom: 2.5rem;">
+      <div class="card-header-clickable" onclick="toggleCard('cardAssistant')" role="button" tabindex="0" aria-expanded="false">
+        <div class="card-title-group">
           <h2 class="panel-title">Curator AI Assistant</h2>
           <span class="badge badge-gold">Curator AI</span>
         </div>
@@ -865,11 +884,14 @@
   
   <!-- RSVP MODAL -->
   <div class="modal-overlay" id="rsvpModal" style="display: none; position: fixed; inset: 0; background: rgba(244, 241, 234, 0.94); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div style="max-width: 440px; width: 90%; padding: 3rem 2.5rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float);">
-       <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 400;">Reserve Your Spot</h3>
+    <div style="max-width: 440px; width: 90%; padding: 3rem 2.5rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); position: relative;">
+       <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+         <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin: 0; font-weight: 400;">Reserve Your Spot</h3>
+         <button onclick="closeRsvpModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.6rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;" aria-label="Close RSVP modal">&times;</button>
+       </div>
        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">Enter your active WhatsApp number so we can confirm your pass and send event details.</p>
        <label class="data-label" for="rsvpWhatsapp">WhatsApp Contact Number</label>
-       <input type="text" id="rsvpWhatsapp" placeholder="+91 94190 00000" required>
+       <input type="tel" id="rsvpWhatsapp" placeholder="+91 94190 00000" required>
        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
           <button onclick="closeRsvpModal()" class="action-btn" style="background:transparent; color:var(--text-secondary); border-color:transparent; padding: 0.7rem 1.2rem; font-size: 10px;">Cancel</button>
           <button id="confirmRsvpBtn" onclick="submitRsvp()" class="action-btn gold" style="padding: 0.7rem 1.8rem; font-size: 10px;">Reserve Spot</button>

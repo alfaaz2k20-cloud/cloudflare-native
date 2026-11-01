@@ -121,6 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (eRow) {
       eRow.style.display = 'flex';
       const input = document.getElementById('nameEditInput');
+      const currentName = document.getElementById('dashName')?.textContent || '';
+      if (input && currentName && currentName !== '—') {
+        input.value = currentName;
+      }
       input?.focus();
     }
   };
@@ -159,6 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (eRow) {
       eRow.style.display = 'flex';
       const input = document.getElementById('phoneEditInput');
+      const currentPhone = document.getElementById('dashPhone')?.textContent || '';
+      if (input && currentPhone && currentPhone !== 'Not provided') {
+        input.value = currentPhone;
+      }
       input?.focus();
     }
   };
@@ -680,8 +688,63 @@ document.addEventListener('DOMContentLoaded', () => {
   window.toggleCard = function(cardId) {
     const card = document.getElementById(cardId);
     if (!card) return;
-    card.classList.toggle('collapsed');
+    const isCollapsed = card.classList.toggle('collapsed');
+    card.querySelector('.card-header-clickable')?.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+
+    const cards = document.querySelectorAll('.dropdown-card');
+    const hasCollapsed = Array.from(cards).some((c) => c.classList.contains('collapsed'));
+    const btn = document.getElementById('toggleAllBtn');
+    if (btn) btn.textContent = hasCollapsed ? 'Expand All Panels' : 'Collapse All Panels';
   };
+
+  // BULK ACCORDION TOGGLE (EXPAND ALL / COLLAPSE ALL)
+  window.toggleAllCards = function() {
+    const cards = document.querySelectorAll('.dropdown-card');
+    const hasCollapsed = Array.from(cards).some((c) => c.classList.contains('collapsed'));
+    cards.forEach((c) => {
+      if (hasCollapsed) {
+        c.classList.remove('collapsed');
+        c.querySelector('.card-header-clickable')?.setAttribute('aria-expanded', 'true');
+      } else {
+        c.classList.add('collapsed');
+        c.querySelector('.card-header-clickable')?.setAttribute('aria-expanded', 'false');
+      }
+    });
+    const btn = document.getElementById('toggleAllBtn');
+    if (btn) btn.textContent = hasCollapsed ? 'Collapse All Panels' : 'Expand All Panels';
+  };
+
+  // ACCESSIBILITY: KEYBOARD NAVIGATION FOR CLICKABLE HEADERS
+  document.querySelectorAll('.card-header-clickable').forEach((header) => {
+    header.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        header.click();
+      }
+    });
+  });
+
+  // KEYBOARD ENTER SHORTCUTS FOR INLINE INPUTS & MODALS
+  document.getElementById('nameEditInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      window.saveEditName();
+    }
+  });
+
+  document.getElementById('phoneEditInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      window.saveEditPhone();
+    }
+  });
+
+  document.getElementById('rsvpWhatsapp')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      window.submitRsvp();
+    }
+  });
 
   // GUIDE TUTORIAL MODAL
   window.openGuideModal = function() {
