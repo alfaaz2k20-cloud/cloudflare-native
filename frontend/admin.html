@@ -18,25 +18,30 @@
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
   
-  
   <script type="module" src="src/admin.js"></script>
   <style>
     .header { font-family: var(--font-heading); font-size: 2.5rem; letter-spacing: 1px; color: var(--text-primary); border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 1rem; margin-top: 6rem; }
-    .tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--grid-border); margin-bottom: 2rem; flex-wrap: wrap; }
-    .tab-btn { padding: 1rem 1.5rem; font-family: var(--font-body); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--text-secondary); border: none; border-bottom: 2px solid transparent; transition: all 0.2s; }
+    .tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--grid-border); margin-bottom: 2rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .tab-nav::-webkit-scrollbar { display: none; }
+    .tab-btn { padding: 1rem 1.4rem; font-family: var(--font-body); font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--text-secondary); border: none; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
     .tab-btn:hover { color: var(--accent-gold); } .tab-btn.active { color: var(--accent-gold); border-bottom-color: var(--accent-gold); font-weight: 500; }
     .tab-panel { display: none; } .tab-panel.active { display: block; }
     .section-title { color: var(--text-primary); font-family: var(--font-heading); font-size: 1.8rem; margin-top: 2rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.5rem; font-weight: 400; }
     
-    .panel { background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 3rem; margin-bottom: 3rem; box-shadow: var(--shadow-base); }
-    .data-card { background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 1.5rem 2rem; margin-bottom: 1rem; display: grid; gap: 1.5rem; align-items: center; transition: border-color 0.3s ease; }
+    .panel { background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 2.5rem; margin-bottom: 2.5rem; box-shadow: var(--shadow-base); }
+    .data-card { background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 1.5rem 2rem; margin-bottom: 1rem; display: grid; gap: 1.5rem; align-items: start; transition: border-color 0.3s ease; }
     .data-card:hover { border-color: var(--accent-gold); }
-    .user-card { grid-template-columns: 2fr 1fr 1fr; } .club-card { grid-template-columns: 2fr 1fr 1fr 1fr; } .event-card { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; } .exhib-card { grid-template-columns: 2fr 1.5fr 1fr 1.5fr; align-items: start; }
+    .user-card { grid-template-columns: 2fr 1fr 1fr; }
+    .club-card { grid-template-columns: 2.5fr 1fr auto; align-items: start; }
+    .event-card { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; align-items: center; }
+    .exhib-card { grid-template-columns: 1fr; }
+    .blog-card { grid-template-columns: 3fr 1fr auto; align-items: center; }
+    .audit-card { grid-template-columns: 140px 1.5fr 1fr 2fr; align-items: start; font-size: 12px; }
     
     .data-label { font-family: var(--font-body); font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; }
     .data-display { font-size: 14px; font-weight: 400; color: var(--text-primary); }
     
-    .badge { display: inline-block; padding: 4px 10px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; border: 1px solid; border-radius: 2px; font-weight: 500;}
+    .badge { display: inline-block; padding: 4px 10px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; border: 1px solid; border-radius: 2px; font-weight: 500; text-align: center; }
     .badge-pending { background: rgba(184, 134, 11, 0.05); color: var(--accent-gold-text); border-color: var(--accent-gold); } 
     .badge-approved { background: rgba(22, 163, 74, 0.05); color: var(--accent-green-text); border-color: var(--accent-green); } 
     .badge-rejected { background: rgba(220, 38, 38, 0.05); color: var(--accent-red-text); border-color: var(--accent-red); } 
@@ -48,7 +53,7 @@
     .roster-card { background: var(--bg-secondary); border: 1px solid var(--grid-border); margin-bottom: 1.25rem; transition: border-color 0.3s ease; }
     .roster-card:hover { border-color: var(--accent-gold); }
     .roster-header { padding: 1.5rem 2rem; display: grid; grid-template-columns: 2.5fr 1fr 1fr; gap: 1.5rem; align-items: center; }
-    .activity-toggle-btn { background: transparent; border: 1px solid var(--grid-border); color: var(--text-secondary); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 0.6rem 1rem; cursor: pointer; transition: all 0.2s; }
+    .activity-toggle-btn { background: transparent; border: 1px solid var(--grid-border); color: var(--text-secondary); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 0.6rem 1rem; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; }
     .activity-toggle-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
     .activity-drawer { border-top: 1px solid var(--grid-border); padding: 1.5rem 2rem; background: var(--bg-primary); display: none; }
     .activity-drawer.open { display: block; }
@@ -58,7 +63,7 @@
     .activity-empty { font-size: 11px; color: var(--text-secondary); font-style: italic; padding: 0.8rem 0; }
     
     .timeline-wrap { margin-bottom: 2rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 1.5rem; }
-    .timeline-title { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-gold-text); margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.5rem; }
+    .timeline-title { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-gold-text); margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem; }
     .timeline-list { display: flex; flex-direction: column; gap: 0.75rem; }
     .timeline-step { display: grid; grid-template-columns: 140px 1fr auto; gap: 1rem; align-items: start; padding: 0.8rem 1rem; background: var(--bg-primary); border-left: 3px solid var(--accent-gold); font-size: 12px; }
     .timeline-step.cat-AUTH { border-left-color: #64748b; }
@@ -71,7 +76,7 @@
     .timeline-time { font-size: 10px; color: var(--text-secondary); font-family: var(--font-body); letter-spacing: 0.5px; }
     .timeline-content { display: flex; flex-direction: column; gap: 2px; }
     .timeline-heading { font-weight: 500; color: var(--text-primary); }
-    .timeline-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+    .timeline-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.4; word-break: break-word; }
     .stat-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--grid-border); border-radius: 2px; color: var(--text-secondary); background: var(--bg-primary); }
     .stat-pill strong { color: var(--text-primary); }
     
@@ -81,13 +86,32 @@
     .form-group { display: flex; flex-direction: column; gap: 0.2rem; } 
     .empty-state { color: var(--text-secondary); font-size: 12px; padding: 3rem; text-align: center; border: 1px dashed var(--grid-border); background: var(--bg-primary); font-style: italic; }
     
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(248, 246, 240, 0.95); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); } .modal-overlay.open { display: flex; } .modal { background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); padding: 3rem; max-width: 750px; width: 90%; max-height: 80vh; overflow-y: auto; } .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 1.5rem; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(45, 49, 46, 0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 1rem; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); padding: 2.5rem; max-width: 750px; width: 100%; max-height: 85vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 1.5rem; }
+
+    .diag-metric { background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .diag-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; border: 1px solid; border-radius: 2px; }
+    .diag-pill-pass { background: rgba(22, 163, 74, 0.08); color: var(--accent-green-text); border-color: var(--accent-green); }
+    .diag-pill-warn { background: rgba(184, 134, 11, 0.08); color: var(--accent-gold-text); border-color: var(--accent-gold); }
+    .diag-pill-fail { background: rgba(220, 38, 38, 0.08); color: var(--accent-red-text); border-color: var(--accent-red); }
+
+    .dossier-box { background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem; margin-top: 1rem; }
+    .dossier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
     
-    @media (max-width: 768px) { .club-card, .event-card, .user-card, .exhib-card, .roster-header { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; gap: 1.5rem; } nav { padding: 1rem 1.5rem; } .nav-login { display: none !important; } .mobile-only-link { display: block; } .nav-links { display: none; position: absolute; top: 100%; left: 0; width: 100%; flex-direction: column; background: var(--bg-secondary); padding: 2rem; gap: 1.5rem; border-bottom: 1px solid var(--grid-border); box-shadow: 0 10px 20px rgba(0,0,0,0.05); } .nav-links.active { display: flex; } #menuToggle { display: flex; align-items: center; justify-content: center; margin-left: 0.5rem; } }
+    @media (max-width: 768px) {
+      .header { margin-top: 5rem; }
+      .club-card, .event-card, .user-card, .exhib-card, .roster-header, .audit-card, .blog-card { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+      .timeline-step { grid-template-columns: 1fr; gap: 0.5rem; }
+      .timeline-time { border-bottom: 1px dashed var(--grid-border); padding-bottom: 0.3rem; }
+      .modal { padding: 1.5rem; }
+    }
   </style>
 </head>
 <body>
-    <nav id="navbar" style="justify-content: space-between;">
+  <nav id="navbar" style="justify-content: space-between;">
     <a href="index.html" class="logo">ALFAAZ</a>
     
     <div class="nav-actions" style="gap: 2rem;">
@@ -107,15 +131,19 @@
         <a href="dashboard.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">&larr; Dashboard</a>
       </div>
     </div>
+    
     <div class="tab-nav">
       <button class="tab-btn active" onclick="switchTab('events')">Standard Events</button>
       <button class="tab-btn" onclick="switchTab('exhibitions')">Exhibitions</button>
       <button class="tab-btn" onclick="switchTab('clubs')">Club Applications</button>
       <button class="tab-btn" onclick="switchTab('roster')">Collective Roster</button>
       <button class="tab-btn" onclick="switchTab('submissions')">Storage Vault</button>
-      <button class="tab-btn" onclick="switchTab('diagnostics')">Diagnostics</button>
+      <button class="tab-btn" onclick="switchTab('blogs')">Journal & Essays</button>
+      <button class="tab-btn" onclick="switchTab('audit')">Audit Ledger</button>
+      <button class="tab-btn" onclick="switchTab('diagnostics')">Diagnostics & Health</button>
     </div>
 
+    <!-- 1. EVENTS PANEL -->
     <div id="tab-events" class="tab-panel active">
       <div class="section-title">Create Event</div>
       <div class="panel">
@@ -125,13 +153,14 @@
           <div class="form-group"><label class="data-label">Capacity (0 = unlimited)</label><input type="number" id="ev-capacity" value="0" min="0" style="background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); padding: 0.8rem 0; width: 100%; font-family: var(--font-body); font-size: 13px; outline: none;"></div>
           <div class="form-group"><label class="data-label">Description</label><input type="text" id="ev-desc" placeholder="Brief description..."></div>
         </div>
-        <button class="action-btn gold" style="padding: 1rem 2rem;" onclick="handleCreateEvent()">Create Event</button>
+        <button class="action-btn gold" id="ev-create-btn" style="padding: 1rem 2rem;" onclick="handleCreateEvent()">Create Event</button>
         <span id="ev-create-msg" style="font-size:11px; margin-left:1rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;"></span>
       </div>
       <div class="section-title">Live Events</div>
       <div id="eventsContainer"><div class="empty-state">Loading events...</div></div>
     </div>
 
+    <!-- 2. EXHIBITIONS PANEL -->
     <div id="tab-exhibitions" class="tab-panel">
       <div class="section-title">Exhibition Management</div>
 
@@ -161,6 +190,13 @@
               <input type="text" id="newExVenue" placeholder="e.g., Mahatta Art Gallery">
             </div>
             <div>
+              <label class="data-label">Age Requirement Configuration *</label>
+              <select id="newExAgeReq" style="margin: 0; font-size: 12px;">
+                <option value="1">18+ Only (Adult Exhibition — Mandatory 18+ Checkbox)</option>
+                <option value="0">Youth / Open (Under 18 Permitted — No 18+ Gate)</option>
+              </select>
+            </div>
+            <div>
               <label class="data-label">About / Description</label>
               <textarea id="newExDesc" rows="3" placeholder="Brief description..."></textarea>
             </div>
@@ -186,13 +222,13 @@
               <input type="text" id="newExPayInst" placeholder="e.g., UPI to alfaaz@okaxis">
             </div>
           </div>
-          <button onclick="createNewExhibition()" class="submit-btn" style="width: 100%;">Create Exhibition</button>
+          <button id="createExBtn" onclick="createNewExhibition()" class="submit-btn" style="width: 100%;">Create Exhibition</button>
           <div id="createExMsg" style="margin-top: 1rem; font-size: 11px; text-align: center;"></div>
         </div>
 
         <div class="panel" style="padding: 2.5rem; margin-bottom: 0;">
           <h3 style="font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); margin-bottom: 1.5rem;">Cycle Control Center</h3>
-          <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 1.5rem;">Click "Set as Live" to open the portal for a specific exhibition. Only one can be live at a time.</p>
+          <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 1.5rem;">Click "Set as Live" to activate a cycle for public submissions. You can also toggle the 18+ requirement dynamically.</p>
           
           <div id="exhibitionListContainer" style="display: flex; flex-direction: column; gap: 1rem; max-height: 600px; overflow-y: auto; padding-right: 10px;">
             <div style="font-size: 12px; color: var(--accent-gold-text);">Loading exhibitions...</div>
@@ -201,7 +237,7 @@
       </div>
 
       <div class="section-title" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
-        <div>Submitted Portfolios</div>
+        <div>Submitted Portfolios (Complete Pipeline Dossier)</div>
         <div id="cycleSelectWrap" style="display:flex; align-items:center;"></div>
       </div>
       
@@ -216,8 +252,9 @@
       <div id="exhibitionsContainer"><div class="empty-state">Loading applications...</div></div>
     </div>
 
+    <!-- 3. CLUBS PANEL -->
     <div id="tab-clubs" class="tab-panel">
-      <div class="section-title">Club Applications</div>
+      <div class="section-title">Club Applications & Creative Intent Statements</div>
       <div style="display:flex; gap:0.8rem; margin-bottom:2rem; flex-wrap:wrap;">
         <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterClubs('ALL')" id="filter-ALL">All</button>
         <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterClubs('PENDING')" id="filter-PENDING">Pending</button>
@@ -227,6 +264,7 @@
       <div id="clubsContainer"><div class="empty-state">Loading applications...</div></div>
     </div>
     
+    <!-- 4. ROSTER PANEL -->
     <div id="tab-roster" class="tab-panel">
       <div class="section-title" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
         <div>Collective Roster</div>
@@ -264,36 +302,179 @@
       <div id="rosterContainer"><div class="empty-state">Loading roster...</div></div>
     </div>
 
+    <!-- 5. STORAGE VAULT SUBMISSIONS PANEL -->
     <div id="tab-submissions" class="tab-panel">
       <div class="section-title">Storage Vault Submissions</div>
       <div id="submissionsContainer"><div class="empty-state">Loading submissions...</div></div>
     </div>
 
-    <div id="tab-diagnostics" class="tab-panel">
-      <div class="section-title">System & Email Diagnostics</div>
+    <!-- 6. BLOGS / CURATED JOURNAL PANEL (NEW) -->
+    <div id="tab-blogs" class="tab-panel">
+      <div class="section-title">Curated Journal & Essay Publishing</div>
       <div class="panel">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
-          <div>
-            <div class="data-label">Email Webhook Status</div>
-            <div id="emailWebhookStatus" class="data-display" style="color: var(--accent-gold-text);">Checking webhook status...</div>
+        <h3 style="font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); margin-bottom: 1.5rem;">Draft or Publish Article</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="data-label">Article Title *</label>
+            <input type="text" id="blogTitle" placeholder="e.g., The Architecture of Pinjrakari">
           </div>
-          <button id="btnTestEmail" class="action-btn gold" style="padding: 0.8rem 1.5rem;" onclick="sendTestEmail()">Send Test Email</button>
+          <div class="form-group">
+            <label class="data-label">Cover Image URL (Optional)</label>
+            <input type="text" id="blogCoverImage" placeholder="https://...">
+          </div>
         </div>
-        <div id="emailTestMsg" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary);"></div>
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label class="data-label">Excerpt / Curator's Abstract</label>
+          <input type="text" id="blogExcerpt" placeholder="Brief 1-2 sentence overview of this reflection...">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label class="data-label">Article Essay Content * (Markdown or HTML)</label>
+          <textarea id="blogContent" rows="7" placeholder="Write or paste your curatorial essay here..."></textarea>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 12px; color: var(--text-primary);">
+            <input type="checkbox" id="blogIsPublished" checked style="width: auto;">
+            Publish immediately to public archives
+          </label>
+          <button class="action-btn gold" id="btnCreateBlog" style="padding: 0.8rem 2rem;" onclick="handleCreateBlog()">Publish Essay</button>
+        </div>
+        <div id="blogCreateMsg" style="margin-top: 1rem; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;"></div>
+      </div>
+
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+        <div>Journal Archives & Curations</div>
+        <button class="action-btn gold" style="padding: 0.5rem 1rem; font-size: 10px;" onclick="loadAdminBlogs()">Refresh Archives</button>
+      </div>
+      <div id="blogsContainer"><div class="empty-state">Loading articles...</div></div>
+    </div>
+
+    <!-- 7. AUDIT LEDGER PANEL -->
+    <div id="tab-audit" class="tab-panel">
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+        <div>Administrative Audit Ledger</div>
+        <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="auditSearchInput" placeholder="Filter action, admin, or target..." style="font-size: 11px; padding: 0.4rem 0.6rem; width: 220px;" oninput="window.filterAuditLogs()">
+          <button class="action-btn gold" style="padding: 0.5rem 1rem; font-size: 10px;" onclick="loadAuditLogs()">Refresh Ledger</button>
+        </div>
+      </div>
+      <div id="auditLogsContainer"><div class="empty-state">Loading audit trail...</div></div>
+    </div>
+
+    <!-- 8. EXPANDED DIAGNOSTICS & TELEMETRY DASHBOARD -->
+    <div id="tab-diagnostics" class="tab-panel">
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+        <div>System Telemetry & Health Dashboard</div>
+        <button id="btnRunProbe" class="action-btn gold" style="padding: 0.5rem 1.2rem; font-size: 10px;" onclick="runDiagnosticProbe()">Run Synthetic Health Probe</button>
+      </div>
+
+      <!-- Overall Status Banner -->
+      <div class="panel" style="padding: 1.5rem 2rem; margin-bottom: 2rem; border-left: 4px solid var(--accent-gold); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <div style="font-family: var(--font-heading); font-size: 1.6rem;" id="diagOverallStatus">System Operational</div>
+          <div id="diagOverallDetail" style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Checking system telemetry across Cloudflare D1, KV, R2, and security gates...</div>
+        </div>
+        <div id="diagLatencyBadge" class="diag-pill diag-pill-pass">D1: -- ms</div>
+      </div>
+
+      <!-- Real-time Probe Console Output -->
+      <div id="diagProbeConsole" style="display:none; background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.5rem; margin-bottom: 2rem; font-family: monospace; font-size: 12px;">
+        <div style="font-weight: 600; color: var(--accent-gold-text); margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">Live Probe Investigation Log:</div>
+        <div id="diagProbeLog" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      </div>
+
+      <!-- Telemetry Metrics Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+        <!-- Card 1: D1 Database Engine -->
+        <div class="diag-metric">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="data-label">D1 Database (SQLite)</span>
+            <span id="badgeDbStatus" class="diag-pill diag-pill-pass">Active</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-secondary); margin-top: 6px;">
+            <div>Total Users: <strong id="m-users" style="color:var(--text-primary);">-</strong></div>
+            <div>Events (Open / Total): <strong id="m-events" style="color:var(--text-primary);">- / -</strong></div>
+            <div>Active Cycle: <strong id="m-cycle" style="color:var(--accent-gold-text);">-</strong></div>
+            <div>Exhibitions (Pending / Total): <strong id="m-exhibs" style="color:var(--text-primary);">- / -</strong></div>
+            <div>Club Applications (Pending): <strong id="m-clubs" style="color:var(--text-primary);">-</strong></div>
+            <div>Vault Works & Blogs: <strong id="m-vault" style="color:var(--text-primary);">-</strong></div>
+          </div>
+        </div>
+
+        <!-- Card 2: Edge Bindings (Cache & Storage) -->
+        <div class="diag-metric">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="data-label">Edge Cache & Storage</span>
+            <span id="badgeStorageStatus" class="diag-pill diag-pill-pass">Bound</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-secondary); margin-top: 6px;">
+            <div>Cloudflare KV: <span id="m-kv" style="font-weight:600;">-</span></div>
+            <div>R2 Vault Bucket: <span id="m-r2" style="font-weight:600;">-</span></div>
+            <div>Notices Cache: <span style="font-size: 11px;">Invalidated on admin edits</span></div>
+          </div>
+        </div>
+
+        <!-- Card 3: Security & Anti-Bot Gates -->
+        <div class="diag-metric">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="data-label">Security & Auth Gates</span>
+            <span id="badgeSecurityStatus" class="diag-pill diag-pill-pass">Secure</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary); margin-top: 6px;">
+            <div>Turnstile Bot Defense: <span id="m-turnstile" style="font-weight:600;">-</span></div>
+            <div>JWT Cryptography: <span id="m-jwt" style="font-weight:600;">-</span></div>
+            <div>Google Identity: <span id="m-google-auth" style="font-weight:600;">-</span></div>
+            <div>Curator Writer Token: <span id="m-curator" style="font-weight:600;">-</span></div>
+          </div>
+        </div>
+
+        <!-- Card 4: Notification Pipeline -->
+        <div class="diag-metric">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="data-label">Notification Pipeline</span>
+            <span id="badgeEmailStatus" class="diag-pill diag-pill-pass">-</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary); margin-top: 6px;">
+            <div>Active Driver: <strong id="m-driver" style="color:var(--text-primary);">-</strong></div>
+            <div>Make.com Webhook: <span id="m-make">-</span></div>
+            <div>Cloudflare Email: <span id="m-cf">-</span></div>
+          </div>
+          <button id="btnTestEmail" class="action-btn gold" style="padding: 0.5rem; font-size: 9px; margin-top: 8px;" onclick="sendTestEmail()">Dispatch Test Email</button>
+          <div id="emailTestMsg" style="font-size: 10px; margin-top: 4px; color: var(--text-secondary);"></div>
+        </div>
       </div>
     </div>
 
-    </div>
+  </div>
 
+  <!-- Registrations List Modal -->
   <div class="modal-overlay" id="regModal">
     <div class="modal">
       <div class="modal-header">
-        <div style="font-family:var(--font-heading); font-size:2.5rem; color:var(--text-primary); font-weight: 400;" id="modalTitle">Details</div>
+        <div style="font-family:var(--font-heading); font-size:2.2rem; color:var(--text-primary); font-weight: 400;" id="modalTitle">Details</div>
         <button class="action-btn" style="padding: 0.5rem 1rem; border-color: transparent;" onclick="closeModal()">✕ Close</button>
       </div>
       <div id="modalBody" style="color:var(--text-primary);"></div>
     </div>
   </div>
 
-  </body>
+  <!-- Curator Confirmation & Prompt Modal -->
+  <div class="modal-overlay" id="curatorDialogModal">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal-header" style="margin-bottom: 1.5rem; padding-bottom: 1rem;">
+        <div style="font-family: var(--font-heading); font-size: 1.8rem; color: var(--text-primary); font-weight: 400;" id="dialogModalTitle">Confirmation</div>
+        <button class="action-btn" style="padding: 0.3rem 0.8rem; border-color: transparent;" onclick="window.curatorDialogClose(null)">✕</button>
+      </div>
+      <p id="dialogModalMessage" style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;"></p>
+      <div id="dialogModalInputGroup" style="display: none; margin-bottom: 1.5rem;">
+        <label class="data-label" id="dialogModalInputLabel">Curator Note</label>
+        <input type="text" id="dialogModalInput" placeholder="Enter notes...">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+        <button class="action-btn" style="padding: 0.7rem 1.4rem; font-size: 10px;" id="dialogModalCancelBtn" onclick="window.curatorDialogClose(null)">Cancel</button>
+        <button class="action-btn gold" style="padding: 0.7rem 1.4rem; font-size: 10px;" id="dialogModalConfirmBtn">Proceed</button>
+      </div>
+    </div>
+  </div>
+
+</body>
 </html>

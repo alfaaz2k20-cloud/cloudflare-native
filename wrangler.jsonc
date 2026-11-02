@@ -49,7 +49,6 @@
 	"vars": {
 		"ENV": "production",
 		"FRONTEND_URL": "https://alfaazcollective.org",
-		"EMAIL_PROVIDER": "webhook",
-		"FIREBASE_PROJECT_ID": "alfaaz-collective"
+		"EMAIL_PROVIDER": "webhook"
 	}
 }

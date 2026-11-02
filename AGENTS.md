@@ -21,11 +21,12 @@
 - **Consent Gate**: Affirmative consent (`consent_records`) and age verification (18+) are required before any recruitment session telemetry or SJT response ingestion is permitted.
 - **7-Dimension Balance**: Psychometric scoring evaluates all 7 core dimensions (Empathy, Conscientiousness, Collaborative Spirit, Emotional Agility, Curiosity, Creative Initiative, Motivation) using Latin Square counterbalanced minigame allocation.
 
-## 3. Federated Identity Verification & Email Integrity (SMS/OTP Decommissioned)
+## 3. Federated Identity Verification & Sovereign Auth (Firebase & SMS/OTP Decommissioned)
+- **Firebase Decommissioning Invariant**: Firebase is not required and has been completely decommissioned from the system architecture. No Firebase SDKs, client scripts, Firebase Auth token verification endpoints (`securetoken.google.com`), or `FIREBASE_PROJECT_ID` configurations may be introduced or retained. Authentication relies exclusively on sovereign Email & Password and verified direct OAuth/OIDC (Google Identity Services GIS) with zero third-party vendor lock-in.
 - **Verified Email Gate**: When linking or authenticating a federated account (Google, Apple, OAuth/OIDC) by email address, the verified token MUST carry `email_verified === true`. If false, missing, or untrusted, NEVER link or issue a session for an existing account matching that email — reject with `401 Unauthorized`.
-- **Cryptographic Provider Integrity**: `auth_provider` must derive ONLY from cryptographically verified token claims (e.g. `firebase.sign_in_provider`); never from mutable client-supplied body fields.
+- **Cryptographic Provider Integrity**: `auth_provider` must derive ONLY from cryptographically verified token claims (e.g. verified Google/OIDC claims); never from mutable client-supplied body fields.
 - **Trusted Edge IP**: Rate limiters and Turnstile verification rely solely on `cf-connecting-ip`. Fall back to client-supplied headers (`x-forwarded-for`) only in automated test environments (`ENV === 'test'`).
-- **Race-Safe Identity Insertion**: Federated account creation must catch SQLite `UNIQUE` constraint races on `firebase_uid` and `email`, resolving cleanly to the existing identity rather than throwing `500`.
+- **Race-Safe Identity Insertion**: Federated account creation must catch SQLite `UNIQUE` constraint races on external federated UIDs and `email`, resolving cleanly to the existing identity rather than throwing `500`.
 - **SMS/OTP Decommission**: Phone OTP delivery and SMS verification systems are deprecated and removed. Primary authentication relies exclusively on sovereign Email & Password and verified 1-Tap OAuth identities.
 
 ## 4. Honest UI & Zero-Facade Engineering

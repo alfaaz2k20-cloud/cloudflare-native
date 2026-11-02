@@ -865,6 +865,26 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         });
       });
 
+      it('T2_R4_02b: strictly rejects GIS token with mismatched audience (OAuth audience confusion protection)', async () => {
+        const gisBadAudToken = await createMockFirebaseToken({
+          uid: 'gis_attacker_victim',
+          email: 'target_victim@alfaaz.local',
+          iss: 'https://accounts.google.com',
+          aud: 'rogue-third-party-app.apps.googleusercontent.com',
+          email_verified: true
+        });
+
+        const res = await app.request('/auth/federated-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: gisBadAudToken, provider: 'google.com' })
+        }, getTestEnv({ GOOGLE_CLIENT_ID: 'alfaaz-canonical-client-id.apps.googleusercontent.com' }));
+
+        await assertContract(res, 401, (data) => {
+          expect(data.error).toMatch(/Invalid or expired/i);
+        });
+      });
+
       it('T2_R4_03: strictly rejects algorithm substitution attack (alg: "none") with 401', async () => {
         const noneToken = await createMockFirebaseToken({ uid: 'none_alg_user', alg: 'none' });
 

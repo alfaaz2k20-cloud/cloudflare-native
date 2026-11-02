@@ -4,7 +4,7 @@ import { hashPassword, verifyPassword, createToken, verifyToken, getJwtSecret } 
 import { requireAuth } from '../middleware/auth';
 import { rateLimiter, verifyTurnstile } from '../middleware/rate_limit';
 import { sendSystemEmail } from '../notifications/email';
-import { verifyFirebaseToken } from '../auth/federated';
+import { verifyFederatedToken } from '../auth/federated';
 import { checkAndRecordVelocity } from '../services/velocity';
 
 export const authRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
@@ -52,9 +52,7 @@ authRouter.post('/send-otp', async (c) => {
     }, 429);
   }
 
-  // 4. SMS dispatch is delegated to Firebase Phone Auth (client calls signInWithPhoneNumber).
-  //    This route is a Turnstile + velocity gatekeeper that authorizes the SMS challenge
-  //    before the client asks Firebase to deliver the actual code.
+  // 4. Verification Gatekeeper: authorizes the SMS challenge via Turnstile + velocity limits.
   return c.json({
     success: true,
     message: 'OTP challenge authorized. Proceed with SMS verification.'
@@ -74,8 +72,8 @@ authRouter.post('/federated-login', async (c) => {
     return c.json({ error: 'ID token is required.' }, 400);
   }
 
-  const projectId = c.env.FIREBASE_PROJECT_ID || 'alfaaz-collective';
-  const verified = await verifyFirebaseToken(idToken, projectId, c.env.ENV);
+  const clientId = c.env.GOOGLE_CLIENT_ID || 'alfaaz-collective';
+  const verified = await verifyFederatedToken(idToken, clientId, c.env.ENV);
   if (!verified) {
     return c.json({ error: 'Invalid or expired authentication token.' }, 401);
   }
@@ -87,7 +85,7 @@ authRouter.post('/federated-login', async (c) => {
   const fullName = verified.name ? String(verified.name).slice(0, 80).trim() : null;
   
   // Security fix: Provider is derived exclusively from cryptographically verified token claims, NOT client body
-  const provider = verified.firebase?.sign_in_provider || (phone ? 'phone' : 'federated');
+  const provider = verified.sign_in_provider || verified.firebase?.sign_in_provider || (phone ? 'phone' : 'google.com');
 
   // Priority 1: Match existing user by sovereign firebase_uid
   let userRow: any = null;
@@ -109,7 +107,7 @@ authRouter.post('/federated-login', async (c) => {
   // Priority 3: Match existing user by email
   // CRITICAL P0 INVARIANT: An existing account MUST NEVER be matched or linked to a federated token
   // unless the email address has been explicitly verified (email_verified === true).
-  // Without this check, an attacker can create an unverified Firebase account using a victim's email and hijack it.
+  // Without this check, an attacker can create an unverified federated account using a victim's email and hijack it.
   if (!userRow && email) {
     const existingByEmail = await c.env.DB
       .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE email = ?')

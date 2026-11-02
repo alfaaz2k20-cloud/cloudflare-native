@@ -67,11 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
  });
 
  // ── Page Init ─────────────────────────────────────────────────────
+ let activeExhibitionConfig = null;
+
  async function initExhibition() {
  try {
  const res = await window.globalApiFetch('/exhibitions/config');
  if (!res || !res.ok) throw new Error("Failed to load config");
  const config = await res.json();
+ activeExhibitionConfig = config;
  
  if (headerTitle) headerTitle.textContent = config.title || 'Exhibition';
 
@@ -83,6 +86,38 @@ document.addEventListener('DOMContentLoaded', () => {
  if (exDates) exDates.textContent = config.date_text;
  if (exVenue) exVenue.textContent = config.venue;
  if (exDesc) exDesc.textContent = config.about_text || 'Applications are now open for the upcoming exhibition cycle.';
+
+ const checkAgeContainer = document.getElementById('checkAgeContainer');
+ const checkAge = document.getElementById('checkAge');
+ const checkAgeLabel = document.getElementById('checkAgeLabel');
+ if (config.require_over_18 === false) {
+  if (checkAgeContainer) {
+    checkAgeContainer.style.background = 'rgba(184, 134, 11, 0.05)';
+    checkAgeContainer.style.padding = '0.6rem 0.8rem';
+    checkAgeContainer.style.border = '1px dashed var(--grid-border)';
+  }
+  if (checkAgeLabel) {
+    checkAgeLabel.innerHTML = '<strong style="color:var(--accent-gold-text);">Youth & Open Cycle:</strong> Under 18 submissions permitted for this cycle.';
+  }
+  if (checkAge) {
+    checkAge.checked = true;
+    checkAge.required = false;
+    checkAge.style.display = 'none';
+  }
+ } else {
+  if (checkAgeContainer) {
+    checkAgeContainer.style.background = '';
+    checkAgeContainer.style.padding = '';
+    checkAgeContainer.style.border = '';
+  }
+  if (checkAgeLabel) {
+    checkAgeLabel.textContent = 'I confirm that I am 18 years of age or older.';
+  }
+  if (checkAge) {
+    checkAge.required = true;
+    checkAge.style.display = 'block';
+  }
+ }
 
  // Gate: block if already applied for this cycle
  if (window.globalApiFetch) {
@@ -151,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
  genre: document.getElementById('genre').value.trim(),
  medium: document.getElementById('medium').value.trim(),
  portfolio_url: uploadedPdfUrl,
- over_19: document.getElementById('checkAge').checked,
+ over_19: activeExhibitionConfig && activeExhibitionConfig.require_over_18 === false ? true : Boolean(document.getElementById('checkAge')?.checked),
  agreed_to_screening: document.getElementById('checkScreen').checked,
  applicant_note: document.getElementById('note').value.trim() || null,
  turnstile_token: turnstileToken

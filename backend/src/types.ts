@@ -13,7 +13,7 @@ export interface Env {
   CURATOR_SECRET_TOKEN?: string;
   PHANTOM_SECRET_TOKEN?: string;
   TURNSTILE_SECRET_KEY?: string;
-  FIREBASE_PROJECT_ID?: string;
+  GOOGLE_CLIENT_ID?: string;
 
   // Email Configuration
   EMAIL_PROVIDER?: 'dev' | 'webhook' | 'cloudflare';

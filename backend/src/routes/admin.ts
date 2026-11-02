@@ -200,23 +200,24 @@ adminRouter.post('/exhibitions/create', async (c) => {
   const registration_fee = (body.registration_fee || '').trim();
   const payment_instructions = (body.payment_instructions || '').trim();
   const payment_qr_url = body.payment_qr_url || null;
+  const require_over_18 = body.require_over_18 !== undefined ? (body.require_over_18 ? 1 : 0) : 1;
 
   if (!title) return c.json({ error: 'Title is required' }, 400);
 
   await c.env.DB.prepare(`
     INSERT INTO exhibitions_list (
       title, date_text, venue, about_text, tnc_pdf_url, registration_fee,
-      payment_instructions, payment_qr_url, is_active
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
-  `).bind(title, date_text, venue, about_text, tnc_pdf_url, registration_fee, payment_instructions, payment_qr_url).run();
+      payment_instructions, payment_qr_url, require_over_18, is_active
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+  `).bind(title, date_text, venue, about_text, tnc_pdf_url, registration_fee, payment_instructions, payment_qr_url, require_over_18).run();
 
-  await logAudit(c.env.DB, admin.email, 'CREATE_EXHIBITION', 'exhibition', title, `Created exhibition cycle ${title}`);
+  await logAudit(c.env.DB, admin.email, 'CREATE_EXHIBITION', 'exhibition', title, `Created exhibition cycle ${title} (18+ required: ${require_over_18})`);
   return c.json({ status: 'SUCCESS' });
 });
 
 adminRouter.get('/exhibitions/list', async (c) => {
   const list = await c.env.DB.prepare(`
-    SELECT id, title, date_text, is_active
+    SELECT id, title, date_text, is_active, require_over_18
     FROM exhibitions_list
     ORDER BY created_at DESC
   `).all();
@@ -225,8 +226,26 @@ adminRouter.get('/exhibitions/list', async (c) => {
     id: e.id,
     title: e.title,
     date_text: e.date_text,
-    is_active: Boolean(e.is_active)
+    is_active: Boolean(e.is_active),
+    require_over_18: e.require_over_18 === undefined || e.require_over_18 === null ? 1 : Number(e.require_over_18)
   })));
+});
+
+adminRouter.patch('/exhibitions/:id/toggle-age', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid exhibition ID' }, 400);
+
+  const ex = await c.env.DB.prepare('SELECT id, title, require_over_18 FROM exhibitions_list WHERE id = ?').bind(id).first<any>();
+  if (!ex) return c.json({ error: 'Exhibition not found.' }, 404);
+
+  const currentVal = ex.require_over_18 === undefined || ex.require_over_18 === null ? 1 : Number(ex.require_over_18);
+  const nextVal = currentVal ? 0 : 1;
+
+  await c.env.DB.prepare('UPDATE exhibitions_list SET require_over_18 = ? WHERE id = ?').bind(nextVal, id).run();
+  await logAudit(c.env.DB, admin.email, 'TOGGLE_EXHIBITION_AGE', 'exhibition', String(id), `Set age requirement to ${nextVal ? '18+ REQUIRED' : 'OPEN/YOUTH'}`);
+
+  return c.json({ status: 'SUCCESS', require_over_18: nextVal });
 });
 
 adminRouter.patch('/exhibitions/:id/activate', async (c) => {
@@ -270,16 +289,18 @@ adminRouter.get('/exhibitions', async (c) => {
   let stmt: D1PreparedStatement;
   if (targetCycle) {
     stmt = c.env.DB.prepare(`
-      SELECT id, user_email, full_name, exhibition_cycle, genre, medium,
-             portfolio_url, status, registration_status, payment_proof_url
+      SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
+             portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+             registration_status, payment_proof_url, participant_note_reg, created_at
       FROM exhibition_applications
       WHERE exhibition_cycle = ?
       ORDER BY created_at DESC
     `).bind(targetCycle);
   } else {
     stmt = c.env.DB.prepare(`
-      SELECT id, user_email, full_name, exhibition_cycle, genre, medium,
-             portfolio_url, status, registration_status, payment_proof_url
+      SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
+             portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+             registration_status, payment_proof_url, participant_note_reg, created_at
       FROM exhibition_applications
       ORDER BY created_at DESC
     `);
@@ -290,13 +311,22 @@ adminRouter.get('/exhibitions', async (c) => {
     id: a.id,
     user_email: a.user_email,
     full_name: a.full_name,
+    age: a.age,
+    address: a.address || '',
+    whatsapp: a.whatsapp || '',
     exhibition_cycle: a.exhibition_cycle,
     genre: a.genre,
     medium: a.medium,
     portfolio_url: a.portfolio_url,
+    over_19: Boolean(a.over_19),
+    agreed_to_screening: Boolean(a.agreed_to_screening),
+    applicant_note: a.applicant_note || '',
     status: a.status,
+    curator_note: a.curator_note || '',
     registration_status: a.registration_status,
-    payment_proof_url: a.payment_proof_url
+    payment_proof_url: a.payment_proof_url,
+    participant_note_reg: a.participant_note_reg || '',
+    created_at: a.created_at
   })));
 });
 
@@ -786,6 +816,248 @@ adminRouter.get('/submissions', async (c) => {
 adminRouter.get('/audit-logs', async (c) => {
   const logs = await c.env.DB.prepare('SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT 100').all();
   return c.json(logs.results || []);
+});
+
+// ── Curated Journal / Blogs Pipeline ─────────────────────────────────────────
+adminRouter.get('/blogs', async (c) => {
+  const list = await c.env.DB.prepare(`
+    SELECT id, title, excerpt, content, cover_image, is_published, created_at
+    FROM blogs
+    ORDER BY created_at DESC
+  `).all();
+  return c.json((list.results || []).map((b: any) => ({
+    id: b.id,
+    title: b.title,
+    excerpt: b.excerpt || '',
+    content: b.content,
+    cover_image: b.cover_image || null,
+    is_published: Boolean(b.is_published),
+    created_at: b.created_at
+  })));
+});
+
+adminRouter.post('/blogs/create', async (c) => {
+  const admin = c.get('user');
+  const body = await c.req.json().catch(() => ({}));
+  const title = (body.title || '').trim();
+  const content = (body.content || '').trim();
+  const excerpt = (body.excerpt || '').trim();
+  const cover_image = (body.cover_image || '').trim() || null;
+  const is_published = body.is_published !== undefined ? (body.is_published ? 1 : 0) : 1;
+
+  if (!title) return c.json({ error: 'Article title is required.' }, 400);
+  if (title.length > 200) return c.json({ error: 'Title exceeds 200 characters.' }, 400);
+  if (!content) return c.json({ error: 'Article content is required.' }, 400);
+
+  await c.env.DB.prepare(`
+    INSERT INTO blogs (title, excerpt, content, cover_image, is_published)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(title, excerpt || null, content, cover_image, is_published).run();
+
+  const created = await c.env.DB.prepare('SELECT id FROM blogs WHERE title = ? ORDER BY id DESC LIMIT 1')
+    .bind(title).first<any>();
+
+  if (c.env.CACHE_KV) {
+    try { await c.env.CACHE_KV.delete('notices_feed'); } catch {}
+  }
+
+  await logAudit(
+    c.env.DB,
+    admin.email,
+    'CREATE_BLOG',
+    'blog',
+    title,
+    `Created journal article "${title}" (${is_published ? 'PUBLISHED' : 'DRAFT'})`
+  );
+
+  return c.json({ status: 'SUCCESS', id: created?.id }, 201);
+});
+
+adminRouter.patch('/blogs/:id/toggle', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid article ID' }, 400);
+
+  const blog = await c.env.DB.prepare('SELECT id, title, is_published FROM blogs WHERE id = ?').bind(id).first<any>();
+  if (!blog) return c.json({ error: 'Article not found.' }, 404);
+
+  const nextStatus = blog.is_published ? 0 : 1;
+  await c.env.DB.prepare('UPDATE blogs SET is_published = ? WHERE id = ?').bind(nextStatus, id).run();
+
+  if (c.env.CACHE_KV) {
+    try { await c.env.CACHE_KV.delete('notices_feed'); } catch {}
+  }
+
+  await logAudit(
+    c.env.DB,
+    admin.email,
+    'TOGGLE_BLOG',
+    'blog',
+    String(id),
+    `Toggled article #${id} to ${nextStatus ? 'PUBLISHED' : 'DRAFT'}`
+  );
+
+  return c.json({ status: 'SUCCESS', is_published: Boolean(nextStatus) });
+});
+
+adminRouter.delete('/blogs/:id', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid article ID' }, 400);
+
+  const blog = await c.env.DB.prepare('SELECT id, title FROM blogs WHERE id = ?').bind(id).first<any>();
+  if (!blog) return c.json({ error: 'Article not found.' }, 404);
+
+  await c.env.DB.prepare('DELETE FROM blogs WHERE id = ?').bind(id).run();
+
+  if (c.env.CACHE_KV) {
+    try { await c.env.CACHE_KV.delete('notices_feed'); } catch {}
+  }
+
+  await logAudit(
+    c.env.DB,
+    admin.email,
+    'DELETE_BLOG',
+    'blog',
+    String(id),
+    `Deleted article #${id} "${blog.title}"`
+  );
+
+  return c.json({ status: 'SUCCESS' });
+});
+
+// ── System Diagnostics & Subsystem Telemetry Dashboard ────────────────────────
+adminRouter.get('/diagnostics/system', async (c) => {
+  const d1Start = Date.now();
+  await c.env.DB.prepare('SELECT 1').first();
+  const d1Latency = Date.now() - d1Start;
+
+  const [
+    usersCount,
+    eventsCount,
+    openEventsCount,
+    exhibitionsCount,
+    activeExhibition,
+    exhibApplications,
+    pendingExhibApplications,
+    clubApplications,
+    pendingClubApplications,
+    submissionsCount,
+    blogsCount,
+    auditLogsCount
+  ] = await Promise.all([
+    c.env.DB.prepare('SELECT COUNT(*) as c FROM users').first<{ c: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as c FROM events').first<{ c: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as c FROM events WHERE registration_open = 1').first<{ c: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as c FROM exhibitions_list').first<{ c: number }>(),
+    c.env.DB.prepare('SELECT title, require_over_18 FROM exhibitions_list WHERE is_active = 1 LIMIT 1').first<{ title: string; require_over_18: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as c FROM exhibition_applications').first<{ c: number }>(),
+    c.env.DB.prepare("SELECT COUNT(*) as c FROM exhibition_applications WHERE status = 'PENDING'").first<{ c: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as c FROM club_applications').first<{ c: number }>(),
+    c.env.DB.prepare("SELECT COUNT(*) as c FROM club_applications WHERE status = 'PENDING'").first<{ c: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as c FROM submissions').first<{ c: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as c FROM blogs').first<{ c: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as c FROM admin_audit_logs').first<{ c: number }>()
+  ]);
+
+  const turnstileKey = c.env.TURNSTILE_SECRET_KEY || '';
+  const isTurnstileDummy = turnstileKey === '1x0000000000000000000000000000000AA';
+
+  return c.json({
+    environment: {
+      env_mode: c.env.ENV || 'development',
+      cf_ray: c.req.header('cf-ray') || 'edge-local',
+      client_ip: c.req.header('cf-connecting-ip') || '127.0.0.1'
+    },
+    security_gates: {
+      jwt_configured: Boolean(c.env.JWT_SECRET),
+      jwt_length: c.env.JWT_SECRET ? c.env.JWT_SECRET.length : 0,
+      turnstile_configured: Boolean(turnstileKey),
+      turnstile_mode: isTurnstileDummy ? 'DEV_DUMMY_KEY' : (turnstileKey ? 'PRODUCTION_LIVE_KEY' : 'UNCONFIGURED'),
+      google_auth_configured: Boolean(c.env.GOOGLE_CLIENT_ID),
+      curator_token_configured: Boolean(c.env.CURATOR_SECRET_TOKEN || c.env.PHANTOM_SECRET_TOKEN)
+    },
+    bindings: {
+      d1_connected: true,
+      d1_latency_ms: d1Latency,
+      kv_bound: Boolean(c.env.CACHE_KV),
+      r2_vault_bound: Boolean(c.env.VAULT_BUCKET)
+    },
+    notifications: {
+      driver: c.env.MAKE_WEBHOOK_URL ? 'make' : (c.env.CF_EMAIL_ROUTING ? 'cloudflare_email' : 'dev'),
+      make_configured: Boolean(c.env.MAKE_WEBHOOK_URL),
+      cf_email_configured: Boolean(c.env.CF_EMAIL_ROUTING)
+    },
+    entity_metrics: {
+      users_total: usersCount?.c || 0,
+      events_total: eventsCount?.c || 0,
+      events_open: openEventsCount?.c || 0,
+      exhibitions_total: exhibitionsCount?.c || 0,
+      active_cycle: activeExhibition?.title || null,
+      active_cycle_over_18: activeExhibition ? (activeExhibition.require_over_18 === undefined || activeExhibition.require_over_18 === null ? 1 : Number(activeExhibition.require_over_18)) : null,
+      exhibition_apps_total: exhibApplications?.c || 0,
+      exhibition_apps_pending: pendingExhibApplications?.c || 0,
+      club_apps_total: clubApplications?.c || 0,
+      club_apps_pending: pendingClubApplications?.c || 0,
+      submissions_total: submissionsCount?.c || 0,
+      blogs_total: blogsCount?.c || 0,
+      audit_logs_total: auditLogsCount?.c || 0
+    }
+  });
+});
+
+adminRouter.post('/diagnostics/probe', async (c) => {
+  const results: Record<string, { status: 'PASS' | 'WARN' | 'FAIL'; latency_ms?: number; detail: string }> = {};
+
+  // Probe 1: D1 Database
+  try {
+    const t0 = Date.now();
+    await c.env.DB.prepare('SELECT 1 as probe').first();
+    results.database = { status: 'PASS', latency_ms: Date.now() - t0, detail: 'D1 SQLite connection and query execution verified.' };
+  } catch (err: any) {
+    results.database = { status: 'FAIL', detail: `D1 connection failed: ${err.message}` };
+  }
+
+  // Probe 2: Cache KV
+  if (c.env.CACHE_KV) {
+    try {
+      const t0 = Date.now();
+      await c.env.CACHE_KV.put('_diag_probe', 'ok', { expirationTtl: 60 });
+      const val = await c.env.CACHE_KV.get('_diag_probe');
+      await c.env.CACHE_KV.delete('_diag_probe');
+      results.cache_kv = { status: val === 'ok' ? 'PASS' : 'WARN', latency_ms: Date.now() - t0, detail: 'KV put/get/delete probe validated.' };
+    } catch (err: any) {
+      results.cache_kv = { status: 'WARN', detail: `KV probe failed: ${err.message}` };
+    }
+  } else {
+    results.cache_kv = { status: 'WARN', detail: 'CACHE_KV not bound in environment.' };
+  }
+
+  // Probe 3: R2 Vault
+  if (c.env.VAULT_BUCKET) {
+    results.r2_vault = { status: 'PASS', detail: 'VAULT_BUCKET R2 binding present and accessible.' };
+  } else {
+    results.r2_vault = { status: 'WARN', detail: 'VAULT_BUCKET not bound. Submissions fall back to direct external URLs.' };
+  }
+
+  // Probe 4: Security Invariants
+  const jwtOk = Boolean(c.env.JWT_SECRET && c.env.JWT_SECRET.length >= 32);
+  const turnstileOk = Boolean(c.env.TURNSTILE_SECRET_KEY);
+  if (c.env.ENV === 'production' && c.env.TURNSTILE_SECRET_KEY === '1x0000000000000000000000000000000AA') {
+    results.security = { status: 'FAIL', detail: 'CRITICAL: Dummy Turnstile pass key detected in production environment.' };
+  } else if (!jwtOk) {
+    results.security = { status: 'WARN', detail: 'JWT_SECRET missing or shorter than 32 characters.' };
+  } else {
+    results.security = { status: 'PASS', detail: 'Cryptographic secrets and Turnstile configuration conform to security guidelines.' };
+  }
+
+  const isHealthy = !Object.values(results).some(r => r.status === 'FAIL');
+
+  return c.json({
+    overall_status: isHealthy ? 'HEALTHY' : 'DEGRADED',
+    timestamp: new Date().toISOString(),
+    checks: results
+  });
 });
 
 // ── Email Diagnostics ────────────────────────────────────────────────────────

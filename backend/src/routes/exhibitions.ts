@@ -12,7 +12,7 @@ exhibitionsRouter.get('/config', async (c) => {
     .first<any>();
 
   if (!config) {
-    return c.json({ is_open: false, title: '', date_text: '', about_text: '' });
+    return c.json({ is_open: false, title: '', date_text: '', about_text: '', require_over_18: true });
   }
 
   return c.json({
@@ -24,7 +24,8 @@ exhibitionsRouter.get('/config', async (c) => {
     tnc_pdf_url: config.tnc_pdf_url,
     registration_fee: config.registration_fee || '',
     payment_instructions: config.payment_instructions || '',
-    payment_qr_url: config.payment_qr_url
+    payment_qr_url: config.payment_qr_url,
+    require_over_18: config.require_over_18 === undefined || config.require_over_18 === null ? true : Boolean(config.require_over_18)
   });
 });
 
@@ -39,8 +40,8 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     return c.json({ detail: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
   }
 
-  if (!body.over_19 || !body.agreed_to_screening) {
-    return c.json({ detail: 'You must agree to the terms to proceed.' }, 400);
+  if (!body.agreed_to_screening) {
+    return c.json({ detail: 'You must agree to the screening terms to proceed.' }, 400);
   }
 
   const age = Number(body.age);
@@ -49,11 +50,26 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
   }
 
   const activeCycle = await c.env.DB
-    .prepare('SELECT title FROM exhibitions_list WHERE is_active = 1 LIMIT 1')
-    .first<{ title: string }>();
+    .prepare('SELECT title, require_over_18 FROM exhibitions_list WHERE is_active = 1 LIMIT 1')
+    .first<any>();
 
   if (!activeCycle) {
     return c.json({ detail: 'The portal is currently closed. No active exhibition.' }, 400);
+  }
+
+  const requireOver18 = activeCycle.require_over_18 === undefined || activeCycle.require_over_18 === null
+    ? 1
+    : Number(activeCycle.require_over_18);
+
+  const isConfirmedOver18 = Boolean(body.over_18 ?? body.over_19);
+
+  if (requireOver18 === 1) {
+    if (age < 18) {
+      return c.json({ detail: 'You must be 18 years of age or older to participate in this exhibition cycle.' }, 400);
+    }
+    if (!isConfirmedOver18) {
+      return c.json({ detail: 'You must confirm that you are 18 years of age or older to participate in this exhibition cycle.' }, 400);
+    }
   }
 
   const existing = await c.env.DB
@@ -66,18 +82,20 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
   }
 
   try {
+    const over19Val = isConfirmedOver18 ? 1 : 0;
     await c.env.DB
       .prepare(`
         INSERT INTO exhibition_applications (
           user_email, exhibition_cycle, full_name, age, address, whatsapp,
           genre, medium, portfolio_url, over_19, agreed_to_screening, applicant_note,
           status, registration_status, agreed_to_tnc
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, 'PENDING', 'NONE', 0)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 'PENDING', 'NONE', 0)
       `)
       .bind(
         user.email, activeCycle.title, String(body.full_name || '').trim(),
         age, String(body.address || '').trim(), String(body.whatsapp || '').trim(),
         String(body.genre || '').trim(), String(body.medium || '').trim(), String(body.portfolio_url || '').trim(),
+        over19Val,
         body.applicant_note ? String(body.applicant_note).trim() : null
       )
       .run();

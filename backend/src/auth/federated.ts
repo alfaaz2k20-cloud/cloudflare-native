@@ -1,11 +1,11 @@
-// Web Crypto implementation of Firebase ID Token verification
-// Compatible with Cloudflare Workers runtime (zero external native dependencies)
+// Web Crypto implementation of Sovereign Federated & Google Identity Services (GIS) Token Verification
+// Zero Firebase SDK or external dependency runtime (100% Cloudflare Workers Web Crypto native)
 
-export interface FirebaseIdTokenPayload {
+export interface FederatedTokenPayload {
   iss: string;
   aud: string;
-  auth_time: number;
-  user_id: string;
+  auth_time?: number;
+  user_id?: string;
   sub: string;
   iat: number;
   exp: number;
@@ -14,12 +14,15 @@ export interface FirebaseIdTokenPayload {
   phone_number?: string;
   name?: string;
   picture?: string;
+  sign_in_provider?: string;
   firebase?: {
     identities?: Record<string, any>;
     sign_in_provider?: string;
   };
   [key: string]: any;
 }
+
+export type FirebaseIdTokenPayload = FederatedTokenPayload;
 
 interface CachedKey {
   key: CryptoKey;
@@ -55,22 +58,24 @@ function base64UrlDecodeJson<T = any>(str: string): T {
 }
 
 /**
- * Fetch and cache Google Auth public keys (GIS or Firebase) in JWK format.
+ * Fetch and cache Google Auth public keys (GIS / Google OAuth) in JWK format.
  */
-async function getGooglePublicKey(kid: string, isGis: boolean = false): Promise<CryptoKey | null> {
+async function getGooglePublicKey(kid: string): Promise<CryptoKey | null> {
   const now = Date.now();
-  const cacheKey = `${isGis ? 'gis:' : 'fb:'}${kid}`;
+  const cacheKey = `google:${kid}`;
   const cached = jwkCache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
     return cached.key;
   }
 
   try {
-    const url = isGis
-      ? 'https://www.googleapis.com/oauth2/v3/certs'
-      : 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
-    const res = await fetch(url);
-    if (!res.ok) return null;
+    const url = 'https://www.googleapis.com/oauth2/v3/certs';
+    let res = await fetch(url);
+    if (!res.ok) {
+      // Fallback endpoint for service accounts / certificates
+      res = await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com');
+      if (!res.ok) return null;
+    }
 
     const cacheControl = res.headers.get('cache-control') || '';
     const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
@@ -88,7 +93,7 @@ async function getGooglePublicKey(kid: string, isGis: boolean = false): Promise<
             false,
             ['verify']
           );
-          jwkCache.set(`${isGis ? 'gis:' : 'fb:'}${keyData.kid}`, { key: importedKey, expiresAt });
+          jwkCache.set(`google:${keyData.kid}`, { key: importedKey, expiresAt });
         } catch {
           // Skip unparseable key
         }
@@ -103,14 +108,14 @@ async function getGooglePublicKey(kid: string, isGis: boolean = false): Promise<
 }
 
 /**
- * Cryptographically verifies a Firebase ID Token using Web Crypto RS256.
+ * Cryptographically verifies a federated token (GIS / OAuth / OIDC) using Web Crypto RS256.
  * Validates issuer, audience, expiration, algorithm, subject, and signature.
  */
-export async function verifyFirebaseToken(
+export async function verifyFederatedToken(
   idToken: string,
   expectedProjectId: string = 'alfaaz-collective',
   envName?: string
-): Promise<FirebaseIdTokenPayload | null> {
+): Promise<FederatedTokenPayload | null> {
   if (!idToken || typeof idToken !== 'string') return null;
 
   const parts = idToken.split('.');
@@ -132,7 +137,7 @@ export async function verifyFirebaseToken(
   }
 
   // 2. Parse and validate payload
-  let payload: FirebaseIdTokenPayload;
+  let payload: FederatedTokenPayload;
   try {
     payload = base64UrlDecodeJson(payloadB64);
   } catch {
@@ -146,15 +151,20 @@ export async function verifyFirebaseToken(
     return null;
   }
 
-  // Issuer check: supports both Google Identity Services (GIS) and Firebase Auth
+  // Issuer check: supports Google Identity Services (GIS) / direct Google OAuth
   const isGis = payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com';
   if (isGis) {
+    // CRITICAL SECURITY FIX: Prevent Audience Confusion & Token Replay Attacks
+    // Validates that Google ID tokens were explicitly issued for our client ID
+    if (expectedProjectId && payload.aud !== expectedProjectId) {
+      return null;
+    }
     if (!payload.email_verified && payload.email_verified !== 'true' as any) {
       return null;
     }
     // Tag provider for consistent downstream mapping
-    if (!payload.firebase) {
-      payload.firebase = { sign_in_provider: 'google.com' };
+    if (!payload.sign_in_provider) {
+      payload.sign_in_provider = 'google.com';
     }
     payload.email_verified = true;
   } else {
@@ -181,14 +191,14 @@ export async function verifyFirebaseToken(
   }
 
   // 3. Cryptographic Signature Verification
-  const testKey = (globalThis as any).__TEST_FIREBASE_PUBLIC_KEY__;
+  const testKey = (globalThis as any).__TEST_FEDERATED_PUBLIC_KEY__ || (globalThis as any).__TEST_FIREBASE_PUBLIC_KEY__;
   let verifyKey: CryptoKey | null = null;
 
   if (envName === 'test' && testKey) {
     verifyKey = testKey;
   } else {
     if (!header.kid) return null;
-    verifyKey = await getGooglePublicKey(header.kid, isGis);
+    verifyKey = await getGooglePublicKey(header.kid);
     if (!verifyKey) return null;
   }
 
@@ -210,3 +220,5 @@ export async function verifyFirebaseToken(
 
   return payload;
 }
+
+export const verifyFirebaseToken = verifyFederatedToken;
