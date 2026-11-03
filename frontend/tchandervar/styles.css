@@ -14,6 +14,7 @@
   --transition-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --font-heading: 'Cormorant Garamond', Georgia, serif;
   --font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-amiri: 'Amiri', serif;
   --font-urdu: 'Noto Nastaliq Urdu', serif;
   --font-teko: 'Teko', sans-serif;
 }
@@ -91,7 +92,7 @@ button {
   transform: translateY(0);
 }
 
-/* ===== BILINGUAL CASCADING TRANSLATION FLIP ANIMATION ===== */
+/* ===== BILINGUAL TRANSLATION FLIP ANIMATION ===== */
 .ur-hover {
   position: relative;
   display: inline-flex;
@@ -102,27 +103,28 @@ button {
 
 .ur-hover .en-text {
   display: inline-block;
-  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
   backface-visibility: hidden;
 }
 
+/* Base overlay template */
 .ur-hover::before {
   content: attr(data-ur);
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) translateY(8px);
-  font-family: var(--font-urdu);
-  font-size: 1.2em;
-  line-height: 1.25;
+  transform: translate(-50%, -50%) translateY(6px);
+  font-family: var(--font-amiri);
+  font-size: 1.15em;
+  line-height: 1;
   font-style: normal;
-  font-weight: 400;
-  color: var(--accent-gold);
+  font-weight: 700;
+  color: var(--text-primary);
   opacity: 0;
   pointer-events: none;
   white-space: nowrap;
-  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
   backface-visibility: hidden;
   direction: rtl;
@@ -132,7 +134,7 @@ button {
 .ur-hover:hover .en-text,
 .ur-hover.lang-swapped .en-text {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-6px);
 }
 
 .ur-hover:hover::before,
@@ -141,23 +143,38 @@ button {
   transform: translate(-50%, -50%) translateY(0);
 }
 
-/* Logo: tchandervar <-> ژندروار */
+/* Logo Alignment: tchandervar <-> ژندروار
+   Pinned flush left to align perfectly with .logo-subtitle (Edition I — Summer 2025)
+   and rendered with architectural Amiri glyphs on a flat horizontal baseline */
+.logo.ur-hover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+}
+
 .logo.ur-hover::before {
-  font-size: 1.7rem;
-  top: 45%;
+  left: 0;
+  top: 48%;
+  transform: translateY(-50%) translateY(6px);
+  font-family: var(--font-amiri);
+  font-size: 1.45rem;
+  font-weight: 700;
   color: var(--text-primary);
-  font-weight: 500;
   letter-spacing: 0;
+  text-align: left;
 }
 
 .logo.ur-hover:hover::before,
 .logo.ur-hover.lang-swapped::before {
+  transform: translateY(-50%) translateY(0);
   color: var(--accent-red);
 }
 
-/* Nav links: Collection, Frames, About, Contact, Journal */
+/* Nav links: Collection, Frames (قاب), About, Contact, Journal */
 #navbar .nav-links a.ur-hover::before {
   font-size: 1.15rem;
+  top: 48%;
   color: var(--text-primary);
   letter-spacing: 0;
 }
@@ -170,39 +187,13 @@ button {
 /* Nav CTA: Alfaaz <-> الفاظ */
 #navbar .nav-cta.ur-hover::before {
   font-size: 1.05rem;
+  top: 48%;
   color: var(--bg-primary);
   letter-spacing: 0;
 }
 
-/* Hero Subtitle */
-.hero-subtitle.ur-hover::before {
-  font-size: 1.05rem;
-  color: var(--accent-red);
-  letter-spacing: 0;
-}
-
-/* Hero Title: It belongs to where it lives <-> یہ وہیں کا ہے جہاں یہ رہتا ہے */
-.hero h1.ur-hover {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  width: 100%;
-}
-
-.hero h1.ur-hover::before {
-  font-size: clamp(1.8rem, 4vw, 3rem);
-  color: var(--text-primary);
-  top: 48%;
-  line-height: 1.35;
-  white-space: normal;
-  max-width: 92%;
-  text-align: center;
-  font-style: normal;
-}
-
-/* Poem Section Bilingual Couplet */
+/* Poem Section Bilingual Epigraph:
+   English couplet smoothly cross-fades into Sohrab Sepehri's Persian original */
 .poem-couplet.ur-hover {
   display: flex;
   flex-direction: column;
@@ -210,15 +201,16 @@ button {
   justify-content: center;
   position: relative;
   width: 100%;
-  min-height: 6rem;
+  min-height: 5.5rem;
   cursor: pointer;
 }
 
 .poem-couplet.ur-hover::before {
   content: attr(data-ur);
   white-space: pre-line;
-  font-size: clamp(1.3rem, 2.5vw, 1.85rem);
-  line-height: 2.2;
+  font-family: var(--font-urdu);
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  line-height: 2.3;
   color: var(--text-primary);
   top: 50%;
   width: 100%;
@@ -226,28 +218,9 @@ button {
 }
 
 .poem-author.ur-hover::before {
+  font-family: var(--font-urdu);
   font-size: 1.05rem;
   color: var(--accent-gold);
-  letter-spacing: 0;
-}
-
-/* Section Headings */
-h2.ur-hover {
-  display: inline-flex;
-  position: relative;
-}
-
-h2.ur-hover::before {
-  font-size: 1.05em;
-  color: var(--text-primary);
-  top: 45%;
-  letter-spacing: 0;
-}
-
-/* Footer Copy */
-.footer-copy.ur-hover::before {
-  font-size: 0.95rem;
-  color: var(--text-muted);
   letter-spacing: 0;
 }
 
