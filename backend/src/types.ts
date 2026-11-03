@@ -22,11 +22,6 @@ export interface Env {
   CLOUDFLARE_EMAIL_TOKEN?: string;
   CLOUDFLARE_EMAIL_SENDER?: string;
 
-  // SMS / Twilio Configuration
-  TWILIO_ACCOUNT_SID?: string;
-  TWILIO_AUTH_TOKEN?: string;
-  TWILIO_FROM_NUMBER?: string;
-
   // External AI Keys
   GEMINI_API_KEY?: string;
   GEMINI_MODEL?: string;

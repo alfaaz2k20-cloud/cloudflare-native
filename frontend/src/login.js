@@ -259,14 +259,24 @@ document.addEventListener('DOMContentLoaded', () => {
           'expired-callback': () => { turnstileToken = ''; },
           'error-callback': (code) => {
             console.error('Turnstile verification error:', code);
-            const container = document.getElementById('loginTurnstile');
-            if (container) {
-              if (isLocal) {
-                // In local dev, gracefully inform developer without blocking submission
+            turnstileToken = '';
+            if (isLocal) {
+              // In local dev, gracefully inform developer without blocking submission
+              const container = document.getElementById('loginTurnstile');
+              if (container) {
                 container.innerHTML = '<div style="font-size:10px; color:var(--text-secondary); line-height:1.4; text-align:center; padding:6px; border:1px dashed var(--grid-border); border-radius:3px;">Local Dev Mode: Turnstile bypassed for localhost.</div>';
-                turnstileToken = 'dummy-local-pass-token';
-              } else {
-                container.innerHTML = '<div style="font-size:11px; color:var(--accent-red-text); line-height:1.4; text-align:center; padding:8px; border:1px dashed var(--accent-red); border-radius:3px;">Security challenge error (code: ' + code + ').<br>If on workers.dev or custom domain, verify hostname in Cloudflare Turnstile settings.</div>';
+              }
+              turnstileToken = 'dummy-local-pass-token';
+            } else {
+              showHint('Security verification encountered a network interruption. Resetting challenge, please retry.');
+              try {
+                if (window.turnstile && typeof window.turnstile.reset === 'function') {
+                  setTimeout(() => {
+                    try { window.turnstile.reset('#loginTurnstile'); } catch (_) {}
+                  }, 1000);
+                }
+              } catch (resetErr) {
+                console.warn('Turnstile reset error:', resetErr);
               }
             }
           }

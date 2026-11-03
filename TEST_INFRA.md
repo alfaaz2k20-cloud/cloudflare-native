@@ -30,7 +30,7 @@ Alfaaz Collective's authentication framework secures curatorial literary archive
    - Tests execute with zero network dependency, utilizing Web Crypto primitives and local cryptographic key generation for RS256 and HMAC-SHA256 tokens.
 
 5. **Progressive Testability & Interface Contract Dual-Mode**:
-   - The test suite defines the authoritative interface contracts for features in active milestone development (`POST /auth/send-otp`, `POST /auth/federated-login`).
+   - The test suite defines the authoritative interface contracts for sovereign and federated auth (`POST /auth/federated-login`, `POST /auth/register`, `POST /auth/login`). Phone OTP (`POST /auth/send-otp`) was decommissioned on 2026-11-03 per `AGENTS.md §3`.
    - During milestone development, the test suite executes deterministically, asserting interface contracts and gracefully detecting pending routes (HTTP 404). In strict E2E mode (`STRICT_E2E=true`), all routes must be mounted and 100% active.
 
 ---
@@ -42,7 +42,7 @@ The testing scope covers Requirements R1 through R5 as specified in `ORIGINAL_RE
 | Requirement | Scope Description | Tier 1 (Feature) | Tier 2 (Boundary) | Tier 3 (Cross-Feature) | Tier 4 (Real-World) | Total Tests |
 |-------------|-------------------|------------------|-------------------|------------------------|---------------------|-------------|
 | **R1** | Dual Segmented Toggle & Curatorial Luxury UI | 5 | 5 | 2 | 1 | 13 |
-| **R2** | Multi-Provider Authentication Suite (Phone OTP + 1-Tap Social) | 5 | 5 | 2 | 1 | 13 |
+| **R2** | Multi-Provider Authentication Suite (1-Tap Social GIS + Sovereign Auth; Phone OTP decommissioned) | 5 | 5 | 2 | 1 | 13 |
 | **R3** | Turnstile Bot Verification & Velocity Rate Limiting | 5 | 5 | 2 | 1 | 13 |
 | **R4** | Backend Federated Auth & Sovereign Session Issuance | 5 | 5 | 1 | 1 | 12 |
 | **R5** | Secret Redaction & Test Invariants | 5 | 5 | 1 | 1 | 12 |
@@ -53,10 +53,11 @@ The testing scope covers Requirements R1 through R5 as specified in `ORIGINAL_RE
 ## 3. Test Architecture & Runner Invocation
 
 ### 3.1 Test Runner & Execution
-- **Runner**: Vitest v2.1.9 with native ESM and TypeScript support.
+- **Runner**: Vitest v2.1.9 with native ESM, V8 code coverage, and TypeScript support.
 - **CLI Commands**:
   - Full Test Suite: `npm test` (invokes `vitest run`)
   - Target E2E Suite: `npx vitest run tests/e2e_federated_auth.test.ts`
+  - Automated Coverage: `npx vitest run --coverage` (powered by `@vitest/coverage-v8`)
   - Typecheck: `npm run typecheck` (`tsc --noEmit`)
   - Hardening Suite: `npm run test:hardening` (`node scripts/verify_challenger_2.mjs`)
 
@@ -69,7 +70,7 @@ The testing scope covers Requirements R1 through R5 as specified in `ORIGINAL_RE
        │         ├──► Cloudflare D1 Mock (`tests/helpers/d1_mock.ts`)
        │         │        └── Node.js `node:sqlite` (DatabaseSync `:memory:`)
        │         │        └── Initial schema: `0001_initial_schema.sql`
-       │         │        └── Federated schema: `otp_velocity_logs` & nullable password
+       │         │        └── Federated schema: nullable password, phone, auth_provider, firebase_uid
        │         │
        │         ├──► Cloudflare KV Mock (`createMockKV()`)
        │         │        └── In-memory Map store for session cache & velocity
@@ -81,7 +82,7 @@ The testing scope covers Requirements R1 through R5 as specified in `ORIGINAL_RE
 
 ### 3.3 Interface Contracts & Schema Specifications
 
-#### 3.3.1 Gatekeeper Endpoint: `POST /auth/send-otp`
+#### 3.3.1 Gatekeeper Endpoint: `POST /auth/send-otp` (Decommissioned 2026-11-03 per AGENTS.md §3; Archived Spec)
 - **Request Body**:
   ```json
   {
@@ -141,16 +142,16 @@ The testing scope covers Requirements R1 through R5 as specified in `ORIGINAL_RE
 
 ## 4. Real-World Application Scenarios (Tier 4)
 
-1. **Scenario 1: Distributed SMS Pumping & Toll Fraud Burst Attack**:
+1. **Scenario 1: Distributed Pumping & Toll Fraud Prevention (Historical / Archived Spec)**:
    - *Threat Model*: Botnet script issues 50 rapid OTP requests attempting to exhaust SMS credit quotas across 10 distinct international numbers and rotating IP headers.
    - *Assertion*: System enforces Turnstile token validation and velocity ceilings (max 1 SMS/60s and max 5 SMS/24h per phone and IP). Bot requests without Turnstile or exceeding limits are dropped with 403 or 429, preventing toll fraud.
 
 2. **Scenario 2: Frictionless User Signup via 1-Tap Google OAuth**:
-   - *Flow*: First-time user clicks monochrome Google badge, client receives Google ID token via Firebase SDK, submits to `POST /auth/federated-login`.
+   - *Flow*: First-time user clicks monochrome Google badge, client receives Google ID token via GIS, submits to `POST /auth/federated-login`.
    - *Assertion*: Backend cryptographically verifies token, provisions D1 `users` record with `password = NULL`, sets `auth_provider = 'google.com'`, and returns a valid 7-day sovereign session JWT.
 
-3. **Scenario 3: Returning Phone OTP Login & Authenticated Session**:
-   - *Flow*: Existing phone user requests OTP via `POST /auth/send-otp` (passing Turnstile and velocity limits), completes SMS verification on client, and sends Firebase ID token to `POST /auth/federated-login`.
+3. **Scenario 3: Returning Phone OTP Login & Authenticated Session (Historical / Archived Spec)**:
+   - *Flow*: Existing phone user requests OTP via `POST /auth/send-otp` (passing Turnstile and velocity limits), completes SMS verification on client, and sends verified token to `POST /auth/federated-login`.
    - *Assertion*: User record matched in D1 by `phone`, sovereign JWT issued with preserved role (`PARTICIPANT`), and subsequent calls to `GET /auth/me` with `Bearer <token>` succeed.
 
 4. **Scenario 4: User Profile Migration & Social Account Convergence**:
@@ -164,14 +165,28 @@ The testing scope covers Requirements R1 through R5 as specified in `ORIGINAL_RE
 ---
 
 ## 5. Coverage Thresholds & Quality Gates
-
+ 
 | Metric | Target Gate | Current Status |
 |--------|-------------|----------------|
-| **Total Test Cases** | $\ge 60$ | **63** |
-| **Tier 1 (Feature Coverage)** | $\ge 25$ ($\ge 5$ per feature) | **25** |
-| **Tier 2 (Boundary & Corner Cases)** | $\ge 25$ ($\ge 5$ per feature) | **25** |
-| **Tier 3 (Cross-Feature Combinations)** | $\ge 8$ | **8** |
-| **Tier 4 (Real-World Scenarios)** | $\ge 5$ | **5** |
-| **Deterministic Pass Rate** | 100% | 100% |
-| **Secret Redaction Violations** | 0 violations | 0 |
-| **TypeScript Compilation (`tsc --noEmit`)** | 0 errors | 0 |
+| **Full Repository Test Suite** | 13 test files | **13 passed (13)** |
+| **Full Repository Test Count** | $\ge 200$ tests | **209 passed (209)** |
+| **Deterministic Pass Rate** | 100% | **100% (209/209)** |
+| **Secret Redaction Violations** | 0 violations | **0** |
+| **TypeScript Compilation (`tsc --noEmit`)** | 0 errors | **0 errors** |
+| **Coverage Tooling (`npx vitest run --coverage`)** | Enabled via `@vitest/coverage-v8` | **Verified V8 Coverage Active** |
+
+### 5.1 Full Test Suite Inventory Breakdown
+The repository test suite comprises 209 automated unit, integration, and security verification tests across 13 test files (down from 256 following the 2026-11-03 SMS/OTP decommission):
+1. `tests/e2e_federated_auth.test.ts` (60 tests)
+2. `tests/error_paths.test.ts` (25 tests)
+3. `tests/d1_routes.test.ts` (24 tests)
+4. `tests/integration.test.ts` (18 tests)
+5. `tests/admin.test.ts` (14 tests)
+6. `tests/velocity_turnstile.test.ts` (12 tests)
+7. `tests/events_clubs.test.ts` (11 tests)
+8. `tests/concurrency_adversarial.test.ts` (10 tests)
+9. `tests/telemetry_evidence.test.ts` (9 tests)
+10. `tests/verification_roster.test.ts` (9 tests)
+11. `tests/auth.test.ts` (8 tests)
+12. `tests/security_seed.test.ts` (5 tests)
+13. `tests/sjt_scoring.test.ts` (5 tests)

@@ -1,134 +1,155 @@
-# Project: Alfaaz Collective Curatorial Authentication System
+# Project: Alfaaz Collective — Cloudflare-Native Platform
 
-## Architecture
-Alfaaz Collective is a Cloudflare-native application built with Cloudflare Workers (Hono framework), Cloudflare D1 SQLite, and a multi-page Vite frontend styled with curatorial luxury tokens (warm paper ivory `#f4f1ea`, deep ink `#2d312e`, Alegreya serif/sans, zero border-radius).
+## Architecture Overview
+Alfaaz Collective is a production-grade, Cloudflare-native platform engineered for high-performance edge execution, sovereign security, and curatorial aesthetic integrity. The application executes inside Cloudflare Workers V8 isolates using the Hono framework (v4.6.14), Cloudflare D1 (SQLite), Cloudflare R2 (`alfaaz-vault`), Cloudflare Workers KV (`CACHE_KV`), and a multi-page Vite frontend styled with brutalist luxury curatorial tokens (warm paper ivory `#f4f1ea`, deep charcoal ink `#2d312e`, antique gold `#bd6f5d`, and Kashmiri/Urdu typography).
 
-### Data & Authentication Flow
-1. **Frontend Auth Card (`frontend/login.html`)**:
-   - Equal-sized segmented toggle switches between `[ Log In ]` and `[ Register ]`.
-   - Monochrome editorial badges initiate 1-tap OAuth (Google, Apple ID, Meta) via Firebase Client SDK.
-   - Mobile Phone + OTP input initiates SMS flow via pre-flight backend Turnstile + velocity check before triggering Firebase Phone Auth.
-   - Traditional Email & Password inputs retained as a secondary option.
-2. **Backend Gatekeeper & Token Issuance (`backend/src/routes/auth.ts`, `backend/src/auth/federated.ts`)**:
-   - `POST /auth/send-otp`: Verifies Cloudflare Turnstile token (`verifyTurnstile`), validates E.164 phone format, enforces velocity rate limits (max 1 SMS/60s per phone, max 5 SMS/day per phone & IP) recorded in D1 table `otp_velocity_logs`.
-   - `POST /auth/federated-login`: Verifies Firebase ID token using zero-dependency Web Crypto RS256 against Google's public x509 certs/JWKs, maps or upserts the user in Cloudflare D1 `users` table, and issues an Alfaaz sovereign session HMAC-SHA256 JWT (7-day validity, role-preserved).
-3. **Database Layer (`database/migrations/0002_federated_auth.sql`)**:
-   - D1 SQLite table rebuild of `users` table to make `password` nullable for federated/passwordless users.
-   - Adds `phone TEXT UNIQUE`, `auth_provider TEXT DEFAULT 'email'`, and `firebase_uid TEXT UNIQUE`.
-   - Creates `otp_velocity_logs` table with indices on `(phone, created_at)` and `(ip, created_at)`.
+### Data & Authentication Architecture
+1. **Frontend Authentication (`frontend/login.html`, `frontend/register.html`)**:
+   - Equal-sized 50%/50% segmented button toggle switching between `[ Log In ]` and `[ Register ]`.
+   - Google Identity Services (GIS) One-Tap and Google Sign-In button rendering via Web Crypto RS256 token transmission.
+   - Traditional sovereign Email & Password inputs backed by PBKDF2 password hashing.
+   - Cloudflare Turnstile bot verification challenge on sensitive registration and authentication pathways.
+   - Unconfigured third-party providers (Apple ID, Meta) visibly gated with `"Coming Soon"` badges and tooltips.
+2. **Backend Gateway & Token Issuance (`backend/src/routes/auth.ts`, `backend/src/auth/federated.ts`, `backend/src/auth/crypto.ts`)**:
+   - `POST /auth/federated-login`: Cryptographically verifies Google GIS RS256 ID tokens against Google's public JWKs (`https://www.googleapis.com/oauth2/v3/certs`), validates audience (`aud === GOOGLE_CLIENT_ID`), enforces verified email (`email_verified === true`), maps or upserts user in Cloudflare D1 `users` table, and issues a 7-day sovereign HMAC-SHA256 session JWT.
+   - `POST /auth/login` & `POST /auth/register`: Authenticates or creates users using PBKDF2 with SHA-256 (100,000 iterations, 16-byte random salt, constant-time bitwise XOR verification).
+   - `POST /auth/forgot-password` & `POST /auth/reset-password`: Single-use 15-minute reset tokens protected by replay ledger in D1 table `consumed_tokens`.
+3. **Database Layer (`database/migrations/0001_initial_schema.sql` to `0005_drop_otp_velocity.sql`)**:
+   - Cloudflare D1 SQLite relational engine running 27 tables with foreign keys and atomic conditional queries.
+   - Non-destructive 12-step table rebuild migration procedure (Rule 6 in `AGENTS.md`).
+   - Sovereign credential storage, contact verification replay ledgers, and rate limiting. (SMS/OTP velocity logging decommissioned on 2026-11-03 per `AGENTS.md §3`).
+4. **Domain-Isolated Recruitment & Psychometric Research (Rule 8 in `AGENTS.md`)**:
+   - Specialized candidate assessment portal (`frontend/recruit.html`, `src/recruit.js`, 14 minigames) and recruiter analytics dashboard (`frontend/research.html`, `src/research.js`).
+   - Protected mathematical invariants: precision ratio $TP/(TP+FP)$ and 14-order Latin Square counterbalanced minigame allocation (`LATIN_SQUARE_14`).
+
+---
+
+## Current Scope: System Audit, Pruning, and Site Hardening
+The current development scope covers a comprehensive repository-wide audit, documentation of all architectural components and dependencies, safe pruning of obsolete scratch files and logs, and defensive hardening against runtime failures.
+
+### Milestones
+
+| # | Name | Scope & Responsibilities | Status |
+|---|---|---|---|
+| **M1** | **Comprehensive System Audit & Dependency Documentation** | Author authoritative `SYSTEM_AUDIT.md` in root cataloging all 5 pillars (Backend [84 endpoints], Frontend [13 entry points], Database [28 tables], Infrastructure, Third-Party CDNs) with architectural rationale, trade-offs, and Rule 1 secret redactions. Update `PROJECT.md` to reflect current scope. | **COMPLETED** |
+| **M2** | **Pruning Unwanted Files & Isolated Dead Code** | Prune obsolete audit files (`docs/audits/*.md`), remove `docs/audits/` directory, prune `TEST_READY.md`, clean empty folders (`frontend/src/content/`, `backend/src/database/`, `backend/tests/`). Strictly preserve all 11 core documentation files, Rule 8 domain files (23+ files), build-time dependencies (`frontend/tchandervar/images/`), and test-linked scripts (`bootstrap-admin.js`, `sms.ts`). | **COMPLETED** |
+| **M3** | **Site Hardening & Error Resilience** | Implement branded curatorial `frontend/404.html` (matching design tokens and registered in Vite/PWA precache); restore automated test coverage via `@vitest/coverage-v8`; add offline status and submission guards in `global.js`; bind Turnstile error recovery in `login.js`; wrap D1 rate limiting queries in safe fail-closed try/catch. | **IN_PROGRESS** |
+| **M4** | **Final Milestone: Verification & Adversarial Audit** | Run full verification across test suites (`npm test`, `npm run typecheck`, `npm run test:hardening`, `npm run build`), conduct adversarial gap analysis, and obtain forensic audit clearance. | **PLANNED** |
 
 ---
 
 ## Feature Inventory
-| # | Feature | Description | Milestone | Source |
-|---|---------|-------------|-----------|--------|
-| 1 | Dual Segmented Toggle | Equal-sized 50%/50% segmented button toggle on auth card switching mode between [ Log In ] and [ Register ] | M3 | ORIGINAL_REQUEST §R1 |
-| 2 | Monochrome Editorial Social Badges | Minimalist monochrome editorial badges for Google, Apple, and Facebook (Meta) in warm paper ivory & deep ink palette | M3 | ORIGINAL_REQUEST §R1 |
-| 3 | Secondary Traditional Email/Password | Retain traditional email and password login/registration as a secondary fallback option | M3 | ORIGINAL_REQUEST §R1 |
-| 4 | Mobile Phone Number + OTP Flow | Client-side OTP delivery via Firebase Phone Auth (`signInWithPhoneNumber`) consuming free tier | M3 | ORIGINAL_REQUEST §R2 |
-| 5 | 1-Tap Social Logins | 1-tap OAuth popup login for Google, Apple ID, and Facebook (Meta) via Firebase SDK | M3 | ORIGINAL_REQUEST §R2 |
-| 6 | Cloudflare Turnstile Bot Verification | Strict Turnstile bot verification enforced on every send-otp and phone auth call (`rate_limit.ts:verifyTurnstile`) | M2 | ORIGINAL_REQUEST §R3 |
-| 7 | Velocity Rate Limiting (60s cooldown) | Max 1 SMS per 60 seconds per phone number | M1 | ORIGINAL_REQUEST §R3 |
-| 8 | Velocity Rate Limiting (Daily Quota) | Max 5 SMS per day per phone number and max 5 SMS per day per IP address | M1 | ORIGINAL_REQUEST §R3 |
-| 9 | D1 Schema Migration for Federated Auth | Non-destructive SQLite table rebuild making `password` nullable, adding `phone`, `auth_provider`, `firebase_uid` | M1 | ORIGINAL_REQUEST §R4 |
-| 10 | Velocity Logs Table | Dedicated `otp_velocity_logs` table in D1 with indexed timestamps for atomic, race-free limits | M1 | ORIGINAL_REQUEST §R3 |
-| 11 | Cryptographic Firebase ID Token Verification | Zero-dependency Web Crypto RS256 token verification using Google's public x509 certs/JWKs in Cloudflare Worker | M2 | ORIGINAL_REQUEST §R4 |
-| 12 | User Mapping & Upserting | D1 user lookup by `firebase_uid`, `email`, or `phone`, upserting profile and preserving existing roles | M2 | ORIGINAL_REQUEST §R4 |
-| 13 | Sovereign Alfaaz Session JWT Issuance | Issuance of Alfaaz HMAC-SHA256 session JWTs with 7-day validity and custom roles (`PARTICIPANT`/`ADMIN`) | M2 | ORIGINAL_REQUEST §R4 |
-| 14 | Send-OTP Backend Gatekeeper Endpoint | `POST /auth/send-otp` enforcing Turnstile and velocity limits before authorizing client SMS delivery | M2 | ORIGINAL_REQUEST §R3 |
-| 15 | Federated Login Backend Endpoint | `POST /auth/federated-login` handling token verification, user upsert, and sovereign JWT issuance | M2 | ORIGINAL_REQUEST §R4 |
-| 16 | Content Security Policy Headers | Update CSP in `backend/src/index.ts` to allow Google and Firebase authentication domains | M2 | Survey Explorer 2 |
-| 17 | Absolute Secret Redaction | Strict redaction of secrets in all logs, documentation, and tests (`<redacted — rotated YYYY-MM-DD>`) | M1, M2, M3, M4 | ORIGINAL_REQUEST §R5, AGENTS.md |
-| 18 | Test Suite Invariants | All existing test suites pass: `npm test`, `npm run test:hardening`, `npm run typecheck`, `npm run build` | M1, M2, M3, M4 | ORIGINAL_REQUEST §R5 |
-| 19 | E2E Test Suite (Tiers 1-4) | Comprehensive opaque-box test suite for all auth features, boundaries, combinations, and workloads | M4 / E2E Track | ORIGINAL_REQUEST Acceptance Criteria |
-| 20 | Adversarial Hardening (Tier 5) | White-box adversarial testing, edge-case exploitation, and gap hardening | M4 | Project Pattern |
 
----
-
-## Milestones
-
-| # | Name | Scope | Dependencies | Status |
-|---|------|-------|-------------|--------|
-| M1 | Database Schema & Velocity Engine | D1 migration `0002_federated_auth.sql` (nullable password rebuild, phone, auth_provider, firebase_uid, otp_velocity_logs) and D1 velocity rate limiting helper | none | PLANNED |
-| M2 | Backend Federated Auth & Verification | `POST /auth/send-otp`, `POST /auth/federated-login`, Web Crypto RS256 Firebase verifier, sovereign JWT issuance, CSP headers | M1 | PLANNED |
-| M3 | Frontend Curatorial Auth UI & Integration | Segmented toggle `[ Log In ]` / `[ Register ]`, monochrome social badges, Firebase Phone Auth & social handlers, Turnstile pre-flight | M2 | PLANNED |
-| M4 | Final Milestone: E2E Test Pass & Adversarial Hardening | Pass 100% of E2E test suite (Tiers 1-4) and complete Tier 5 adversarial coverage hardening | M3, E2E Track | PLANNED |
+| # | Feature | Description | Scope |
+|---|---|---|---|
+| 1 | Sovereign Cloudflare Workers Runtime | Edge execution via Hono v4.6.14 with dual-mount routing (`/*` and `/api/*`) and custom domain canonicalization | Core Platform |
+| 2 | Curatorial Multi-Page Vite Frontend | 13 HTML entry points bundled with Vite 5, Tailwind CSS utilities, and Lucide icons | Frontend |
+| 3 | Brutalist Editorial Design Tokens | Warm paper ivory (`#f4f1ea`), deep ink (`#2d312e`), antique gold (`#bd6f5d`), and Kashmiri/Urdu typography | Design System |
+| 4 | Dual Segmented Auth Toggle | Equal-sized 50%/50% segmented button toggle on auth card switching mode between [ Log In ] and [ Register ] | Authentication |
+| 5 | Google Identity Services (GIS) One-Tap | Zero-dependency Web Crypto RS256 Google ID token verification against Google public JWKs | Authentication |
+| 6 | Sovereign PBKDF2 Password Hashing | PBKDF2 SHA-256 with 100,000 iterations, 16-byte random salt, and constant-time XOR verification | Authentication |
+| 7 | Sovereign Session JWT Issuance | HMAC-SHA256 session JWTs with 7-day validity and strict algorithm verification | Authentication |
+| 8 | Cloudflare Turnstile Bot Verification | Strict bot protection with fail-closed security in production (`ENV === 'production'`) | Security |
+| 9 | Contact Cross-Verification | Email and phone number cross-verification with 6-digit OTPs and rate limiting | Member Portal |
+| 10 | Community Events & RSVP Engine | Event scheduling, capacity enforcement, and atomic double-registration prevention | Events |
+| 11 | Collective Circles (Clubs) | Application and review workflows across 5 creative circles with uniqueness constraints | Community |
+| 12 | Curatorial Exhibition Cycles | Exhibition submission, 18+ age criteria toggles, portfolio curation, and fee verification | Exhibitions |
+| 13 | Creative Vault & Private R2 Storage | Private object storage in `alfaaz-vault` with ownership checks and anti-XSS attachment disposition | Storage |
+| 14 | Curated Journal & Autonomous Essays | Scholarly essays, weekly Cloudflare Cron writer (`0 10 * * SUN`), and AI model integrations | Journal |
+| 15 | Administrative Management Console | RBAC console for events, clubs, exhibitions, user directory, and audit logs | Administration |
+| 16 | Domain-Isolated Recruitment (Rule 8) | Candidate intake, affirmative consent, 14 behavioral minigames, and interview scheduling | Recruitment |
+| 17 | Psychometric Research Analytics | 7-construct non-normative radar charts and telemetry evidence synthesis | Research |
+| 18 | D1 Relational Engine & 12-Step Rebuilds | Cloudflare D1 SQLite layer with 28 tables and non-destructive rebuild migrations | Database |
+| 19 | Absolute Secret Redaction (Rule 1) | Strict redaction of secrets in all logs and documentation (`<redacted — rotated YYYY-MM-DD>`) | Security |
+| 20 | System Audit & Architecture Catalog | Authoritative documentation in `SYSTEM_AUDIT.md` cataloging backend, frontend, D1, R2, and CDNs | System Audit |
 
 ---
 
 ## Interface Contracts
 
-### Frontend Client ↔ Backend Gatekeeper (`POST /auth/send-otp`)
+### 1. Google Identity Services (GIS) Federated Login (`POST /auth/federated-login`)
 - **Request Body**:
   ```json
   {
-    "phone": "+14155552671",
-    "turnstile_token": "0x4AAAAAA..."
-  }
-  ```
-- **Headers**:
-  - `Content-Type: application/json`
-  - `cf-turnstile-response: <token>` (optional fallback)
-- **Response**:
-  - `200 OK`: `{ "success": true, "message": "Rate limit check passed. Proceed with SMS delivery." }`
-  - `400 Bad Request`: `{ "error": "Invalid phone number format. Must be E.164." }`
-  - `403 Forbidden`: `{ "error": "Turnstile verification failed" }`
-  - `429 Too Many Requests`: `{ "error": "Rate limit exceeded. Please wait 60 seconds before requesting another SMS.", "retry_after": 60 }` or `{ "error": "Daily SMS limit exceeded (max 5 per day)." }`
-
-### Frontend Client ↔ Backend Federated Login (`POST /auth/federated-login`)
-- **Request Body**:
-  ```json
-  {
-    "id_token": "<firebase_id_token>",
-    "provider": "phone" | "google.com" | "apple.com" | "facebook.com",
+    "id_token": "<google_gis_credential_jwt>",
+    "provider": "google.com",
     "turnstile_token": "<optional_token>"
   }
   ```
-- **Response**:
-  - `200 OK`:
-    ```json
-    {
-      "token": "<alfaaz_sovereign_jwt>",
-      "user": {
-        "email": "user@example.com",
-        "full_name": "Jane Doe",
-        "phone": "+14155552671",
-        "status": "PARTICIPANT",
-        "auth_provider": "google.com"
-      }
+- **Response (`200 OK`)**:
+  ```json
+  {
+    "token": "<alfaaz_sovereign_session_jwt>",
+    "user": {
+      "email": "scholar@example.com",
+      "full_name": "Lalla Ded",
+      "phone": "+919876543210",
+      "status": "PARTICIPANT",
+      "auth_provider": "google.com"
     }
-    ```
+  }
+  ```
+- **Error Responses**:
   - `401 Unauthorized`: `{ "error": "Invalid or expired federated token." }`
-  - `500 Internal Server Error`: `{ "error": "Authentication failed." }`
+  - `403 Forbidden`: `{ "error": "Turnstile verification failed" }`
 
-### Velocity Engine Interface (`backend/src/services/velocity.ts` or `rate_limit.ts`)
-- **Function**: `checkAndRecordOtpVelocity(db: D1Database, phone: string, ip: string): Promise<{ allowed: boolean; reason?: string; retryAfter?: number }>`
-- **Rules**:
-  - Rejects if `phone` has record within past 60s (`retryAfter` set).
-  - Rejects if `phone` has >= 5 records within past 24h.
-  - Rejects if `ip` has >= 5 records within past 24h.
-  - On allowed: inserts `(phone, ip, CURRENT_TIMESTAMP)` into `otp_velocity_logs`.
+### 2. Candidate Interview Slot Reservation (`POST /recruit/schedule-interview`)
+- **Request Body**:
+  ```json
+  {
+    "session_id": "sess_candidate_123",
+    "candidate_name": "Habba Khatoon",
+    "candidate_email": "habba@alfaaz.local",
+    "slot_date": "2026-11-25",
+    "slot_time": "11:00 AM"
+  }
+  ```
+- **Response (`200 OK`)**:
+  ```json
+  {
+    "success": true,
+    "booking": {
+      "slot_date": "2026-11-25",
+      "slot_time": "11:00 AM"
+    }
+  }
+  ```
+- **Error Response (`409 Conflict`)**:
+  ```json
+  {
+    "error": "This interview slot has just been reserved by another candidate. Please select another slot."
+  }
+  ```
 
 ---
 
 ## Code Layout
-- `database/migrations/`:
-  - `0001_initial_schema.sql` (baseline)
-  - `0002_federated_auth.sql` (M1: nullable password table rebuild, phone, auth_provider, firebase_uid, otp_velocity_logs)
+
 - `backend/src/`:
-  - `index.ts` (routing, CSP, CORS headers)
-  - `routes/auth.ts` (auth router, `/send-otp`, `/federated-login`, `/register`, `/login`)
-  - `auth/crypto.ts` (sovereign HMAC-SHA256 JWT issuance and verification)
-  - `auth/federated.ts` (M2: Web Crypto RS256 Google x509/JWK verification)
-  - `middleware/rate_limit.ts` (Turnstile bot verification and velocity rate limiting)
+  - `index.ts`: Application entry point, CSP & security headers, CORS, host canonicalization, router mounting, cron triggers, and global error handling.
+  - `types.ts`: TypeScript environment bindings (`Env`), JWT payload definitions, and context variables.
+  - `routes/`: Dual-mounted route controllers (`auth.ts`, `events.ts`, `clubs.ts`, `exhibitions.ts`, `vault.ts`, `blogs.ts`, `curator.ts`, `admin.ts`, `recruit.ts`, `research.ts`, `notices.ts`, `verification.ts`).
+  - `auth/crypto.ts`: Sovereign PBKDF2 password hashing and HMAC-SHA256 JWT issuance/verification.
+  - `auth/federated.ts`: Web Crypto RS256 token verifier for Google Identity Services (GIS).
+  - `middleware/rate_limit.ts`: In-memory sliding window rate limiter and Cloudflare Turnstile verifier.
+  - `services/`: Autonomous curator AI, telemetry event validator, feature extraction, SJT scoring engine, and Latin Square allocator.
+  - `notifications/`: Tri-modal email provider (Dev, Webhook, Cloudflare).
+- `database/migrations/`:
+  - `0001_initial_schema.sql`: 20 baseline tables.
+  - `0002_federated_auth.sql`: Nullable password rebuild, phone, auth_provider, firebase_uid, otp_velocity_logs.
+  - `0003_contact_verification.sql`: Contact verification flags, timestamps, and verification_codes table.
+  - `0004_exhibition_age_toggle.sql`: Exhibition 18+ requirement toggle.
+  - `0005_drop_otp_velocity.sql`: Drops decommissioned otp_velocity_logs and its indexes.
 - `frontend/`:
-  - `login.html` (curatorial luxury auth card with segmented toggle, monochrome social badges, phone OTP, email/pw)
-  - `register.html` (backward-compatibility redirect or render mode)
-  - `global.css` (editorial styles, segmented button toggle, monochrome grid)
-  - `src/login.js` (segmented toggle handler, social login triggers, phone OTP handler)
-  - `src/firebase.js` (Firebase client SDK initialization, phone auth verifier, social popup providers)
+  - `index.html`, `login.html`, `register.html`, `reset.html`, `dashboard.html`, `admin.html`, `blogs.html`, `post.html`, `exhibition.html`, `submit.html`, `recruit.html`, `research.html`, `tchandervar/index.html`.
+  - `global.css`: Brutalist curatorial design tokens, typography, and khadi paper noise filter.
+  - `global.js`: Global API fetch wrapper, Turnstile/GIS initialization, and PWA service worker registration.
+  - `src/`: Client scripts (`login.js`, `dashboard.js`, `admin.js`, `blogs.js`, `post.js`, `exhibition.js`, `submit.js`, `reset.js`, `recruit.js`, `research.js`, and `recruit_games/**`).
+  - `public/`: Service worker (`sw.js`), web manifest, offline page (`offline.html`), icons, and gallery vitrine images.
+  - `vite.config.js`: Rollup multi-page input bundle definition.
 - `tests/`:
-  - `auth.test.ts` (existing auth suite)
-  - `federated_auth.test.ts` (federated login, token verification, D1 upsert)
-  - `velocity_turnstile.test.ts` (Turnstile enforcement, 60s cooldown, 5/day quotas)
-  - `security_seed.test.ts` (secret redaction scanner)
+  - 13 Vitest test suites executing 209 automated tests (`auth.test.ts`, `d1_routes.test.ts`, `e2e_federated_auth.test.ts`, `error_paths.test.ts`, `concurrency_adversarial.test.ts`, `admin.test.ts`, `verification_roster.test.ts`, `velocity_turnstile.test.ts`, `events_clubs.test.ts`, `integration.test.ts`, `security_seed.test.ts`, `telemetry_evidence.test.ts`, `sjt_scoring.test.ts`).
+  - `helpers/d1_mock.ts`: In-memory SQLite (`node:sqlite` DatabaseSync) test harness.
+- `scripts/`:
+  - `bootstrap-admin.js`: CLI script for administrative credential initialization.
+  - `verify_challenger_2.mjs`: Hardening harness validating 6 database constraints and 16,384 SJT combinatorial profiles.

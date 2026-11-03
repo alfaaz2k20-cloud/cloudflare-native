@@ -55,22 +55,6 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
     mockDb = createMockD1();
     mockR2 = createMockR2();
     mockKv = createMockKV();
-
-    // Prepare SQLite schema for federated auth if not already present
-    try {
-      await mockDb.exec(`
-        CREATE TABLE IF NOT EXISTS otp_velocity_logs (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          phone TEXT NOT NULL,
-          ip TEXT NOT NULL,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE INDEX IF NOT EXISTS idx_otp_velocity_phone_time ON otp_velocity_logs(phone, created_at);
-        CREATE INDEX IF NOT EXISTS idx_otp_velocity_ip_time ON otp_velocity_logs(ip, created_at);
-      `);
-    } catch {
-      // Table may already exist in migrated databases
-    }
   });
 
   /**
@@ -194,19 +178,6 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
     });
 
     describe('R2. Multi-Provider Authentication Suite', () => {
-      it('T1_R2_01: POST /auth/send-otp contract: sends OTP request with valid phone and Turnstile', async () => {
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: '+14155552671', turnstile_token: dummyTurnstileToken })
-        }, getTestEnv());
-
-        await assertContract(res, 200, (data) => {
-          expect(data.success).toBe(true);
-          expect(data.message).toBeDefined();
-        });
-      });
-
       it('T1_R2_02: POST /auth/federated-login contract: Google 1-tap provider returns sovereign JWT', async () => {
         const idToken = await createMockFirebaseToken({ uid: 'google_uid_101', email: 'scholar@gmail.com', name: 'Al-Biruni' });
         const res = await app.request('/auth/federated-login', {
@@ -268,95 +239,9 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
     });
 
     describe('R3. Turnstile Bot Verification & Velocity Rate Limiting', () => {
-      it('T1_R3_01: POST /auth/send-otp strictly requires Turnstile verification (rejects missing token with 403)', async () => {
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: '+14155552671' }) // Missing turnstile_token
-        }, getTestEnv({ TURNSTILE_SECRET_KEY: 'test-real-enforced-key' }));
-
-        await assertContract(res, 403, (data) => {
-          expect(data.error || data.detail).toMatch(/Turnstile/i);
-        });
-      });
-
       it('T1_R3_02: verifyTurnstile passes with Cloudflare official always-pass secret key', async () => {
         const isValid = await verifyTurnstile(dummyTurnstileToken, passTurnstileSecret, '127.0.0.1', 'test');
         expect(isValid).toBe(true);
-      });
-
-      it('T1_R3_03: enforces 60-second cooldown rate limit on subsequent requests to the same phone', async () => {
-        const env = getTestEnv();
-        // First request: should pass
-        const firstRes = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.1' },
-          body: JSON.stringify({ phone: '+14155550001', turnstile_token: dummyTurnstileToken })
-        }, env);
-
-        const firstResult = await assertContract(firstRes, 200);
-
-        if (!firstResult.pending) {
-          // Immediate second request within 60s: must be rejected with 429
-          const secondRes = await app.request('/auth/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.1' },
-            body: JSON.stringify({ phone: '+14155550001', turnstile_token: dummyTurnstileToken })
-          }, env);
-
-          await assertContract(secondRes, 429, (data) => {
-            expect(data.error).toMatch(/wait 60 seconds|Rate limit/i);
-            expect(data.retry_after).toBeDefined();
-          });
-        }
-      });
-
-      it('T1_R3_04: enforces daily quota limit (max 5 SMS per 24 hours per phone number)', async () => {
-        const env = getTestEnv();
-        const testPhone = '+14155550002';
-
-        // Pre-populate 5 records in velocity log for today
-        try {
-          for (let i = 0; i < 5; i++) {
-            await mockDb.exec(`INSERT INTO otp_velocity_logs (phone, ip, created_at) VALUES ('${testPhone}', '198.51.100.2', datetime('now', '-${i + 2} hours'))`);
-          }
-        } catch {
-          // Ignore if table pending
-        }
-
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.2' },
-          body: JSON.stringify({ phone: testPhone, turnstile_token: dummyTurnstileToken })
-        }, env);
-
-        await assertContract(res, 429, (data) => {
-          expect(data.error).toMatch(/Daily.*limit|limit exceeded/i);
-        });
-      });
-
-      it('T1_R3_05: enforces daily quota limit per IP address (max 5 SMS per 24 hours per IP)', async () => {
-        const env = getTestEnv();
-        const testIp = '198.51.100.99';
-
-        // Pre-populate 5 records from same IP across 5 different phone numbers
-        try {
-          for (let i = 0; i < 5; i++) {
-            await mockDb.exec(`INSERT INTO otp_velocity_logs (phone, ip, created_at) VALUES ('+1415555009${i}', '${testIp}', datetime('now', '-${i + 2} hours'))`);
-          }
-        } catch {
-          // Ignore if table pending
-        }
-
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': testIp },
-          body: JSON.stringify({ phone: '+14155550999', turnstile_token: dummyTurnstileToken })
-        }, env);
-
-        await assertContract(res, 429, (data) => {
-          expect(data.error).toMatch(/Daily.*limit|limit exceeded/i);
-        });
       });
     });
 
@@ -651,38 +536,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       });
     });
 
-    describe('R2 Boundaries: Phone & Token Formatting Edge Cases', () => {
-      it('T2_R2_01: accepts international E.164 phone formats (+1, +44, +91, +92, +33)', async () => {
-        const validPhones = ['+14155552671', '+442071838750', '+919876543210', '+923001234567', '+33123456789'];
-        for (const phone of validPhones) {
-          const res = await app.request('/auth/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, turnstile_token: dummyTurnstileToken })
-          }, getTestEnv());
-
-          // Should either pass (200) or return pending (404 during dev), never 400 invalid format
-          if (res.status !== 404) {
-            expect([200, 429]).toContain(res.status);
-          }
-        }
-      });
-
-      it('T2_R2_02: rejects invalid phone number formats with 400 Bad Request', async () => {
-        const invalidPhones = ['invalid_string', '14155552671', '+1', '++14155552671', '03001234567', '+14155552671999999999'];
-        for (const phone of invalidPhones) {
-          const res = await app.request('/auth/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, turnstile_token: dummyTurnstileToken })
-          }, getTestEnv());
-
-          await assertContract(res, 400, (data) => {
-            expect(data.error || data.detail).toMatch(/phone.*format|E\.164/i);
-          });
-        }
-      });
-
+    describe('R2 Boundaries: Token Formatting Edge Cases', () => {
       it('T2_R2_03: handles federated login payload missing email claim gracefully', async () => {
         const idToken = await createMockFirebaseToken({ uid: 'apple_no_email', phone_number: '+14155559999' });
         const res = await app.request('/auth/federated-login', {
@@ -720,118 +574,6 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
 
         // Worker should not crash with unhandled exception
         expect([200, 400, 401, 404, 500]).toContain(res.status);
-      });
-    });
-
-    describe('R3 Boundaries: Velocity 59s vs 60s & Quota Exceedance', () => {
-      it('T2_R3_01: 59-second vs 60-second cooldown boundary: T+59s rejected, T+60s permitted', async () => {
-        const testPhone = '+14155556001';
-        try {
-          // Pre-populate an OTP request exactly 59 seconds ago
-          await mockDb.exec(`INSERT INTO otp_velocity_logs (phone, ip, created_at) VALUES ('${testPhone}', '198.51.100.5', datetime('now', '-59 seconds'))`);
-        } catch {
-          // Ignore if table pending
-        }
-
-        const res59 = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: testPhone, turnstile_token: dummyTurnstileToken })
-        }, getTestEnv());
-
-        await assertContract(res59, 429, (data) => {
-          expect(data.error).toMatch(/wait 60 seconds|Rate limit/i);
-        });
-
-        // Pre-populate an OTP request 61 seconds ago
-        const testPhone2 = '+14155556002';
-        try {
-          await mockDb.exec(`INSERT INTO otp_velocity_logs (phone, ip, created_at) VALUES ('${testPhone2}', '198.51.100.5', datetime('now', '-61 seconds'))`);
-        } catch {
-          // Ignore if table pending
-        }
-
-        const res60 = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: testPhone2, turnstile_token: dummyTurnstileToken })
-        }, getTestEnv());
-
-        await assertContract(res60, 200);
-      });
-
-      it('T2_R3_02: daily limit 5th vs 6th request boundary: 5th request allowed, 6th request blocked', async () => {
-        const testPhone = '+14155555005';
-        try {
-          // Insert 4 previous requests today
-          for (let i = 0; i < 4; i++) {
-            await mockDb.exec(`INSERT INTO otp_velocity_logs (phone, ip, created_at) VALUES ('${testPhone}', '198.51.100.6', datetime('now', '-${i + 2} hours'))`);
-          }
-        } catch {
-          // Ignore if table pending
-        }
-
-        // 5th request: should succeed
-        const res5th = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: testPhone, turnstile_token: dummyTurnstileToken })
-        }, getTestEnv());
-
-        const result5th = await assertContract(res5th, 200);
-
-        if (!result5th.pending) {
-          // Insert 5th record
-          try {
-            await mockDb.exec(`INSERT INTO otp_velocity_logs (phone, ip, created_at) VALUES ('${testPhone}', '198.51.100.6', datetime('now', '-2 minutes'))`);
-          } catch {}
-
-          // 6th request: must be rejected with 429
-          const res6th = await app.request('/auth/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: testPhone, turnstile_token: dummyTurnstileToken })
-          }, getTestEnv());
-
-          await assertContract(res6th, 429, (data) => {
-            expect(data.error).toMatch(/Daily.*limit|limit exceeded/i);
-          });
-        }
-      });
-
-      it('T2_R3_03: Cloudflare failing Turnstile test key strictly returns 403 Forbidden', async () => {
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: '+14155557777', turnstile_token: dummyTurnstileToken })
-        }, getTestEnv({ TURNSTILE_SECRET_KEY: failTurnstileSecret }));
-
-        await assertContract(res, 403, (data) => {
-          expect(data.error || data.detail).toMatch(/Turnstile verification failed/i);
-        });
-      });
-
-      it('T2_R3_04: rejects empty string or whitespace Turnstile token with 403', async () => {
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: '+14155557777', turnstile_token: '   ' })
-        }, getTestEnv({ TURNSTILE_SECRET_KEY: 'test-real-enforced-key' }));
-
-        await assertContract(res, 403);
-      });
-
-      it('T2_R3_05: fallback header cf-turnstile-response accepted if body token is omitted', async () => {
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'cf-turnstile-response': dummyTurnstileToken
-          },
-          body: JSON.stringify({ phone: '+14155558888' })
-        }, getTestEnv());
-
-        await assertContract(res, 200);
       });
     });
 
@@ -930,37 +672,6 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
     });
 
     describe('R5 Boundaries: Secret Redaction & Defensive Injection Protection', () => {
-      it('T2_R5_01: rate limit 429 error messages never disclose internal table or column names', async () => {
-        const testPhone = '+14155550000';
-        try {
-          for (let i = 0; i < 6; i++) {
-            await mockDb.exec(`INSERT INTO otp_velocity_logs (phone, ip, created_at) VALUES ('${testPhone}', '127.0.0.1', datetime('now', '-${i} minutes'))`);
-          }
-        } catch {}
-
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: testPhone, turnstile_token: dummyTurnstileToken })
-        }, getTestEnv());
-
-        const body = await res.text();
-        expect(body).not.toContain('otp_velocity_logs');
-        expect(body).not.toContain('sqlite_master');
-      });
-
-      it('T2_R5_02: SQL injection attempts in phone parameter are treated safely as strings', async () => {
-        const sqliPhone = "'+OR+1=1;--";
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: sqliPhone, turnstile_token: dummyTurnstileToken })
-        }, getTestEnv());
-
-        // Must reject format or handle safely without database syntax crash
-        await assertContract(res, 400);
-      });
-
       it('T2_R5_03: HTML/XSS injection attempts in full_name are sanitized or stored verbatim without execution', async () => {
         const xssToken = await createMockFirebaseToken({
           uid: 'xss_uid_1',
@@ -977,28 +688,6 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         await assertContract(res, 200, (data) => {
           expect(data.user).toBeDefined();
         });
-      });
-
-      it('T2_R5_04: database connection failure during rate check fails closed securely', async () => {
-        const brokenDb = {
-          prepare() {
-            throw new Error('D1_STORAGE_OFFLINE_FATAL');
-          },
-          exec() {
-            throw new Error('D1_STORAGE_OFFLINE_FATAL');
-          }
-        };
-
-        const res = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: '+14155551234', turnstile_token: dummyTurnstileToken })
-        }, getTestEnv({ DB: brokenDb as any }));
-
-        // Must fail closed (500 or 404 if pending) without disclosing stack trace in production
-        if (res.status !== 404) {
-          expect([500, 503]).toContain(res.status);
-        }
       });
 
       it('T2_R5_05: verifies zero plaintext passwords stored in D1 users table for traditional or federated users', async () => {
@@ -1032,41 +721,6 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
   // =========================================================================
 
   describe('Tier 3: Cross-Feature Combinations', () => {
-
-    it('T3_C01: Turnstile failure preempts rate limit check (does NOT increment velocity quota)', async () => {
-      const testPhone = '+14155553001';
-      // Issue request with failing Turnstile secret
-      const res = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: testPhone, turnstile_token: dummyTurnstileToken })
-      }, getTestEnv({ TURNSTILE_SECRET_KEY: failTurnstileSecret }));
-
-      await assertContract(res, 403);
-
-      // Verify no velocity log entry was created for this failed bot check
-      try {
-        const count = await mockDb.prepare('SELECT COUNT(*) as count FROM otp_velocity_logs WHERE phone = ?')
-          .bind(testPhone)
-          .first('count');
-        expect(count).toBe(0);
-      } catch {
-        // Ignore if table pending
-      }
-    });
-
-    it('T3_C02: Turnstile bypass attempt with valid rate limit status blocked at gatekeeper', async () => {
-      const testPhone = '+14155553002';
-      // Attempt bypass with omitted Turnstile token
-      const res = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: testPhone })
-      }, getTestEnv({ TURNSTILE_SECRET_KEY: 'test-real-enforced-key' }));
-
-      await assertContract(res, 403);
-    });
-
     it('T3_C03: Social login with existing email/password account preserves role and links identity', async () => {
       const email = 'link_target@alfaaz.local';
       const initialHash = await hashPassword('ExistingPassword123!');
@@ -1114,79 +768,6 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       }
     });
 
-    it('T3_C05: Rate-limited phone user on SMS can still authenticate via existing social login without lockout', async () => {
-      const phone = '+14155553005';
-      const email = 'social_fallback@alfaaz.local';
-
-      // Lock out phone via velocity log
-      try {
-        await mockDb.exec(`INSERT INTO otp_velocity_logs (phone, ip, created_at) VALUES ('${phone}', '198.51.100.1', datetime('now'))`);
-      } catch {}
-
-      // Attempt OTP: should fail with 429
-      const otpRes = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, turnstile_token: dummyTurnstileToken })
-      }, getTestEnv());
-
-      await assertContract(otpRes, 429);
-
-      // Social login for same user should succeed
-      const idToken = await createMockFirebaseToken({ uid: 'fallback_google_uid', email });
-      const socialRes = await app.request('/auth/federated-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: idToken, provider: 'google.com' })
-      }, getTestEnv());
-
-      await assertContract(socialRes, 200);
-    });
-
-    it('T3_C06: Attacker rotating IP address for same phone number blocked by phone cooldown limit', async () => {
-      const phone = '+14155553006';
-      // First request from IP 1
-      const res1 = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '1.1.1.1' },
-        body: JSON.stringify({ phone, turnstile_token: dummyTurnstileToken })
-      }, getTestEnv());
-
-      const r1 = await assertContract(res1, 200);
-
-      if (!r1.pending) {
-        // Immediate second request from IP 2
-        const res2 = await app.request('/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '2.2.2.2' },
-          body: JSON.stringify({ phone, turnstile_token: dummyTurnstileToken })
-        }, getTestEnv());
-
-        await assertContract(res2, 429);
-      }
-    });
-
-    it('T3_C07: Attacker rotating phone numbers from single IP blocked by IP daily limit', async () => {
-      const attackerIp = '203.0.113.88';
-      // Insert 5 requests from this attacker IP
-      try {
-        for (let i = 0; i < 5; i++) {
-          await mockDb.exec(`INSERT INTO otp_velocity_logs (phone, ip, created_at) VALUES ('+1415555800${i}', '${attackerIp}', datetime('now', '-${i + 1} hours'))`);
-        }
-      } catch {}
-
-      // Attempt new phone number from same IP
-      const res = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': attackerIp },
-        body: JSON.stringify({ phone: '+14155558999', turnstile_token: dummyTurnstileToken })
-      }, getTestEnv());
-
-      await assertContract(res, 429, (data) => {
-        expect(data.error).toMatch(/Daily.*limit/i);
-      });
-    });
-
     it('T3_C08: Traditional registration attempt for an email already registered returns 400', async () => {
       const email = 'existing_poet@alfaaz.local';
       await mockDb.prepare('INSERT INTO users (email, password, full_name, status) VALUES (?, ?, ?, ?)')
@@ -1210,37 +791,6 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
   // =========================================================================
 
   describe('Tier 4: Real-World Scenarios', () => {
-
-    it('T4_S01: Simulated Distributed SMS Pumping & Toll Fraud Attack Burst', async () => {
-      // Threat scenario: Botnet fires 20 rapid OTP requests across multiple numbers and IPs
-      const botnetIps = ['192.0.2.1', '192.0.2.2', '192.0.2.3'];
-      const targetNumbers = ['+14155559001', '+14155559002', '+14155559003'];
-
-      const promises = [];
-      for (let i = 0; i < 9; i++) {
-        const ip = botnetIps[i % botnetIps.length];
-        const phone = targetNumbers[i % targetNumbers.length];
-        // Alternate between missing Turnstile token (botnet) and rapid requests
-        const turnstileToken = i % 2 === 0 ? undefined : dummyTurnstileToken;
-
-        promises.push(
-          app.request('/auth/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': ip },
-            body: JSON.stringify({ phone, turnstile_token: turnstileToken })
-          }, getTestEnv({ TURNSTILE_SECRET_KEY: 'enforced-turnstile-secret' }))
-        );
-      }
-
-      const results = await Promise.all(promises);
-      for (const res of results) {
-        if (res.status !== 404) {
-          // Every attack attempt is either blocked by Turnstile (403) or rate limit (429) or accepted if valid (200)
-          expect([200, 403, 429]).toContain(res.status);
-        }
-      }
-    });
-
     it('T4_S02: Frictionless User Signup via 1-Tap Google OAuth', async () => {
       // User scenario: New visitor registers via Google 1-tap popup
       const googleEmail = 'new_scholar@gmail.com';
@@ -1272,37 +822,6 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         const meData: any = await meRes.json();
         expect(meData.email).toBe(googleEmail);
       }
-    });
-
-    it('T4_S03: Returning Phone OTP Login & Full Authenticated Workflow', async () => {
-      // User scenario: Member requests OTP, verifies client-side, submits ID token
-      const phone = '+14155559876';
-
-      // Step 1: Pre-flight gatekeeper
-      const otpRes = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, turnstile_token: dummyTurnstileToken })
-      }, getTestEnv());
-
-      await assertContract(otpRes, 200);
-
-      // Step 2: Client Firebase phone auth completes and submits ID token
-      const idToken = await createMockFirebaseToken({
-        uid: 'phone_verified_user',
-        phone_number: phone
-      });
-
-      const loginRes = await app.request('/auth/federated-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: idToken, provider: 'phone' })
-      }, getTestEnv());
-
-      await assertContract(loginRes, 200, (data) => {
-        expect(data.token).toBeDefined();
-        expect(data.user.phone).toBe(phone);
-      });
     });
 
     it('T4_S04: User Identity Convergence (Traditional user logs in via Google)', async () => {

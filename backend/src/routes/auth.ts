@@ -5,7 +5,6 @@ import { requireAuth } from '../middleware/auth';
 import { rateLimiter, verifyTurnstile } from '../middleware/rate_limit';
 import { sendSystemEmail } from '../notifications/email';
 import { verifyFederatedToken } from '../auth/federated';
-import { checkAndRecordVelocity } from '../services/velocity';
 
 export const authRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
 
@@ -14,50 +13,7 @@ authRouter.use('/register', rateLimiter({ limit: 20, windowMs: 60000 }));
 authRouter.use('/login', rateLimiter({ limit: 20, windowMs: 60000 }));
 authRouter.use('/forgot-password', rateLimiter({ limit: 10, windowMs: 60000 }));
 authRouter.use('/reset-password', rateLimiter({ limit: 10, windowMs: 60000 }));
-authRouter.use('/send-otp', rateLimiter({ limit: 30, windowMs: 60000 }));
 authRouter.use('/federated-login', rateLimiter({ limit: 30, windowMs: 60000 }));
-
-authRouter.post('/send-otp', async (c) => {
-  const body = await c.req.json().catch(() => ({}));
-  const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
-  const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
-  // Trust cf-connecting-ip from Cloudflare edge; fallback to x-forwarded-for only in test environment
-  const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1') : '127.0.0.1');
-
-  // 1. Bot Verification via Cloudflare Turnstile
-  const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
-  if (!turnstileValid) {
-    return c.json({ error: 'Turnstile verification failed. Please complete the security challenge.' }, 403);
-  }
-
-  // 2. Strict E.164 Phone Format Validation (+ followed by 7 to 15 digits)
-  if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) {
-    return c.json({ error: 'Invalid phone number format. Must be in E.164 format (e.g., +919876543210).' }, 400);
-  }
-
-  // 2b. Geographic SMS Routing: In production, non-+91 international numbers are routed to Google One-Tap or Email
-  if (c.env.ENV === 'production' && !phone.startsWith('+91')) {
-    return c.json({
-      error: 'International participants: please authenticate using Google One-Tap or Email for instant global delivery.'
-    }, 400);
-  }
-
-  // 3. Velocity and Rate Limit Engine (60s cooldown, 5/24h per phone, 5/24h per IP)
-  const velocity = await checkAndRecordVelocity(c.env.DB, phone, ip);
-  if (!velocity.allowed) {
-    c.header('Retry-After', String(velocity.retryAfter || 60));
-    return c.json({
-      error: velocity.error || velocity.reason,
-      retry_after: velocity.retryAfter
-    }, 429);
-  }
-
-  // 4. Verification Gatekeeper: authorizes the SMS challenge via Turnstile + velocity limits.
-  return c.json({
-    success: true,
-    message: 'OTP challenge authorized. Proceed with SMS verification.'
-  });
-});
 
 authRouter.post('/federated-login', async (c) => {
   let body: any;

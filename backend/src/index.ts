@@ -27,9 +27,14 @@ app.use('*', async (c, next) => {
   c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
+  const isTailwindRoute = c.req.path.startsWith('/recruit') || c.req.path.startsWith('/research');
+  const scriptSrc = isTailwindRoute
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://challenges.cloudflare.com https://apis.google.com https://www.gstatic.com https://accounts.google.com"
+    : "script-src 'self' 'unsafe-inline' https://unpkg.com https://challenges.cloudflare.com https://apis.google.com https://www.gstatic.com https://accounts.google.com";
+
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://challenges.cloudflare.com https://apis.google.com https://www.gstatic.com https://accounts.google.com",
+    scriptSrc,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.googleusercontent.com https://graph.facebook.com https://appleid.cdn-apple.com https://www.gstatic.com https://ssl.gstatic.com",

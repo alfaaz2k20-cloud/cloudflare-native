@@ -3,7 +3,6 @@ import app from '../backend/src/index';
 import { createMockD1, createMockR2, createMockKV } from './helpers/d1_mock';
 import { createToken, hashPassword } from '../backend/src/auth/crypto';
 import { devEmailPreviews } from '../backend/src/notifications/email';
-import { devSmsPreviews } from '../backend/src/notifications/sms';
 
 describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite', () => {
   let mockDb: ReturnType<typeof createMockD1>;
@@ -51,7 +50,6 @@ describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite',
     mockR2 = createMockR2();
     mockKv = createMockKV();
     devEmailPreviews.length = 0;
-    devSmsPreviews.length = 0;
   });
 
   describe('Part 3: Contact Cross-Verification System', () => {
@@ -236,108 +234,6 @@ describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite',
         body: JSON.stringify({ code })
       }, getTestEnv());
       expect(resReplay.status).toBe(400);
-    });
-
-    it('V_06: POST /verification/phone/send and /confirm full SMS cross-verification lifecycle', async () => {
-      const userEmail = 'sms_target_user@alfaaz.local';
-      const phone = '+14155558899';
-
-      await mockDb.prepare('INSERT INTO users (email, full_name, status, email_verified, phone_verified) VALUES (?, ?, ?, 1, 0)')
-        .bind(userEmail, 'SMS User', 'PARTICIPANT')
-        .run();
-
-      const token = await createToken({ email: userEmail, status: 'PARTICIPANT' }, jwtSecret);
-
-      // 1. Send SMS verification code
-      const sendRes = await app.request('/verification/phone/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ phone })
-      }, getTestEnv());
-
-      expect(sendRes.status).toBe(200);
-      const sendData = await sendRes.json();
-      expect(sendData.success).toBe(true);
-
-      // Verify SMS was buffered in dev preview
-      expect(devSmsPreviews.length).toBe(1);
-      expect(devSmsPreviews[0].to).toBe(phone);
-      const codeMatch = devSmsPreviews[0].body.match(/\b\d{6}\b/);
-      expect(codeMatch).not.toBeNull();
-      const code = codeMatch![0];
-
-      // 2. Confirm phone with code
-      const confirmRes = await app.request('/verification/phone/confirm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ code })
-      }, getTestEnv());
-
-      expect(confirmRes.status).toBe(200);
-      const confirmData = await confirmRes.json();
-      expect(confirmData.success).toBe(true);
-      expect(confirmData.phone_verified).toBe(1);
-
-      // Verify DB row
-      const userRow: any = await mockDb.prepare('SELECT phone, phone_verified, phone_verified_at FROM users WHERE email = ?')
-        .bind(userEmail)
-        .first();
-      expect(userRow.phone).toBe(phone);
-      expect(userRow.phone_verified).toBe(1);
-      expect(userRow.phone_verified_at).not.toBeNull();
-    });
-
-    it('V_07: POST /auth/send-otp authorizes OTP challenge as gatekeeper (no SMS dispatch)', async () => {
-      const phone = '+14155559090';
-
-      const res = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'cf-turnstile-response': dummyTurnstileToken
-        },
-        body: JSON.stringify({ phone })
-      }, getTestEnv());
-
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.success).toBe(true);
-      expect(data.message).toMatch(/authorized/i);
-
-      // SMS dispatch is delegated to Firebase Phone Auth; no preview is buffered here.
-      expect(devSmsPreviews.length).toBe(0);
-    });
-
-    it('V_08: POST /auth/send-otp does not depend on Twilio in production (gatekeeper only)', async () => {
-      const phone = '+919876543211';
-
-      const prodEnv = getTestEnv({
-        ENV: 'production',
-        TURNSTILE_SECRET_KEY: simulatedProdTurnstileSecret,
-        TWILIO_ACCOUNT_SID: undefined,
-        TWILIO_AUTH_TOKEN: undefined,
-        TWILIO_FROM_NUMBER: undefined
-      });
-
-      const res = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'cf-turnstile-response': dummyTurnstileToken
-        },
-        body: JSON.stringify({ phone })
-      }, prodEnv);
-
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.success).toBe(true);
-      expect(data.message).toMatch(/authorized/i);
     });
   });
 
@@ -542,62 +438,6 @@ describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite',
       expect(entry.recruit_sessions).toBeUndefined();
       expect(entry.session_id).toBeUndefined();
       expect(entry.sjt_responses).toBeUndefined();
-    });
-  });
-
-  describe('Part 5: Geographic SMS Routing & International Candidate Onboarding', () => {
-    it('I_01: In production, non-+91 international numbers on /auth/send-otp return 400 with Google/Email guidance', async () => {
-      const res = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'cf-connecting-ip': '203.0.113.195'
-        },
-        body: JSON.stringify({
-          phone: '+14155552671',
-          turnstile_token: dummyTurnstileToken
-        })
-      }, getTestEnv({ ENV: 'production', TURNSTILE_SECRET_KEY: simulatedProdTurnstileSecret }));
-
-      expect(res.status).toBe(400);
-      const data = await res.json();
-      expect(data.error).toMatch(/Google One-Tap or Email/i);
-    });
-
-    it('I_02: In production, +91 Indian numbers on /auth/send-otp are permitted and return 200', async () => {
-      const res = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'cf-connecting-ip': '203.0.113.196'
-        },
-        body: JSON.stringify({
-          phone: '+919876543210',
-          turnstile_token: dummyTurnstileToken
-        })
-      }, getTestEnv({ ENV: 'production', TURNSTILE_SECRET_KEY: simulatedProdTurnstileSecret }));
-
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.success).toBe(true);
-    });
-
-    it('I_03: In test/development, non-+91 numbers are permitted for local integration testing', async () => {
-      const res = await app.request('/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'cf-connecting-ip': '203.0.113.197'
-        },
-        body: JSON.stringify({
-          phone: '+14155552671',
-          turnstile_token: dummyTurnstileToken
-        })
-      }, getTestEnv({ ENV: 'test' }));
-
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.success).toBe(true);
     });
   });
 });

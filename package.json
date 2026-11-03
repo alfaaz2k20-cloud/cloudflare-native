@@ -12,6 +12,7 @@
     "build:frontend": "cd frontend && npm install && npm run build",
     "build:backend": "tsc --noEmit",
     "build": "npm run build:frontend && npm run build:backend",
+    "deploy": "npm run build && wrangler deploy",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:hardening": "node scripts/verify_challenger_2.mjs",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241101.0",
+    "@vitest/coverage-v8": "^2.1.9",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8",
     "wrangler": "^4.154.0"

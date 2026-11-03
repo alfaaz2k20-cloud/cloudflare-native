@@ -18,6 +18,7 @@ const PRECACHE_URLS = [
   '/research.html',
   '/tchandervar/index.html',
   '/offline.html',
+  '/404.html',
   '/manifest.webmanifest',
   '/images/favicon.ico',
   '/images/icons/icon-192.png',

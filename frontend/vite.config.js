@@ -20,6 +20,7 @@ export default defineConfig({
         recruit: resolve(__dirname, 'recruit.html'),
         research: resolve(__dirname, 'research.html'),
         tchandervar: resolve(__dirname, 'tchandervar/index.html'),
+        notFound: resolve(__dirname, '404.html'),
       },
     },
   },

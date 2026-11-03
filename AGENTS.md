@@ -27,7 +27,8 @@
 - **Cryptographic Provider Integrity**: `auth_provider` must derive ONLY from cryptographically verified token claims (e.g. verified Google/OIDC claims); never from mutable client-supplied body fields.
 - **Trusted Edge IP**: Rate limiters and Turnstile verification rely solely on `cf-connecting-ip`. Fall back to client-supplied headers (`x-forwarded-for`) only in automated test environments (`ENV === 'test'`).
 - **Race-Safe Identity Insertion**: Federated account creation must catch SQLite `UNIQUE` constraint races on external federated UIDs and `email`, resolving cleanly to the existing identity rather than throwing `500`.
-- **SMS/OTP Decommission**: Phone OTP delivery and SMS verification systems are deprecated and removed. Primary authentication relies exclusively on sovereign Email & Password and verified 1-Tap OAuth identities.
+- **SMS/OTP Decommission & Future Option**: Phone OTP delivery and SMS verification systems were decommissioned and removed from the active codebase on 2026-11-03 (Twilio adapter, `/auth/send-otp`, `/verification/phone/*`, and the `otp_velocity_logs` velocity limiter). Primary authentication relies exclusively on sovereign Email & Password and verified direct OAuth/OIDC identities. SMS/OTP is retained as a documented future capability for phone-ownership verification.
+  - *Re-introduction plan*: (1) re-add `backend/src/notifications/sms.ts` Twilio adapter + `TWILIO_*` bindings; (2) restore `/verification/phone/{send,confirm}` writing `verification_codes` with `purpose='phone'`; (3) re-add an OTP velocity limiter + `otp_velocity_logs` migration; (4) gate behind Turnstile and the verified-email/phone invariants in §3.
 
 ## 4. Honest UI & Zero-Facade Engineering
 - **Working Core Front-and-Center**: The functional Email & Password flow must be primary and open, never hidden behind a collapsed `<details>` panel while unconfigured flows lead the UI.

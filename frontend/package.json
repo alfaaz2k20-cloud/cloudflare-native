@@ -1,5 +1,6 @@
 {
   "name": "alfaaz-frontend",
+  "type": "module",
   "private": true,
   "dependencies": {
     "lucide": "^1.28.0"

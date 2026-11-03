@@ -175,3 +175,110 @@ if ('serviceWorker' in navigator && window.isSecureContext) {
       });
   });
 }
+
+// 7. Offline Resilience & Edge Status Handling
+(function() {
+  const BANNER_ID = 'alfaaz-offline-banner';
+
+  function createOfflineBanner() {
+    let banner = document.getElementById(BANNER_ID);
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = BANNER_ID;
+      banner.setAttribute('role', 'alert');
+      banner.setAttribute('aria-live', 'assertive');
+      banner.style.cssText = [
+        'position: fixed',
+        'top: 0',
+        'left: 0',
+        'right: 0',
+        'z-index: 10000',
+        'background: #2d312e',
+        'color: #f4f1ea',
+        'padding: 0.55rem 1rem',
+        'text-align: center',
+        'font-family: var(--font-body, "Alegreya Sans", sans-serif)',
+        'font-size: 0.78rem',
+        'font-weight: 600',
+        'letter-spacing: 0.14em',
+        'text-transform: uppercase',
+        'border-bottom: 1px solid #8c6d3b',
+        'transition: opacity 0.3s ease, transform 0.3s ease',
+        'display: flex',
+        'align-items: center',
+        'justify-content: center',
+        'gap: 0.6rem'
+      ].join(';');
+      document.body.prepend(banner);
+    }
+    banner.style.background = '#2d312e';
+    banner.style.opacity = '1';
+    banner.style.transform = 'translateY(0)';
+    banner.innerHTML = '<span style="color:#bd6f5d; font-size:1rem; line-height:1;">●</span> <span>Offline Archive Active // رابطہ منقطع ہے — Live Submissions Paused</span>';
+  }
+
+  function removeOfflineBanner(restored = true) {
+    const banner = document.getElementById(BANNER_ID);
+    if (!banner) return;
+    if (restored) {
+      banner.style.background = '#3e5c46';
+      banner.innerHTML = '<span style="color:#9fd6a8; font-size:1rem; line-height:1;">✓</span> <span>Connection Restored // رابطہ بحال ہوا — Live Operations Ready</span>';
+      setTimeout(() => {
+        banner.style.opacity = '0';
+        banner.style.transform = 'translateY(-100%)';
+        setTimeout(() => banner.remove(), 350);
+      }, 2500);
+    } else {
+      banner.remove();
+    }
+  }
+
+  function setSubmitButtonsState(disabled) {
+    const submitElements = document.querySelectorAll('form button[type="submit"], form input[type="submit"], button[data-submit]');
+    submitElements.forEach((btn) => {
+      if (disabled) {
+        if (!btn.disabled) {
+          btn.setAttribute('data-offline-disabled', 'true');
+          btn.disabled = true;
+          if (btn.title) btn.setAttribute('data-prev-title', btn.title);
+          btn.title = 'Offline: Network connection required to submit';
+        }
+      } else {
+        if (btn.getAttribute('data-offline-disabled') === 'true') {
+          btn.removeAttribute('data-offline-disabled');
+          btn.disabled = false;
+          if (btn.hasAttribute('data-prev-title')) {
+            btn.title = btn.getAttribute('data-prev-title');
+            btn.removeAttribute('data-prev-title');
+          } else {
+            btn.removeAttribute('title');
+          }
+        }
+      }
+    });
+  }
+
+  function onOffline() {
+    createOfflineBanner();
+    setSubmitButtonsState(true);
+  }
+
+  function onOnline() {
+    removeOfflineBanner(true);
+    setSubmitButtonsState(false);
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('offline', onOffline);
+    window.addEventListener('online', onOnline);
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onOffline);
+      } else {
+        onOffline();
+      }
+    }
+  }
+})();
+

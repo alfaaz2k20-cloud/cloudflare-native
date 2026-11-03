@@ -146,25 +146,297 @@
         .footer-content, .footer-bottom { flex-direction: column; align-items: start; gap: 2rem; } 
     }
 
-    /* CURATOR AI FLOATING WIDGET (DESKTOP & MOBILE RESPONSIVE) */
-    .curator-widget-overlay { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; }
-    .curator-widget-box { display: none; width: 360px; max-width: calc(100vw - 2rem); max-height: 80vh; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); margin-bottom: 1rem; padding: 1.5rem; transform: translateY(10px); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-sizing: border-box; }
-    .curator-widget-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.75rem; margin-bottom: 1rem; }
-    .curator-widget-title { font-family: var(--font-heading); font-size: 1.8rem; color: var(--text-primary); line-height: 1; margin: 0; }
-    .curator-widget-close { background: none; border: none; font-size: 1.4rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.5rem; line-height: 1; transition: color 0.2s ease; }
-    .curator-widget-close:hover { color: var(--accent-gold); }
-    .curator-widget-output { font-size: 12px; color: var(--text-secondary); line-height: 1.6; height: 260px; max-height: 45vh; overflow-y: auto; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 12px; overscroll-behavior: contain; }
-    .curator-input-wrapper { display: flex; align-items: center; border: 1px solid var(--grid-border); background: var(--bg-primary); transition: border-color 0.3s ease; }
-    .curator-input-box { flex: 1; background: transparent; border: none; color: var(--text-primary); padding: 0.85rem 1rem; font-family: var(--font-body); font-size: 16px; outline: none; min-height: 44px; }
-    .curator-send-button { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 0 1rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; transition: color 0.2s ease; }
-    .curator-send-button:hover { color: var(--accent-gold); }
-    .curator-trigger-button { background: var(--bg-secondary); border: 1px solid var(--grid-border); border-radius: 0; color: var(--text-primary); padding: 0.85rem 1.6rem; font-size: 10px; letter-spacing: 2px; transition: all 0.3s ease; text-transform: uppercase; box-shadow: var(--shadow-base); min-height: 44px; cursor: pointer; }
+    /* CURATORIAL ARCHIVAL SEAL & DIALOGUE (ALFAAZ EDITORIAL AESTHETIC) */
+    .curator-widget-overlay {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+    .curator-widget-overlay > * {
+      pointer-events: auto;
+    }
+    .curator-widget-box {
+      display: none;
+      width: 380px;
+      max-width: calc(100vw - 2.5rem);
+      max-height: min(520px, 78vh);
+      background: var(--bg-primary);
+      border: 1px solid var(--grid-border);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+      margin-bottom: 0.85rem;
+      padding: 1.25rem 1.4rem;
+      transform: translateY(12px) scale(0.98);
+      opacity: 0;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+      box-sizing: border-box;
+      border-radius: 2px;
+    }
+    .curator-widget-box.open {
+      display: flex;
+      flex-direction: column;
+    }
+    .curator-widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--grid-border);
+      padding-bottom: 0.85rem;
+      margin-bottom: 0.85rem;
+    }
+    .curator-header-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .curator-badge-kicker {
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent-gold-text);
+      font-family: var(--font-body);
+      font-weight: 600;
+    }
+    .curator-widget-title {
+      font-family: var(--font-heading);
+      font-size: 1.6rem;
+      font-weight: 400;
+      color: var(--text-primary);
+      line-height: 1.1;
+      margin: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .curator-ur-title {
+      font-family: "Noto Nastaliq Urdu", serif;
+      font-size: 1.1rem;
+      color: var(--accent-gold-text);
+    }
+    .curator-widget-close {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.35rem;
+      min-width: 32px;
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      border-radius: 2px;
+    }
+    .curator-widget-close:hover {
+      color: var(--text-primary);
+      border-color: var(--grid-border);
+      background: var(--bg-secondary);
+    }
+    .curator-widget-output {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      height: 250px;
+      max-height: 42vh;
+      overflow-y: auto;
+      margin-bottom: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overscroll-behavior: contain;
+      padding-right: 0.35rem;
+    }
+    .curator-welcome-note {
+      font-style: italic;
+      color: var(--text-secondary);
+      border-left: 2px solid var(--accent-gold);
+      padding-left: 0.75rem;
+      margin: 0.25rem 0;
+    }
+    .curator-input-wrapper {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--grid-border);
+      background: var(--bg-secondary);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      border-radius: 2px;
+    }
+    .curator-input-wrapper:focus-within {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 1px var(--accent-gold);
+    }
+    .curator-input-box {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      padding: 0.75rem 0.9rem;
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      min-height: 42px;
+      box-sizing: border-box;
+    }
+    .curator-input-box::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+      font-style: italic;
+      font-size: 13px;
+    }
+    .curator-send-button {
+      background: transparent;
+      border: none;
+      color: var(--accent-gold-text);
+      cursor: pointer;
+      padding: 0 0.85rem;
+      min-width: 42px;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .curator-send-button:hover:not(:disabled) {
+      color: var(--text-primary);
+      transform: translateX(1px);
+    }
+    .curator-send-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* CURATORIAL SEAL TRIGGER (OPTION 1: ARCHITECTURAL BRUTALIST STAMP) */
+    .curator-seal-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--accent-gold);
+      color: var(--text-primary);
+      padding: 0;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      position: relative;
+      border-radius: 2px;
+    }
+    .curator-seal-trigger:hover {
+      background: var(--bg-secondary);
+      box-shadow: 0 6px 18px rgba(140, 109, 59, 0.22);
+      transform: translateY(-2px);
+    }
+    .curator-seal-trigger[aria-expanded="true"] {
+      background: var(--accent-gold);
+      border-color: var(--accent-gold);
+      color: #ffffff;
+    }
+    .seal-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .seal-icon-idle, .seal-icon-active {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .seal-lucide {
+      width: 20px;
+      height: 20px;
+      transition: transform 0.2s ease;
+    }
+    .curator-seal-trigger:hover .seal-lucide {
+      transform: rotate(-6deg);
+    }
+    .seal-pulse-pip {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      box-shadow: 0 0 0 2px var(--bg-primary);
+      transition: opacity 0.2s ease;
+    }
+    .curator-seal-trigger[aria-expanded="true"] .seal-pulse-pip {
+      opacity: 0;
+    }
+    .seal-tooltip {
+      position: absolute;
+      right: calc(100% + 12px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      padding: 0.35rem 0.65rem;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      border-radius: 2px;
+      box-shadow: var(--shadow-base);
+    }
+    .seal-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 100%;
+      transform: translateY(-50%);
+      border: 4px solid transparent;
+      border-left-color: var(--text-primary);
+    }
+    @media (hover: hover) {
+      .curator-seal-trigger:hover .seal-tooltip {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(-50%) translateX(-4px);
+      }
+    }
 
     @media (max-width: 640px) {
-      .curator-widget-overlay { bottom: 1rem; right: 1rem; left: 1rem; align-items: stretch; }
-      .curator-widget-box { width: 100%; max-width: 100%; max-height: 75vh; padding: 1.25rem; margin-bottom: 0.75rem; }
-      .curator-widget-output { height: 220px; max-height: 38vh; font-size: 12px; }
-      .curator-trigger-button { width: 100%; text-align: center; }
+      .curator-widget-overlay {
+        bottom: 1.25rem;
+        right: 1.25rem;
+        left: auto;
+        align-items: flex-end;
+      }
+      .curator-widget-box {
+        position: fixed;
+        bottom: 4.85rem;
+        right: 1rem;
+        left: 1rem;
+        width: auto;
+        max-width: calc(100vw - 2rem);
+        max-height: min(480px, calc(82dvh - 5rem));
+        padding: 1.15rem 1.2rem;
+        margin-bottom: 0;
+      }
+      .curator-widget-output {
+        height: 200px;
+        max-height: 32vh;
+        font-size: 12px;
+      }
+      .curator-seal-trigger {
+        width: 46px;
+        height: 46px;
+      }
+      .seal-tooltip {
+        display: none !important;
+      }
     }
   </style>
 </head>
@@ -390,22 +662,42 @@
   </footer>
 
   <div id="phantomMiniOverlay" class="curator-widget-overlay">
-    <div id="phantomMiniBox" class="curator-widget-box">
+    <div id="phantomMiniBox" class="curator-widget-box" role="dialog" aria-modal="true" aria-labelledby="curatorDialogTitle">
       <div class="curator-widget-header">
-        <h3 class="curator-widget-title">Curator AI</h3>
-        <button class="curator-widget-close" onclick="togglePhantomMini()" aria-label="Close Chat" aria-expanded="false" aria-controls="phantomMiniBox">&times;</button>
+        <div class="curator-header-info">
+          <span class="curator-badge-kicker">Archival Intelligence</span>
+          <h3 id="curatorDialogTitle" class="curator-widget-title">
+            The Curator <span class="curator-ur-title">مُنتظم</span>
+          </h3>
+        </div>
+        <button class="curator-widget-close" onclick="togglePhantomMini()" aria-label="Close Dialogue" aria-controls="phantomMiniBox">
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+        </button>
       </div>
       <div id="phantomMiniOutput" class="curator-widget-output">
-        <div style="font-style: italic;">Ask Curator AI a question about our art, literature, or programming...</div>
+        <div class="curator-welcome-note">
+          Welcome to Alfaaz Collective. Inquire into contemporary Kashmiri literature, vernacular craft archives, exhibition schedules, or collective circles.
+        </div>
       </div>
       <div class="curator-input-wrapper">
-        <input type="text" id="phantomMiniInput" class="curator-input-box" placeholder="Ask Curator AI...">
-        <button id="phantomMiniSendBtn" class="curator-send-button" aria-label="Send">
-          <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+        <input type="text" id="phantomMiniInput" class="curator-input-box" placeholder="Inquire into the archives..." autocomplete="off">
+        <button id="phantomMiniSendBtn" class="curator-send-button" aria-label="Send inquiry">
+          <i data-lucide="send" style="width: 15px; height: 15px;"></i>
         </button>
       </div>
     </div>
-    <button id="phantomMiniTrigger" class="curator-trigger-button" onclick="togglePhantomMini()" aria-expanded="false" aria-controls="phantomMiniBox">[ Consult Curator ]</button>
+    <button id="phantomMiniTrigger" class="curator-seal-trigger" onclick="togglePhantomMini()" aria-expanded="false" aria-controls="phantomMiniBox" aria-label="Consult The Curator">
+      <span class="seal-inner">
+        <span class="seal-icon-idle">
+          <i data-lucide="feather" class="seal-lucide"></i>
+        </span>
+        <span class="seal-icon-active" style="display: none;">
+          <i data-lucide="x" class="seal-lucide"></i>
+        </span>
+        <span class="seal-pulse-pip"></span>
+      </span>
+      <span class="seal-tooltip">The Curator // مُنتظم</span>
+    </button>
   </div>
 
   <script type="module">
@@ -533,37 +825,76 @@
       });
     })();
 
-    // CURATOR AI
-    const pBox = document.getElementById('phantomMiniBox'), pOut = document.getElementById('phantomMiniOutput'), pIn = document.getElementById('phantomMiniInput'), pTrig = document.getElementById('phantomMiniTrigger'), pSend = document.getElementById('phantomMiniSendBtn');
+    // CURATOR ARCHIVAL DIALOGUE
+    const pBox = document.getElementById('phantomMiniBox'),
+          pOut = document.getElementById('phantomMiniOutput'),
+          pIn = document.getElementById('phantomMiniInput'),
+          pTrig = document.getElementById('phantomMiniTrigger'),
+          pSend = document.getElementById('phantomMiniSendBtn');
+
     function togglePhantomMini() {
-      if (pBox.style.display === 'none' || !pBox.style.display) { 
-        pBox.style.display = 'block'; 
-        setTimeout(() => { pBox.style.opacity = '1'; pBox.style.transform = 'translateY(0)'; }, 10); 
-        pTrig.textContent = '[ Close Chat ]'; 
-        pTrig.style.background = 'var(--accent-gold)'; 
-        pTrig.style.color = '#fff'; 
-        pTrig.setAttribute('aria-expanded', 'true'); 
-        setTimeout(() => pIn.focus(), 150); 
+      if (!pBox) return;
+      const isOpen = pBox.classList.contains('open');
+      const idleIcon = pTrig ? pTrig.querySelector('.seal-icon-idle') : null;
+      const activeIcon = pTrig ? pTrig.querySelector('.seal-icon-active') : null;
+
+      if (!isOpen) { 
+        pBox.style.display = 'flex'; 
+        void pBox.offsetWidth; // Force reflow for animation
+        pBox.classList.add('open');
+        pBox.style.opacity = '1'; 
+        pBox.style.transform = 'translateY(0) scale(1)'; 
+        if (pTrig) {
+          pTrig.setAttribute('aria-expanded', 'true'); 
+          pTrig.setAttribute('aria-label', 'Close Curator dialogue');
+        }
+        if (idleIcon) idleIcon.style.display = 'none';
+        if (activeIcon) activeIcon.style.display = 'inline-flex';
+        setTimeout(() => pIn ? pIn.focus() : null, 150); 
       } else { 
         pBox.style.opacity = '0'; 
-        pBox.style.transform = 'translateY(10px)'; 
-        setTimeout(() => { pBox.style.display = 'none'; }, 300); 
-        pTrig.textContent = '[ Consult Curator ]'; 
-        pTrig.style.background = 'var(--bg-secondary)'; 
-        pTrig.style.color = 'var(--text-primary)'; 
-        pTrig.setAttribute('aria-expanded', 'false'); 
+        pBox.style.transform = 'translateY(12px) scale(0.98)'; 
+        if (pTrig) {
+          pTrig.setAttribute('aria-expanded', 'false'); 
+          pTrig.setAttribute('aria-label', 'Consult The Curator');
+        }
+        if (idleIcon) idleIcon.style.display = 'inline-flex';
+        if (activeIcon) activeIcon.style.display = 'none';
+        setTimeout(() => { 
+          pBox.classList.remove('open');
+          pBox.style.display = 'none'; 
+        }, 250); 
       }
     }
     window.toggleCurator = togglePhantomMini;
     window.togglePhantomMini = togglePhantomMini;
 
+    // Click outside to dismiss dialogue
+    document.addEventListener('click', (e) => {
+      if (pBox && pBox.classList.contains('open') && !pBox.contains(e.target) && !pTrig?.contains(e.target)) {
+        togglePhantomMini();
+      }
+    });
+
+    // Escape key to dismiss dialogue
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && pBox && pBox.classList.contains('open')) {
+        togglePhantomMini();
+      }
+    });
+
     function clearCuratorPlaceholder() {
-      if (pOut.children.length === 1 && pOut.textContent.includes('Curator AI')) {
+      if (!pOut) return;
+      const welcome = pOut.querySelector('.curator-welcome-note');
+      if (welcome) {
+        welcome.remove();
+      } else if (pOut.children.length === 1 && (pOut.textContent.includes('Curator') || pOut.textContent.includes('Consult') || pOut.textContent.includes('Welcome'))) {
         pOut.innerHTML = '';
       }
     }
 
     function appendCuratorMessage(label, text, style = '') {
+      if (!pOut) return null;
       const row = document.createElement('div');
       row.style.cssText = style;
       if (label) {
@@ -579,18 +910,19 @@
     }
 
     async function sendCuratorMiniMessage() {
+      if (!pIn) return;
       const query = pIn.value.trim();
       if (!query) return;
       if (pSend) { pSend.disabled = true; pSend.style.opacity = '0.5'; }
       pIn.value = '';
       clearCuratorPlaceholder();
       appendCuratorMessage('You', query, 'color: var(--accent-gold-text); font-weight: 500;');
-      const loadingRow = appendCuratorMessage('', 'Curator AI is reflecting...', 'color: var(--accent-gold-text); font-style: italic;');
+      const loadingRow = appendCuratorMessage('', 'The Curator is reflecting on the archives...', 'color: var(--accent-gold-text); font-style: italic;');
 
       // Warm-up indicator for Render cold starts
       const coldStartTimer = setTimeout(() => {
-        if (loadingRow.isConnected) {
-          loadingRow.textContent = 'Waking the archives... Curator AI is preparing your answer.';
+        if (loadingRow && loadingRow.isConnected) {
+          loadingRow.textContent = 'Searching the collections... The Curator is preparing your answer.';
         }
       }, 4000);
 
@@ -607,40 +939,41 @@
         let response = await attemptFetch();
         // If server is waking up (502 / 503), retry once
         if (response && (response.status === 502 || response.status === 503)) {
-          if (loadingRow.isConnected) loadingRow.textContent = 'Connecting to archives...';
+          if (loadingRow && loadingRow.isConnected) loadingRow.textContent = 'Connecting to archives...';
           await new Promise(r => setTimeout(r, 3000));
           response = await attemptFetch();
         }
 
         clearTimeout(coldStartTimer);
-        if (loadingRow.isConnected) loadingRow.remove();
+        if (loadingRow && loadingRow.isConnected) loadingRow.remove();
 
         if (response && response.ok) {
           const data = await response.json();
-          appendCuratorMessage('Curator AI', data.answer, 'color: var(--text-primary); border-left: 2px solid var(--accent-gold); padding-left: 10px;');
+          appendCuratorMessage('The Curator', data.answer, 'color: var(--text-primary); border-left: 2px solid var(--accent-gold); padding-left: 10px; line-height: 1.6;');
           window.alfaazCuratorMemory?.add?.('user', query);
           window.alfaazCuratorMemory?.add?.('assistant', data.answer);
         } else if (response && response.status === 429) {
-          appendCuratorMessage('', 'Curator AI is currently occupied with other visitors. Please wait a moment.', 'color: var(--accent-red-text); font-style: italic;');
+          appendCuratorMessage('', 'The Curator is currently occupied with other visitors. Please wait a moment.', 'color: var(--accent-red-text); font-style: italic;');
         } else {
           appendCuratorMessage('', 'The archives are momentarily quiet. Please ask again in a few moments.', 'color: var(--accent-red-text); font-style: italic;');
         }
       } catch (error) {
         clearTimeout(coldStartTimer);
-        if (loadingRow.isConnected) loadingRow.remove();
+        if (loadingRow && loadingRow.isConnected) loadingRow.remove();
         appendCuratorMessage('', 'Connection interrupted. Please try again.', 'color: var(--accent-red-text); font-style: italic;');
       } finally {
         if (pSend) { pSend.disabled = false; pSend.style.opacity = '1'; }
       }
     }
-    pIn.addEventListener('keydown', async (e) => {
+    pIn?.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         await sendCuratorMiniMessage();
       }
     });
     pSend?.addEventListener('click', sendCuratorMiniMessage);
-    pIn.addEventListener('focus', () => { pIn.style.borderColor = 'var(--accent-gold)'; }); pIn.addEventListener('blur', () => { pIn.style.borderColor = 'var(--grid-border)'; });
+    pIn?.addEventListener('focus', () => { if (pIn) pIn.style.borderColor = 'var(--accent-gold)'; }); 
+    pIn?.addEventListener('blur', () => { if (pIn) pIn.style.borderColor = 'var(--grid-border)'; });
 
    // LIVE NOTICES
 (function () {
