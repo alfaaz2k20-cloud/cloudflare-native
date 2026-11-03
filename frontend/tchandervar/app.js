@@ -547,6 +547,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 150);
   }
 
+  // ===== BILINGUAL CASCADING TRANSLATION CYCLE =====
+  function startLanguageCycle() {
+    const bilingualElements = document.querySelectorAll('.ur-hover');
+    if (bilingualElements.length === 0) return;
+
+    setInterval(() => {
+      bilingualElements.forEach((el, index) => {
+        setTimeout(() => {
+          el.classList.toggle('lang-swapped');
+        }, index * 90);
+      });
+    }, 7500);
+  }
+
+  startLanguageCycle();
+
   // ===== ASSET PROTECTION =====
   document.addEventListener('contextmenu', (e) => {
     if (e.target && e.target.tagName === 'IMG') {

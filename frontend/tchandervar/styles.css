@@ -91,6 +91,166 @@ button {
   transform: translateY(0);
 }
 
+/* ===== BILINGUAL CASCADING TRANSLATION FLIP ANIMATION ===== */
+.ur-hover {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.ur-hover .en-text {
+  display: inline-block;
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
+
+.ur-hover::before {
+  content: attr(data-ur);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(8px);
+  font-family: var(--font-urdu);
+  font-size: 1.2em;
+  line-height: 1.25;
+  font-style: normal;
+  font-weight: 400;
+  color: var(--accent-gold);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  direction: rtl;
+}
+
+/* Trigger: hover or periodic JS cycle */
+.ur-hover:hover .en-text,
+.ur-hover.lang-swapped .en-text {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.ur-hover:hover::before,
+.ur-hover.lang-swapped::before {
+  opacity: 1;
+  transform: translate(-50%, -50%) translateY(0);
+}
+
+/* Logo: tchandervar <-> ژندروار */
+.logo.ur-hover::before {
+  font-size: 1.7rem;
+  top: 45%;
+  color: var(--text-primary);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.logo.ur-hover:hover::before,
+.logo.ur-hover.lang-swapped::before {
+  color: var(--accent-red);
+}
+
+/* Nav links: Collection, Frames, About, Contact, Journal */
+#navbar .nav-links a.ur-hover::before {
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+
+#navbar .nav-links a.ur-hover:hover::before,
+#navbar .nav-links a.ur-hover.lang-swapped::before {
+  color: var(--accent-red);
+}
+
+/* Nav CTA: Alfaaz <-> الفاظ */
+#navbar .nav-cta.ur-hover::before {
+  font-size: 1.05rem;
+  color: var(--bg-primary);
+  letter-spacing: 0;
+}
+
+/* Hero Subtitle */
+.hero-subtitle.ur-hover::before {
+  font-size: 1.05rem;
+  color: var(--accent-red);
+  letter-spacing: 0;
+}
+
+/* Hero Title: It belongs to where it lives <-> یہ وہیں کا ہے جہاں یہ رہتا ہے */
+.hero h1.ur-hover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+}
+
+.hero h1.ur-hover::before {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  color: var(--text-primary);
+  top: 48%;
+  line-height: 1.35;
+  white-space: normal;
+  max-width: 92%;
+  text-align: center;
+  font-style: normal;
+}
+
+/* Poem Section Bilingual Couplet */
+.poem-couplet.ur-hover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  min-height: 6rem;
+  cursor: pointer;
+}
+
+.poem-couplet.ur-hover::before {
+  content: attr(data-ur);
+  white-space: pre-line;
+  font-size: clamp(1.3rem, 2.5vw, 1.85rem);
+  line-height: 2.2;
+  color: var(--text-primary);
+  top: 50%;
+  width: 100%;
+  text-align: center;
+}
+
+.poem-author.ur-hover::before {
+  font-size: 1.05rem;
+  color: var(--accent-gold);
+  letter-spacing: 0;
+}
+
+/* Section Headings */
+h2.ur-hover {
+  display: inline-flex;
+  position: relative;
+}
+
+h2.ur-hover::before {
+  font-size: 1.05em;
+  color: var(--text-primary);
+  top: 45%;
+  letter-spacing: 0;
+}
+
+/* Footer Copy */
+.footer-copy.ur-hover::before {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
 /* ===== NAVIGATION ===== */
 #navbar {
   position: fixed;
@@ -278,26 +438,18 @@ button {
 }
 
 .poem-text {
-  font-family: var(--font-urdu);
-  direction: rtl;
-  font-size: clamp(1.4rem, 2.8vw, 2.1rem);
-  color: var(--text-primary);
-  line-height: 2.5;
-  margin-bottom: 1.5rem;
-}
-
-.poem-translation {
   font-family: var(--font-heading);
-  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
   font-style: italic;
-  color: var(--text-secondary);
-  line-height: 1.8;
-  margin-bottom: 1.25rem;
+  color: var(--text-primary);
+  line-height: 2.1;
+  max-width: 700px;
+  margin: 0 auto 1.5rem;
 }
 
 .poem-author {
-  font-size: 0.75rem;
-  letter-spacing: 0.18em;
+  font-size: 0.76rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--accent-gold);
   font-weight: 600;
