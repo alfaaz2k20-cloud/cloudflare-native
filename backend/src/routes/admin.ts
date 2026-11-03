@@ -216,19 +216,35 @@ adminRouter.post('/exhibitions/create', async (c) => {
 });
 
 adminRouter.get('/exhibitions/list', async (c) => {
-  const list = await c.env.DB.prepare(`
-    SELECT id, title, date_text, is_active, require_over_18
-    FROM exhibitions_list
-    ORDER BY created_at DESC
-  `).all();
+  try {
+    const list = await c.env.DB.prepare(`
+      SELECT id, title, date_text, is_active, require_over_18
+      FROM exhibitions_list
+      ORDER BY created_at DESC
+    `).all();
 
-  return c.json((list.results || []).map((e: any) => ({
-    id: e.id,
-    title: e.title,
-    date_text: e.date_text,
-    is_active: Boolean(e.is_active),
-    require_over_18: e.require_over_18 === undefined || e.require_over_18 === null ? 1 : Number(e.require_over_18)
-  })));
+    return c.json((list.results || []).map((e: any) => ({
+      id: e.id,
+      title: e.title,
+      date_text: e.date_text,
+      is_active: Boolean(e.is_active),
+      require_over_18: e.require_over_18 === undefined || e.require_over_18 === null ? 1 : Number(e.require_over_18)
+    })));
+  } catch {
+    const fallbackList = await c.env.DB.prepare(`
+      SELECT id, title, date_text, is_active
+      FROM exhibitions_list
+      ORDER BY created_at DESC
+    `).all();
+
+    return c.json((fallbackList.results || []).map((e: any) => ({
+      id: e.id,
+      title: e.title,
+      date_text: e.date_text,
+      is_active: Boolean(e.is_active),
+      require_over_18: 1
+    })));
+  }
 });
 
 adminRouter.patch('/exhibitions/:id/toggle-age', async (c) => {
@@ -928,16 +944,56 @@ adminRouter.delete('/blogs/:id', async (c) => {
 
 // ── System Diagnostics & Subsystem Telemetry Dashboard ────────────────────────
 adminRouter.get('/diagnostics/system', async (c) => {
-  const d1Start = Date.now();
-  await c.env.DB.prepare('SELECT 1').first();
-  const d1Latency = Date.now() - d1Start;
+  let d1Latency = 0;
+  let d1Connected = false;
+  let d1Error: string | null = null;
+
+  try {
+    const d1Start = Date.now();
+    await c.env.DB.prepare('SELECT 1').first();
+    d1Latency = Date.now() - d1Start;
+    d1Connected = true;
+  } catch (err: any) {
+    d1Connected = false;
+    d1Error = err?.message || 'D1 connection error';
+  }
+
+  const safeCount = async (query: string): Promise<number> => {
+    if (!d1Connected) return 0;
+    try {
+      const res = await c.env.DB.prepare(query).first<{ c: number }>();
+      return res?.c || 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  let activeCycleTitle: string | null = null;
+  let activeCycleOver18: number | null = null;
+
+  if (d1Connected) {
+    try {
+      const activeExhib = await c.env.DB.prepare('SELECT title, require_over_18 FROM exhibitions_list WHERE is_active = 1 LIMIT 1').first<any>();
+      if (activeExhib) {
+        activeCycleTitle = activeExhib.title || null;
+        activeCycleOver18 = activeExhib.require_over_18 === undefined || activeExhib.require_over_18 === null ? 1 : Number(activeExhib.require_over_18);
+      }
+    } catch {
+      try {
+        const fallback = await c.env.DB.prepare('SELECT title FROM exhibitions_list WHERE is_active = 1 LIMIT 1').first<any>();
+        if (fallback) {
+          activeCycleTitle = fallback.title || null;
+          activeCycleOver18 = 1;
+        }
+      } catch {}
+    }
+  }
 
   const [
     usersCount,
     eventsCount,
     openEventsCount,
     exhibitionsCount,
-    activeExhibition,
     exhibApplications,
     pendingExhibApplications,
     clubApplications,
@@ -946,18 +1002,17 @@ adminRouter.get('/diagnostics/system', async (c) => {
     blogsCount,
     auditLogsCount
   ] = await Promise.all([
-    c.env.DB.prepare('SELECT COUNT(*) as c FROM users').first<{ c: number }>(),
-    c.env.DB.prepare('SELECT COUNT(*) as c FROM events').first<{ c: number }>(),
-    c.env.DB.prepare('SELECT COUNT(*) as c FROM events WHERE registration_open = 1').first<{ c: number }>(),
-    c.env.DB.prepare('SELECT COUNT(*) as c FROM exhibitions_list').first<{ c: number }>(),
-    c.env.DB.prepare('SELECT title, require_over_18 FROM exhibitions_list WHERE is_active = 1 LIMIT 1').first<{ title: string; require_over_18: number }>(),
-    c.env.DB.prepare('SELECT COUNT(*) as c FROM exhibition_applications').first<{ c: number }>(),
-    c.env.DB.prepare("SELECT COUNT(*) as c FROM exhibition_applications WHERE status = 'PENDING'").first<{ c: number }>(),
-    c.env.DB.prepare('SELECT COUNT(*) as c FROM club_applications').first<{ c: number }>(),
-    c.env.DB.prepare("SELECT COUNT(*) as c FROM club_applications WHERE status = 'PENDING'").first<{ c: number }>(),
-    c.env.DB.prepare('SELECT COUNT(*) as c FROM submissions').first<{ c: number }>(),
-    c.env.DB.prepare('SELECT COUNT(*) as c FROM blogs').first<{ c: number }>(),
-    c.env.DB.prepare('SELECT COUNT(*) as c FROM admin_audit_logs').first<{ c: number }>()
+    safeCount('SELECT COUNT(*) as c FROM users'),
+    safeCount('SELECT COUNT(*) as c FROM events'),
+    safeCount('SELECT COUNT(*) as c FROM events WHERE registration_open = 1'),
+    safeCount('SELECT COUNT(*) as c FROM exhibitions_list'),
+    safeCount('SELECT COUNT(*) as c FROM exhibition_applications'),
+    safeCount("SELECT COUNT(*) as c FROM exhibition_applications WHERE status = 'PENDING'"),
+    safeCount('SELECT COUNT(*) as c FROM club_applications'),
+    safeCount("SELECT COUNT(*) as c FROM club_applications WHERE status = 'PENDING'"),
+    safeCount('SELECT COUNT(*) as c FROM submissions'),
+    safeCount('SELECT COUNT(*) as c FROM blogs'),
+    safeCount('SELECT COUNT(*) as c FROM admin_audit_logs')
   ]);
 
   const turnstileKey = c.env.TURNSTILE_SECRET_KEY || '';
@@ -978,8 +1033,9 @@ adminRouter.get('/diagnostics/system', async (c) => {
       curator_token_configured: Boolean(c.env.CURATOR_SECRET_TOKEN || c.env.PHANTOM_SECRET_TOKEN)
     },
     bindings: {
-      d1_connected: true,
+      d1_connected: d1Connected,
       d1_latency_ms: d1Latency,
+      d1_error: d1Error,
       kv_bound: Boolean(c.env.CACHE_KV),
       r2_vault_bound: Boolean(c.env.VAULT_BUCKET)
     },
@@ -989,19 +1045,19 @@ adminRouter.get('/diagnostics/system', async (c) => {
       cf_email_configured: Boolean(c.env.CF_EMAIL_ROUTING)
     },
     entity_metrics: {
-      users_total: usersCount?.c || 0,
-      events_total: eventsCount?.c || 0,
-      events_open: openEventsCount?.c || 0,
-      exhibitions_total: exhibitionsCount?.c || 0,
-      active_cycle: activeExhibition?.title || null,
-      active_cycle_over_18: activeExhibition ? (activeExhibition.require_over_18 === undefined || activeExhibition.require_over_18 === null ? 1 : Number(activeExhibition.require_over_18)) : null,
-      exhibition_apps_total: exhibApplications?.c || 0,
-      exhibition_apps_pending: pendingExhibApplications?.c || 0,
-      club_apps_total: clubApplications?.c || 0,
-      club_apps_pending: pendingClubApplications?.c || 0,
-      submissions_total: submissionsCount?.c || 0,
-      blogs_total: blogsCount?.c || 0,
-      audit_logs_total: auditLogsCount?.c || 0
+      users_total: usersCount,
+      events_total: eventsCount,
+      events_open: openEventsCount,
+      exhibitions_total: exhibitionsCount,
+      active_cycle: activeCycleTitle,
+      active_cycle_over_18: activeCycleOver18,
+      exhibition_apps_total: exhibApplications,
+      exhibition_apps_pending: pendingExhibApplications,
+      club_apps_total: clubApplications,
+      club_apps_pending: pendingClubApplications,
+      submissions_total: submissionsCount,
+      blogs_total: blogsCount,
+      audit_logs_total: auditLogsCount
     }
   });
 });

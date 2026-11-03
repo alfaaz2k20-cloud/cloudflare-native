@@ -49,9 +49,16 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     return c.json({ detail: 'A valid age is required.' }, 400);
   }
 
-  const activeCycle = await c.env.DB
-    .prepare('SELECT title, require_over_18 FROM exhibitions_list WHERE is_active = 1 LIMIT 1')
-    .first<any>();
+  let activeCycle: any = null;
+  try {
+    activeCycle = await c.env.DB
+      .prepare('SELECT title, require_over_18 FROM exhibitions_list WHERE is_active = 1 LIMIT 1')
+      .first<any>();
+  } catch {
+    activeCycle = await c.env.DB
+      .prepare('SELECT title FROM exhibitions_list WHERE is_active = 1 LIMIT 1')
+      .first<any>();
+  }
 
   if (!activeCycle) {
     return c.json({ detail: 'The portal is currently closed. No active exhibition.' }, 400);
