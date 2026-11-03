@@ -143,7 +143,7 @@ researchRouter.get('/sessions/:session_id', async (c) => {
 
   // Log recruiter access to audit trail
   try {
-    const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
+    const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1') : '127.0.0.1');
     await c.env.DB.prepare(`
       INSERT INTO recruiter_access_logs (admin_email, session_id, ip_address)
       VALUES (?, ?, ?)
@@ -462,11 +462,24 @@ researchRouter.post('/sessions/:session_id/reschedule', async (c) => {
     return c.json({ error: 'slot_date and slot_time are required', detail: 'slot_date and slot_time are required' }, 400);
   }
 
-  await c.env.DB.prepare(`
-    UPDATE interview_bookings
-    SET slot_date = ?, slot_time = ?, slot_display = ?
-    WHERE session_id = ?
-  `).bind(slotDate, slotTime, slotDisplay, sessionId).run();
+  // Check collision against another active booking on the exact same date and time slot
+  const collision = await c.env.DB.prepare("SELECT id FROM interview_bookings WHERE slot_date = ? AND slot_time = ? AND session_id != ? AND status = 'SCHEDULED'").bind(slotDate, slotTime, sessionId).first();
+  if (collision) {
+    return c.json({ error: 'This interview slot is already scheduled for another candidate. Please select a different slot.', detail: 'This interview slot is already scheduled for another candidate.' }, 409);
+  }
+
+  try {
+    await c.env.DB.prepare(`
+      UPDATE interview_bookings
+      SET slot_date = ?, slot_time = ?, slot_display = ?
+      WHERE session_id = ?
+    `).bind(slotDate, slotTime, slotDisplay, sessionId).run();
+  } catch (err: any) {
+    if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
+      return c.json({ error: 'This interview slot is already scheduled for another candidate. Please select a different slot.', detail: 'This interview slot is already scheduled for another candidate.' }, 409);
+    }
+    throw err;
+  }
 
   return c.json({ status: 'RESCHEDULED', slot_date: slotDate, slot_time: slotTime });
 });

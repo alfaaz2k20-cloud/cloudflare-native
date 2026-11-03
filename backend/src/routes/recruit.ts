@@ -42,7 +42,7 @@ recruitRouter.post('/consent', async (c) => {
   const body = await c.req.json().catch(() => ({}));
 
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
-  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || undefined;
+  const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1') : undefined);
   const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);
   if (!turnstileValid) {
     return c.json({ error: 'Turnstile verification failed. Please complete the security challenge.', detail: 'Turnstile verification failed.' }, 403);

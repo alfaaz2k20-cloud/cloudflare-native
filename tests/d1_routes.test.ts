@@ -534,6 +534,41 @@ describe('Real Route-Level D1 SQLite & R2 Integration Test Suite', () => {
       expect(updatedData.slots).toEqual(['11:00 AM', '03:00 PM', '05:00 PM']);
       expect(updatedData.skip_days).toEqual(['Sunday', 'Friday']);
     });
+
+    it('POST /recruit/research/sessions/:session_id/reschedule rejects slot collision with 409', async () => {
+      const adminToken = await createToken('admin@alfaaz.com', 'ADMIN', jwtSecret);
+
+      // Create two distinct sessions and bookings
+      await mockDb.prepare("INSERT INTO recruit_sessions (session_id, status) VALUES ('sess_resched_1', 'CONSENTED')").run();
+      await mockDb.prepare("INSERT INTO recruit_sessions (session_id, status) VALUES ('sess_resched_2', 'CONSENTED')").run();
+
+      await mockDb.prepare(`
+        INSERT INTO interview_bookings (session_id, candidate_name, candidate_email, slot_date, slot_time, slot_display, status)
+        VALUES ('sess_resched_1', 'Candidate One', 'one@alfaaz.local', '2026-11-20', '11:00 AM', 'Nov 20, 11:00 AM', 'SCHEDULED')
+      `).run();
+
+      await mockDb.prepare(`
+        INSERT INTO interview_bookings (session_id, candidate_name, candidate_email, slot_date, slot_time, slot_display, status)
+        VALUES ('sess_resched_2', 'Candidate Two', 'two@alfaaz.local', '2026-11-20', '03:00 PM', 'Nov 20, 03:00 PM', 'SCHEDULED')
+      `).run();
+
+      // Attempt to reschedule sess_resched_2 to Candidate One's slot (2026-11-20 11:00 AM)
+      const res = await app.request('/recruit/research/sessions/sess_resched_2/reschedule', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          slot_date: '2026-11-20',
+          slot_time: '11:00 AM'
+        })
+      }, getTestEnv());
+
+      expect(res.status).toBe(409);
+      const data: any = await res.json();
+      expect(data.error).toContain('already scheduled for another candidate');
+    });
   });
 
   describe('Events and Collective Circles (/events/* and /clubs/*)', () => {
