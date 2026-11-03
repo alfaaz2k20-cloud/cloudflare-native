@@ -20,11 +20,34 @@
   
   <script type="module" src="src/admin.js"></script>
   <style>
-    .header { font-family: var(--font-heading); font-size: 2.5rem; letter-spacing: 1px; color: var(--text-primary); border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 1rem; margin-top: 6rem; }
-    .tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--grid-border); margin-bottom: 2rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .admin-container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+    .header { font-family: var(--font-heading); font-size: 2.5rem; letter-spacing: 1px; color: var(--text-primary); border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 1rem; margin-top: 6rem; }
+    
+    /* Curatorial Operational Pulse Bar */
+    .curatorial-pulse { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .pulse-chip { background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; cursor: pointer; transition: all 0.2s ease; position: relative; }
+    .pulse-chip:hover { border-color: var(--accent-gold); transform: translateY(-1px); }
+    .pulse-label { font-size: 9px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-secondary); }
+    .pulse-val { font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pulse-val.pulse-health { font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: 0.05em; color: var(--accent-green-text); }
+
+    /* Mobile Quick Tab Dropdown (Visible on <= 768px) */
+    .mobile-tab-bar-container { display: none; margin-bottom: 1.25rem; }
+    .mobile-tab-select-styled { position: relative; background: var(--bg-secondary); border: 1px solid var(--grid-border); border-left: 4px solid var(--accent-gold); display: flex; align-items: center; padding: 0.3rem 1rem; box-shadow: var(--shadow-base); }
+    .mobile-tab-select-styled select { border: none; font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-primary); background: transparent; padding: 0.8rem 0; cursor: pointer; width: 100%; appearance: none; -webkit-appearance: none; }
+    .mobile-tab-icon { margin-right: 0.75rem; color: var(--accent-gold-text); font-size: 14px; font-weight: bold; }
+    .mobile-tab-arrow { position: absolute; right: 1.25rem; pointer-events: none; font-size: 10px; color: var(--text-secondary); }
+
+    /* Responsive Tab Navigation with Smooth Touch Scroll */
+    .tab-nav-wrapper { position: relative; margin-bottom: 2rem; }
+    .tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--grid-border); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x proximity; }
     .tab-nav::-webkit-scrollbar { display: none; }
-    .tab-btn { padding: 1rem 1.4rem; font-family: var(--font-body); font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--text-secondary); border: none; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
-    .tab-btn:hover { color: var(--accent-gold); } .tab-btn.active { color: var(--accent-gold); border-bottom-color: var(--accent-gold); font-weight: 500; }
+    .tab-btn { padding: 1rem 1.4rem; font-family: var(--font-body); font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--text-secondary); border: none; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; scroll-snap-align: center; display: inline-flex; align-items: center; gap: 6px; }
+    .tab-btn:hover { color: var(--accent-gold); } 
+    .tab-btn.active { color: var(--accent-gold); border-bottom-color: var(--accent-gold); font-weight: 600; }
+    .tab-count { font-size: 9px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--grid-border); background: var(--bg-primary); color: var(--text-secondary); font-weight: 600; }
+    .tab-count.pending { border-color: var(--accent-gold); color: var(--accent-gold-text); background: rgba(189, 111, 93, 0.08); }
+    
     .tab-panel { display: none; } .tab-panel.active { display: block; }
     .section-title { color: var(--text-primary); font-family: var(--font-heading); font-size: 1.8rem; margin-top: 2rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.5rem; font-weight: 400; }
     
@@ -53,7 +76,7 @@
     .roster-card { background: var(--bg-secondary); border: 1px solid var(--grid-border); margin-bottom: 1.25rem; transition: border-color 0.3s ease; }
     .roster-card:hover { border-color: var(--accent-gold); }
     .roster-header { padding: 1.5rem 2rem; display: grid; grid-template-columns: 2.5fr 1fr 1fr; gap: 1.5rem; align-items: center; }
-    .activity-toggle-btn { background: transparent; border: 1px solid var(--grid-border); color: var(--text-secondary); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 0.6rem 1rem; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; }
+    .activity-toggle-btn { background: transparent; border: 1px solid var(--grid-border); color: var(--text-secondary); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 0.6rem 1rem; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
     .activity-toggle-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
     .activity-drawer { border-top: 1px solid var(--grid-border); padding: 1.5rem 2rem; background: var(--bg-primary); display: none; }
     .activity-drawer.open { display: block; }
@@ -80,7 +103,8 @@
     .stat-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--grid-border); border-radius: 2px; color: var(--text-secondary); background: var(--bg-primary); }
     .stat-pill strong { color: var(--text-primary); }
     
-    input, select, textarea { background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); padding: 0.8rem 0; width: 100%; font-family: var(--font-body); font-size: 13px; border-radius: 0; transition: border-color 0.3s; } input:focus, select:focus, textarea:focus { outline: none; border-bottom-color: var(--accent-gold); }
+    input, select, textarea { background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); padding: 0.8rem 0; width: 100%; font-family: var(--font-body); font-size: 14px; border-radius: 0; transition: border-color 0.3s; } 
+    input:focus, select:focus, textarea:focus { outline: none; border-bottom-color: var(--accent-gold); }
     
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-bottom: 2rem; } 
     .form-group { display: flex; flex-direction: column; gap: 0.2rem; } 
@@ -98,49 +122,138 @@
     .diag-pill-fail { background: rgba(220, 38, 38, 0.08); color: var(--accent-red-text); border-color: var(--accent-red); }
 
     .dossier-box { background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem; margin-top: 1rem; }
-    .dossier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-    
+    .dossier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+    .dossier-notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .card-actions-row { display: flex; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
+
+    .filter-pills-bar { display: flex; gap: 0.6rem; margin-bottom: 2rem; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 0.4rem; scrollbar-width: none; }
+    .filter-pills-bar::-webkit-scrollbar { display: none; }
+    .filter-pill-btn { padding: 0.6rem 1.2rem; font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; white-space: nowrap; flex-shrink: 0; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; }
+
+    /* Touch & Mobile Responsiveness Breakpoints */
     @media (max-width: 768px) {
-      .header { margin-top: 5rem; }
+      .admin-container { padding: 0 1rem; }
+      .header { margin-top: 4.5rem; font-size: 1.85rem; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+      .mobile-tab-bar-container { display: block; }
+      .tab-nav-wrapper { margin-bottom: 1.25rem; }
+      .tab-btn { padding: 0.85rem 1rem; font-size: 10px; }
+      .panel { padding: 1.25rem 1rem; margin-bottom: 1.5rem; }
+      .data-card { padding: 1.25rem 1rem; gap: 1rem; }
       .club-card, .event-card, .user-card, .exhib-card, .roster-header, .audit-card, .blog-card { grid-template-columns: 1fr; }
-      .form-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+      .form-grid { grid-template-columns: 1fr; gap: 1.25rem; }
       .timeline-step { grid-template-columns: 1fr; gap: 0.5rem; }
       .timeline-time { border-bottom: 1px dashed var(--grid-border); padding-bottom: 0.3rem; }
-      .modal { padding: 1.5rem; }
+      .modal { padding: 1.5rem 1.25rem; width: 95%; max-height: 90vh; }
+      .modal-header { margin-bottom: 1.25rem; padding-bottom: 1rem; }
+      .dossier-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+      .dossier-notes-grid { grid-template-columns: 1fr !important; gap: 0.75rem !important; }
+      .card-actions-row { width: 100%; justify-content: stretch; }
+      .card-actions-row > * { flex: 1 1 calc(50% - 0.4rem); min-width: 120px; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; text-align: center; }
+      input, select, textarea { font-size: 16px; /* Prevents auto-zoom on iOS Safari */ }
+    }
+
+    @media (max-width: 480px) {
+      .admin-container { padding: 0 0.75rem; }
+      .curatorial-pulse { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+      .pulse-chip { padding: 0.75rem 0.85rem; }
+      .pulse-val { font-size: 1.15rem; }
+      .dossier-grid { grid-template-columns: 1fr; }
+      .card-actions-row > * { flex: 1 1 100%; }
+      .filter-pill-btn { padding: 0.5rem 0.8rem; font-size: 9px; min-height: 36px; }
     }
   </style>
 </head>
 <body>
   <nav id="navbar" style="justify-content: space-between;">
-    <a href="index.html" class="logo">ALFAAZ</a>
+    <div style="display: flex; align-items: center; gap: 0.8rem;">
+      <a href="index.html" class="logo">ALFAAZ</a>
+      <span style="font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent-gold-text); border: 1px solid var(--accent-gold); padding: 2px 6px; border-radius: 2px;">Admin Suite</span>
+    </div>
     
-    <div class="nav-actions" style="gap: 2rem;">
+    <div class="nav-actions" style="gap: 1.5rem; display: flex; align-items: center;">
       <a href="dashboard.html" style="font-size: 11px; color: var(--text-primary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">Dashboard</a>
       <button id="logoutBtn" style="background: transparent; border: none; color: var(--text-secondary); font-family: var(--font-body); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: color 0.3s ease;">Log Out</button>
     </div>
   </nav>
 
-  <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+  <div class="admin-container">
     <div class="header">
       <div>Administration</div>
-      <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
-        <a href="research.html" class="action-btn gold" style="padding: 0.5rem 1.2rem; font-size: 10px; letter-spacing: 1.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+      <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <a href="research.html" class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 10px; letter-spacing: 1.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px;">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
           Research Dossier &rarr;
         </a>
-        <a href="dashboard.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">&larr; Dashboard</a>
+        <a href="dashboard.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; padding: 0.4rem 0;">&larr; Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Operational Pulse Summary Bar (Mobile & Desktop Situational Awareness) -->
+    <div class="curatorial-pulse" id="curatorialPulse">
+      <div class="pulse-chip" onclick="switchTab('exhibitions')" title="Jump to Exhibitions">
+        <span class="pulse-label">Active Cycle</span>
+        <span class="pulse-val" id="pulseCycleTitle">Loading...</span>
+      </div>
+      <div class="pulse-chip" onclick="switchTab('exhibitions')" title="Jump to Pending Portfolios">
+        <span class="pulse-label">Pending Portfolios</span>
+        <span class="pulse-val" id="pulsePendingExhibs" style="color: var(--accent-gold-text);">—</span>
+      </div>
+      <div class="pulse-chip" onclick="switchTab('clubs')" title="Jump to Club Applications">
+        <span class="pulse-label">Pending Clubs</span>
+        <span class="pulse-val" id="pulsePendingClubs" style="color: var(--accent-gold-text);">—</span>
+      </div>
+      <div class="pulse-chip" onclick="switchTab('diagnostics')" title="Jump to Diagnostics & Health">
+        <span class="pulse-label">Subsystem Status</span>
+        <span class="pulse-val pulse-health" id="pulseSystemHealth">Checking...</span>
+      </div>
+    </div>
+
+    <!-- Mobile Quick Tab Selector (Dropdown for fast mobile navigation) -->
+    <div class="mobile-tab-bar-container">
+      <div class="mobile-tab-select-styled">
+        <span class="mobile-tab-icon">☰</span>
+        <select id="mobileTabSelect" onchange="switchTab(this.value)" aria-label="Select administrative section">
+          <option value="events">Standard Events</option>
+          <option value="exhibitions">Exhibitions & Portfolios</option>
+          <option value="clubs">Club Applications</option>
+          <option value="roster">Collective Roster</option>
+          <option value="submissions">Storage Vault</option>
+          <option value="blogs">Journal & Essays</option>
+          <option value="audit">Audit Ledger</option>
+          <option value="diagnostics">Diagnostics & Health</option>
+        </select>
+        <span class="mobile-tab-arrow">▼</span>
       </div>
     </div>
     
-    <div class="tab-nav">
-      <button class="tab-btn active" onclick="switchTab('events')">Standard Events</button>
-      <button class="tab-btn" onclick="switchTab('exhibitions')">Exhibitions</button>
-      <button class="tab-btn" onclick="switchTab('clubs')">Club Applications</button>
-      <button class="tab-btn" onclick="switchTab('roster')">Collective Roster</button>
-      <button class="tab-btn" onclick="switchTab('submissions')">Storage Vault</button>
-      <button class="tab-btn" onclick="switchTab('blogs')">Journal & Essays</button>
-      <button class="tab-btn" onclick="switchTab('audit')">Audit Ledger</button>
-      <button class="tab-btn" onclick="switchTab('diagnostics')">Diagnostics & Health</button>
+    <!-- Responsive Tab Strip with Smooth Scroll -->
+    <div class="tab-nav-wrapper">
+      <div class="tab-nav" id="adminTabNav">
+        <button class="tab-btn active" data-tab="events" onclick="switchTab('events')">
+          Events <span class="tab-count" id="count-events"></span>
+        </button>
+        <button class="tab-btn" data-tab="exhibitions" onclick="switchTab('exhibitions')">
+          Exhibitions <span class="tab-count" id="count-exhibitions"></span>
+        </button>
+        <button class="tab-btn" data-tab="clubs" onclick="switchTab('clubs')">
+          Clubs <span class="tab-count" id="count-clubs"></span>
+        </button>
+        <button class="tab-btn" data-tab="roster" onclick="switchTab('roster')">
+          Roster <span class="tab-count" id="count-roster"></span>
+        </button>
+        <button class="tab-btn" data-tab="submissions" onclick="switchTab('submissions')">
+          Vault <span class="tab-count" id="count-submissions"></span>
+        </button>
+        <button class="tab-btn" data-tab="blogs" onclick="switchTab('blogs')">
+          Journal <span class="tab-count" id="count-blogs"></span>
+        </button>
+        <button class="tab-btn" data-tab="audit" onclick="switchTab('audit')">
+          Audit <span class="tab-count" id="count-audit"></span>
+        </button>
+        <button class="tab-btn" data-tab="diagnostics" onclick="switchTab('diagnostics')">
+          Health <span class="tab-count" id="count-diagnostics"></span>
+        </button>
+      </div>
     </div>
 
     <!-- 1. EVENTS PANEL -->
@@ -241,12 +354,12 @@
         <div id="cycleSelectWrap" style="display:flex; align-items:center;"></div>
       </div>
       
-      <div style="display:flex; gap:0.8rem; margin-bottom:2rem; flex-wrap:wrap;">
-        <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterExhibitions('ALL')" id="filt-ALL">All</button>
-        <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterExhibitions('PENDING')" id="filt-PENDING">Pending</button>
-        <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterExhibitions('APPROVED')" id="filt-APPROVED">Approved</button>
-        <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterExhibitions('FINALIZED')" id="filt-FINALIZED">Finalized (Paid)</button>
-        <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterExhibitions('REJECTED')" id="filt-REJECTED">Rejected</button>
+      <div class="filter-pills-bar">
+        <button class="action-btn gold filter-pill-btn" onclick="filterExhibitions('ALL')" id="filt-ALL">All</button>
+        <button class="action-btn gold filter-pill-btn" onclick="filterExhibitions('PENDING')" id="filt-PENDING">Pending</button>
+        <button class="action-btn gold filter-pill-btn" onclick="filterExhibitions('APPROVED')" id="filt-APPROVED">Approved</button>
+        <button class="action-btn gold filter-pill-btn" onclick="filterExhibitions('FINALIZED')" id="filt-FINALIZED">Finalized (Paid)</button>
+        <button class="action-btn gold filter-pill-btn" onclick="filterExhibitions('REJECTED')" id="filt-REJECTED">Rejected</button>
       </div>
       
       <div id="exhibitionsContainer"><div class="empty-state">Loading applications...</div></div>
@@ -255,11 +368,11 @@
     <!-- 3. CLUBS PANEL -->
     <div id="tab-clubs" class="tab-panel">
       <div class="section-title">Club Applications & Creative Intent Statements</div>
-      <div style="display:flex; gap:0.8rem; margin-bottom:2rem; flex-wrap:wrap;">
-        <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterClubs('ALL')" id="filter-ALL">All</button>
-        <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterClubs('PENDING')" id="filter-PENDING">Pending</button>
-        <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterClubs('APPROVED')" id="filter-APPROVED">Approved</button>
-        <button class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 9px;" onclick="filterClubs('REJECTED')" id="filter-REJECTED">Rejected</button>
+      <div class="filter-pills-bar">
+        <button class="action-btn gold filter-pill-btn" onclick="filterClubs('ALL')" id="filter-ALL">All</button>
+        <button class="action-btn gold filter-pill-btn" onclick="filterClubs('PENDING')" id="filter-PENDING">Pending</button>
+        <button class="action-btn gold filter-pill-btn" onclick="filterClubs('APPROVED')" id="filter-APPROVED">Approved</button>
+        <button class="action-btn gold filter-pill-btn" onclick="filterClubs('REJECTED')" id="filter-REJECTED">Rejected</button>
       </div>
       <div id="clubsContainer"><div class="empty-state">Loading applications...</div></div>
     </div>
@@ -272,7 +385,7 @@
       </div>
       
       <div class="panel" style="padding: 1.5rem 2rem; margin-bottom: 2rem;">
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1.5rem; align-items: center;">
+        <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.25rem; align-items: center; margin-bottom: 0;">
           <div>
             <label class="data-label">Search Participant</label>
             <input type="text" id="rosterSearchInput" placeholder="Filter by name, email, phone, or provider..." oninput="window.filterRoster()">

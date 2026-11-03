@@ -152,22 +152,95 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // TAB NAVIGATION
+  // TAB NAVIGATION & CURATORIAL PULSE
   // ==========================================
   const tabLoaded = {};
   window.switchTab = function(name) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     
-    const targetBtn = document.querySelector(`[onclick="switchTab('${name}')"]`);
-    if (targetBtn) targetBtn.classList.add('active');
+    const targetBtn = document.querySelector(`.tab-btn[data-tab="${name}"]`) || document.querySelector(`[onclick="switchTab('${name}')"]`);
+    if (targetBtn) {
+      targetBtn.classList.add('active');
+      try {
+        targetBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      } catch (_) {}
+    }
     
     const targetPanel = document.getElementById(`tab-${name}`);
     if (targetPanel) targetPanel.classList.add('active');
+
+    const mobileSelect = document.getElementById('mobileTabSelect');
+    if (mobileSelect && mobileSelect.value !== name) {
+      mobileSelect.value = name;
+    }
     
     if (!tabLoaded[name]) {
       tabLoaded[name] = true;
       loadTab(name);
+    }
+  };
+
+  window.refreshCuratorialPulse = async function() {
+    try {
+      const res = await adminFetch('/admin/diagnostics/system');
+      if (!res || !res.ok) return;
+      const data = await res.json();
+      const m = data.entity_metrics || {};
+      const b = data.bindings || {};
+
+      // Pulse chips
+      const cycleTitleEl = document.getElementById('pulseCycleTitle');
+      if (cycleTitleEl) {
+        if (m.active_cycle) {
+          const ageLabel = m.active_cycle_over_18 === 0 ? 'All Ages' : '18+';
+          cycleTitleEl.textContent = `${m.active_cycle} (${ageLabel})`;
+        } else {
+          cycleTitleEl.textContent = 'None (Portal Closed)';
+        }
+      }
+
+      const pendingExhibsEl = document.getElementById('pulsePendingExhibs');
+      if (pendingExhibsEl) {
+        pendingExhibsEl.textContent = m.exhibition_apps_pending !== undefined ? m.exhibition_apps_pending : '0';
+      }
+
+      const pendingClubsEl = document.getElementById('pulsePendingClubs');
+      if (pendingClubsEl) {
+        pendingClubsEl.textContent = m.club_apps_pending !== undefined ? m.club_apps_pending : '0';
+      }
+
+      const healthEl = document.getElementById('pulseSystemHealth');
+      if (healthEl) {
+        if (b.d1_connected) {
+          healthEl.textContent = `Operational (${b.d1_latency_ms || 0}ms)`;
+          healthEl.style.color = 'var(--accent-green-text)';
+        } else {
+          healthEl.textContent = 'D1 Degraded';
+          healthEl.style.color = 'var(--accent-red-text)';
+        }
+      }
+
+      // Tab badges
+      const setBadge = (id, count, hasPending = false) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = count;
+          if (hasPending) el.classList.add('pending');
+          else el.classList.remove('pending');
+        }
+      };
+
+      setBadge('count-events', m.events_total ?? 0);
+      setBadge('count-exhibitions', m.exhibition_apps_total ?? 0, (m.exhibition_apps_pending || 0) > 0);
+      setBadge('count-clubs', m.club_apps_total ?? 0, (m.club_apps_pending || 0) > 0);
+      setBadge('count-roster', m.users_total ?? 0);
+      setBadge('count-submissions', m.submissions_total ?? 0);
+      setBadge('count-blogs', m.blogs_total ?? 0);
+      setBadge('count-audit', m.audit_logs_total ?? 0);
+      setBadge('count-diagnostics', b.d1_connected ? 'OK' : '!');
+    } catch (e) {
+      console.warn('Could not refresh curatorial pulse:', e);
     }
   };
 
@@ -232,10 +305,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="data-label">Status</div>
             <span class="badge ${isOpen ? 'badge-open' : 'badge-closed'}">${isOpen ? 'Open' : 'Closed'}</span>
           </div>
-          <div style="display:flex; flex-direction:column; gap:0.6rem;">
-            <button class="action-btn ${isOpen ? '' : 'gold'}" style="padding: 0.6rem; font-size:9px;" data-action="toggle-event" data-id="${e.id}">${isOpen ? 'Close Registration' : 'Open Registration'}</button>
-            <button class="action-btn gold" style="padding: 0.6rem; font-size:9px;" data-action="view-registrations" data-id="${e.id}">View Registrations</button>
-            <button class="action-btn" style="padding: 0.6rem; font-size:9px; border-color:var(--accent-red); color:var(--accent-red-text);" data-action="delete-event" data-id="${e.id}" data-name="${safeName}">Delete</button>
+          <div class="card-actions-row">
+            <button class="action-btn ${isOpen ? '' : 'gold'}" style="padding: 0.6rem 0.9rem; font-size:10px; min-height:38px;" data-action="toggle-event" data-id="${e.id}">${isOpen ? 'Close RSVP' : 'Open RSVP'}</button>
+            <button class="action-btn gold" style="padding: 0.6rem 0.9rem; font-size:10px; min-height:38px;" data-action="view-registrations" data-id="${e.id}">Registrations</button>
+            <button class="action-btn" style="padding: 0.6rem 0.9rem; font-size:10px; min-height:38px; border-color:var(--accent-red); color:var(--accent-red-text);" data-action="delete-event" data-id="${e.id}" data-name="${safeName}">Delete</button>
           </div>
         `;
         container.appendChild(card);
@@ -303,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
         descEl.value = '';
         capEl.value = '0';
         window.loadEvents();
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         const err = await res?.json().catch(() => ({}));
         if (msg) {
@@ -329,6 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await adminFetch(`/admin/events/${id}/toggle`, { method: 'PATCH' });
       if (res && res.ok) {
         window.loadEvents();
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
         return;
       }
       const err = await res?.json().catch(() => ({}));
@@ -355,6 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await adminFetch(`/admin/events/${id}`, { method: 'DELETE' });
       if (res && res.ok) {
         window.loadEvents();
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
         return;
       }
       const err = await res?.json().catch(() => ({}));
@@ -389,15 +465,19 @@ document.addEventListener('DOMContentLoaded', () => {
       let html = `<div style="font-size:12px; margin-bottom:1.5rem; color:var(--accent-gold-text); font-weight:600; letter-spacing: 1px; text-transform: uppercase;">Total Registrations: ${list.length}</div>`;
       list.forEach((r, i) => {
         const safeEmail = window.escapeHtml(r.email);
-        const safeWa = r.whatsapp && r.whatsapp !== '—' ? 'WA: ' + window.escapeHtml(r.whatsapp) : 'No WA';
+        const emailLink = r.email ? `<a href="mailto:${safeEmail}" style="color:var(--text-primary); text-decoration:underline;">${safeEmail}</a>` : safeEmail;
+        const cleanWa = (r.whatsapp && r.whatsapp !== '—') ? r.whatsapp.replace(/[^0-9+]/g, '') : '';
+        const waLink = cleanWa
+          ? `<a href="https://wa.me/${cleanWa.replace('+', '')}" target="_blank" rel="noopener noreferrer" style="color:var(--accent-green-text); text-decoration:underline; font-weight:600;">WA: ${window.escapeHtml(r.whatsapp)} ↗</a>`
+          : `<span style="color:var(--text-secondary);">${window.escapeHtml(r.whatsapp || 'No WA')}</span>`;
         const safeTime = r.registered_at ? new Date(r.registered_at).toLocaleString() : 'Date TBD';
         html += `
           <div style="padding:1rem 0; border-bottom:1px solid var(--grid-border); font-size:13px; display:flex; justify-content:space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <div>
-              <span style="font-weight: 500;"><strong style="color: var(--accent-gold-text); margin-right: 8px;">${i+1}.</strong> ${safeEmail}</span>
+              <span style="font-weight: 500;"><strong style="color: var(--accent-gold-text); margin-right: 8px;">${i+1}.</strong> ${emailLink}</span>
               <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">RSVP Timestamp: ${window.escapeHtml(safeTime)}</div>
             </div>
-            <span style="color:var(--text-primary); font-size: 11px; background: var(--bg-primary); padding: 4px 10px; border-radius: 2px;">${safeWa}</span>
+            <span style="color:var(--text-primary); font-size: 11px; background: var(--bg-primary); padding: 4px 10px; border-radius: 2px;">${waLink}</span>
           </div>`;
       });
       document.getElementById('modalBody').innerHTML = html;
@@ -551,6 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.querySelectorAll('#newExTitle, #newExDate, #newExVenue, #newExDesc, #newExTnc, #newExFee, #newExQr, #newExPayInst').forEach(el => el.value = '');
         await window.loadExhibitionManager();
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         const err = await res?.json().catch(() => ({}));
         if (msg) {
@@ -580,6 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res && res.ok) {
       await window.loadExhibitionManager();
       await window.loadExhibitionsData('ALL');
+      if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
     } else {
       alert("Failed to activate exhibition.");
     }
@@ -596,6 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const res = await adminFetch('/admin/exhibitions/deactivate-all', { method: 'PATCH' });
     if (res && res.ok) {
       await window.loadExhibitionManager();
+      if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
     } else {
       alert("Failed to close portal.");
     }
@@ -676,31 +759,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const safePortfolio = window.safeHttpUrl ? window.safeHttpUrl(a.portfolio_url) : null;
       let actionBtns = safePortfolio
-        ? `<a href="${window.escapeHtml(safePortfolio)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:0.6rem;font-size:9px;text-align:center;">View Portfolio Document ↗</a>`
-        : `<span class="action-btn" style="padding:0.6rem;font-size:9px;text-align:center;opacity:0.4;cursor:not-allowed;">No Portfolio Link</span>`;
+        ? `<a href="${window.escapeHtml(safePortfolio)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; text-align:center;">View Portfolio Document ↗</a>`
+        : `<span class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; text-align:center; opacity:0.4; cursor:not-allowed;">No Portfolio Link</span>`;
 
       if (a.status === 'PENDING') {
         actionBtns += `
-          <button class="action-btn" style="padding:0.6rem;font-size:9px;" data-action="review-exhib" data-id="${Number(a.id)}" data-decision="APPROVED">Approve</button>
-          <button class="action-btn" style="padding:0.6rem;font-size:9px;border-color:var(--accent-red);color:var(--accent-red-text);" data-action="review-exhib" data-id="${Number(a.id)}" data-decision="REJECTED">Reject</button>`;
+          <button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="review-exhib" data-id="${Number(a.id)}" data-decision="APPROVED">Approve</button>
+          <button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-red); color:var(--accent-red-text);" data-action="review-exhib" data-id="${Number(a.id)}" data-decision="REJECTED">Reject</button>`;
       } else if (a.status === 'REJECTED') {
-        actionBtns += `<button class="action-btn" style="padding:0.6rem;font-size:9px;" data-action="revert-exhib" data-id="${Number(a.id)}">Undo Rejection</button>`;
+        actionBtns += `<button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="revert-exhib" data-id="${Number(a.id)}">Undo Rejection</button>`;
       }
       
       if (a.payment_proof_url) {
         const safePayment = window.safeHttpUrl ? window.safeHttpUrl(a.payment_proof_url) : null;
         if (safePayment) {
-          actionBtns += `<a href="${window.escapeHtml(safePayment)}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.6rem;font-size:9px;border-color:var(--accent-green);color:var(--accent-green-text);text-align:center;margin-top:0.5rem;">View Payment Receipt ↗</a>`;
+          actionBtns += `<a href="${window.escapeHtml(safePayment)}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-green); color:var(--accent-green-text); text-align:center;">View Payment Receipt ↗</a>`;
         }
       }
       if (a.registration_status === 'SUBMITTED') {
-        actionBtns += `<button class="action-btn gold" style="padding:0.6rem;font-size:9px;" data-action="confirm-payment" data-id="${Number(a.id)}">Confirm Payment</button>`;
+        actionBtns += `<button class="action-btn gold" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="confirm-payment" data-id="${Number(a.id)}">Confirm Payment</button>`;
       }
 
       const cycleName = window.escapeHtml(a.exhibition_cycle ? a.exhibition_cycle : 'LEGACY ARCHIVE');
       const safeFullName = window.escapeHtml(a.full_name || 'Anonymous');
       const safeUserEmail = window.escapeHtml(a.user_email || '—');
+      const emailHtml = a.user_email ? `<a href="mailto:${safeUserEmail}" style="color:var(--text-primary); text-decoration:underline;">${safeUserEmail}</a>` : '—';
       const safePhone = window.escapeHtml(a.whatsapp || 'No WhatsApp provided');
+      const cleanPhone = a.whatsapp ? a.whatsapp.replace(/[^0-9+]/g, '') : '';
+      const phoneHtml = cleanPhone
+        ? `<a href="https://wa.me/${cleanPhone.replace('+', '')}" target="_blank" rel="noopener noreferrer" style="color:var(--accent-green-text); text-decoration:underline;">${safePhone} ↗</a>`
+        : safePhone;
       const safeAddress = window.escapeHtml(a.address || 'No address provided');
       const safeGenre = window.escapeHtml(a.genre || 'General Art');
       const safeMedium = window.escapeHtml(a.medium || 'Mixed Medium');
@@ -715,7 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div>
             <div class="data-label">Exhibition Cycle: ${cycleName}</div>
             <div style="font-family:var(--font-heading); font-size:1.5rem; color:var(--text-primary); font-weight:400;">${safeFullName}</div>
-            <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Email: <strong style="color:var(--text-primary);">${safeUserEmail}</strong> · WhatsApp: <strong style="color:var(--text-primary);">${safePhone}</strong></div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Email: <strong>${emailHtml}</strong> · WhatsApp: <strong>${phoneHtml}</strong></div>
           </div>
           <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.4rem;">
             <span class="badge ${badge}">${displayStatus}</span>
@@ -743,7 +831,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
-          <div style="margin-top: 1rem; border-top: 1px dashed var(--grid-border); padding-top: 0.8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="dossier-notes-grid" style="margin-top: 1rem; border-top: 1px dashed var(--grid-border); padding-top: 0.8rem;">
             <div>
               <div class="data-label">Artist's Submission Note</div>
               <div style="font-size:12px; color:var(--text-secondary); line-height:1.5; font-style:italic;">"${safeApplicantNote}"</div>
@@ -756,7 +844,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:0.8rem; flex-wrap:wrap; margin-top:0.5rem;">
+        <div class="card-actions-row">
           ${actionBtns}
         </div>
       `;
@@ -804,6 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res && res.ok) {
         await window.loadExhibitionsData('ALL');
         window.filterExhibitions(activeCycleFilter);
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         const err = await res?.json().catch(() => ({}));
         alert(err.error || err.detail || 'Could not update portfolio status.');
@@ -828,6 +917,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res && res.ok) {
         await window.loadExhibitionsData('ALL');
         window.filterExhibitions(activeCycleFilter);
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         alert('Could not revert portfolio status.');
       }
@@ -851,6 +941,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res && res.ok) {
         await window.loadExhibitionsData('ALL');
         window.filterExhibitions('FINALIZED');
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         alert('Could not confirm payment.');
       }
@@ -898,7 +989,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'data-card club-card';
       const badge = a.status === 'PENDING' ? 'badge-pending' : a.status === 'APPROVED' ? 'badge-approved' : 'badge-rejected';
-      const safeEmail = window.escapeHtml(a.user_email);
+      const safeEmail = window.escapeHtml(a.user_email || '—');
+      const emailHtml = a.user_email ? `<a href="mailto:${safeEmail}" style="color:var(--text-primary); text-decoration:underline;">${safeEmail}</a>` : '—';
       const safeClub = window.escapeHtml(a.club_name);
       const safeNote = window.escapeHtml(a.note || 'No statement provided by applicant.');
       const safeAdminNote = window.escapeHtml(a.admin_note || '');
@@ -906,10 +998,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       card.innerHTML = `
         <div>
-          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.5rem;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;">
             <div>
               <div class="data-label">Circle / Club: ${safeClub}</div>
-              <div class="data-display" style="font-weight:600;">${safeEmail}</div>
+              <div class="data-display" style="font-weight:600;">${emailHtml}</div>
             </div>
             <div style="font-size:10px; color:var(--text-secondary);">Applied: ${safeDate}</div>
           </div>
@@ -923,12 +1015,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="data-label">Review Status</div>
           <span class="badge ${badge}">${a.status}</span>
         </div>
-        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+        <div class="card-actions-row">
           ${a.status === 'PENDING' ? `
-            <button class="action-btn" style="padding:0.6rem; font-size:9px;" data-action="review-club" data-id="${a.id}" data-decision="APPROVED">Approve</button>
-            <button class="action-btn" style="padding:0.6rem; font-size:9px; border-color:var(--accent-red); color:var(--accent-red-text);" data-action="review-club" data-id="${a.id}" data-decision="REJECTED">Reject</button>
+            <button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="review-club" data-id="${a.id}" data-decision="APPROVED">Approve</button>
+            <button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-red); color:var(--accent-red-text);" data-action="review-club" data-id="${a.id}" data-decision="REJECTED">Reject</button>
           ` : ''}
-          ${a.status === 'REJECTED' ? `<button class="action-btn" style="padding:0.6rem; font-size:9px;" data-action="revert-club" data-id="${a.id}">Undo Rejection</button>` : ''}
+          ${a.status === 'REJECTED' ? `<button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="revert-club" data-id="${a.id}">Undo Rejection</button>` : ''}
         </div>
       `;
       container.appendChild(card);
@@ -970,6 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (res && res.ok) {
         window.loadClubs('ALL');
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         alert('Failed to update club application.');
       }
@@ -993,6 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res && res.ok) {
         window.loadClubs('ALL');
         window.filterClubs('ALL');
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         alert('Could not undo rejection.');
       }
@@ -1091,7 +1185,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'roster-card';
       const safeEmail = window.escapeHtml(u.email || '-');
+      const emailHtml = u.email ? `<a href="mailto:${safeEmail}" style="color:var(--text-primary); text-decoration:underline;">${safeEmail}</a>` : '-';
       const safePhone = window.escapeHtml(u.phone || 'No Phone');
+      const cleanRosterPhone = u.phone ? u.phone.replace(/[^0-9+]/g, '') : '';
+      const phoneHtml = cleanRosterPhone
+        ? `<a href="tel:${cleanRosterPhone}" style="color:var(--text-secondary); text-decoration:underline;">${safePhone}</a>`
+        : safePhone;
       const safeName = window.escapeHtml(u.full_name || 'Member');
       const safeProvider = window.escapeHtml(u.auth_provider || 'email');
       const isSelf = user && u.email === user.email;
@@ -1105,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : (u.phone ? '<span class="badge badge-unverified">WhatsApp Pending</span>' : '<span class="badge badge-closed">No Phone</span>');
 
       const deleteBtn = (isSelf || u.status === 'ADMIN') ? '' : `
-        <button class="action-btn" style="border-color: var(--accent-red); color: var(--accent-red-text); padding:0.6rem 0.8rem; font-size:9px;" data-action="delete-user" data-email="${safeEmail}">Purge</button>
+        <button class="action-btn" style="border-color: var(--accent-red); color: var(--accent-red-text); padding:0.6rem 0.8rem; font-size:10px; min-height:38px;" data-action="delete-user" data-email="${safeEmail}">Purge</button>
       `;
 
       let timelineHtml = '<div class="activity-empty">No participant steps recorded yet.</div>';
@@ -1236,8 +1335,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="roster-header">
           <div>
             <div class="data-label">${safeName}</div>
-            <div class="data-display" style="font-size: 13px;">${safeEmail}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Phone: ${safePhone}</div>
+            <div class="data-display" style="font-size: 13px;">${emailHtml}</div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Phone: ${phoneHtml}</div>
             <div style="display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap;">
               ${emailBadge}
               ${phoneBadge}
@@ -1260,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div style="display:flex; flex-direction:column; gap:0.5rem; align-items:stretch;">
             <div style="display:flex; gap:0.5rem; align-items:center;">
-              <button class="action-btn gold" style="padding:0.6rem 0.8rem; font-size:9px; flex:1;" data-action="save-role" data-email="${safeEmail}" data-index="${i}">Save Role</button>
+              <button class="action-btn gold" style="padding:0.6rem 0.8rem; font-size:10px; min-height:38px; flex:1;" data-action="save-role" data-email="${safeEmail}" data-index="${i}">Save Role</button>
               ${deleteBtn}
             </div>
             <button class="activity-toggle-btn" id="drawer-btn-${i}" data-closed-text="${closedBtnText}" data-open-text="${openBtnText}" onclick="toggleActivityDrawer(${i})">${closedBtnText}</button>
@@ -1338,6 +1437,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await adminFetch(`/admin/users/${encodeURIComponent(email)}`, { method: 'DELETE' });
       if (res && res.ok) {
         window.loadRoster();
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         const err = await res?.json().catch(() => ({}));
         alert(err.error || err.detail || 'Failed to delete user.');
@@ -1405,24 +1505,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const safeTitle = window.escapeHtml(s.title || 'Untitled');
         const safeType = window.escapeHtml(s.submission_type || 'Work');
         const safeAuthor = window.escapeHtml(s.author_email || 'Anonymous');
+        const authorHtml = s.author_email ? `<a href="mailto:${safeAuthor}" style="color:var(--text-primary); text-decoration:underline;">${safeAuthor}</a>` : safeAuthor;
         const safeNote = window.escapeHtml(s.note || '');
         const safeDate = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
         const safeUrl = window.safeHttpUrl ? window.safeHttpUrl(s.file_url) : null;
         const linkHtml = safeUrl
-          ? `<a href="${window.escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:0.6rem 1rem; font-size:9px; text-decoration:none; display:inline-block;">View / Download File ↗</a>`
+          ? `<a href="${window.escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:0.6rem 1.2rem; font-size:10px; min-height:40px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">View / Download File ↗</a>`
           : `<span style="font-size:11px; color:var(--text-secondary);">(No valid URL)</span>`;
 
         card.innerHTML = `
           <div>
             <div class="data-label">${safeType} · ${safeDate}</div>
             <div class="data-display" style="font-weight:600; font-size:15px; margin-bottom:0.3rem;">${safeTitle}</div>
-            <div style="font-size:11px; color:var(--text-secondary);">${safeAuthor}</div>
+            <div style="font-size:11px; color:var(--text-secondary);">Author: ${authorHtml}</div>
           </div>
           <div>
             <div class="data-label">Author Note</div>
             <div style="font-size:12px; color:var(--text-secondary); max-height:80px; overflow-y:auto;">${safeNote || '—'}</div>
           </div>
-          <div style="display:flex; justify-content:flex-end; align-items:center;">
+          <div class="card-actions-row">
             ${linkHtml}
           </div>
         `;
@@ -1472,10 +1573,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="data-label">Status</div>
             <span class="badge ${isPublished ? 'badge-approved' : 'badge-closed'}">${isPublished ? 'Published' : 'Draft'}</span>
           </div>
-          <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
-            <a href="post.html?id=${b.id}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.5rem 0.8rem; font-size:9px;">View ↗</a>
-            <button data-action="toggle-blog" data-id="${b.id}" class="action-btn ${isPublished ? '' : 'gold'}" style="padding:0.5rem 0.8rem; font-size:9px;">${isPublished ? 'Unpublish' : 'Publish'}</button>
-            <button data-action="delete-blog" data-id="${b.id}" data-title="${safeTitle}" class="action-btn" style="padding:0.5rem 0.8rem; font-size:9px; border-color:var(--accent-red); color:var(--accent-red-text);">Delete</button>
+          <div class="card-actions-row">
+            <a href="post.html?id=${b.id}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; text-decoration:none;">View ↗</a>
+            <button data-action="toggle-blog" data-id="${b.id}" class="action-btn ${isPublished ? '' : 'gold'}" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;">${isPublished ? 'Unpublish' : 'Publish'}</button>
+            <button data-action="delete-blog" data-id="${b.id}" data-title="${safeTitle}" class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-red); color:var(--accent-red-text);">Delete</button>
           </div>
         `;
         container.appendChild(card);
@@ -1548,6 +1649,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contentEl.value = '';
         coverEl.value = '';
         window.loadAdminBlogs();
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         const err = await res?.json().catch(() => ({}));
         if (msg) {
@@ -1574,6 +1676,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await adminFetch(`/admin/blogs/${id}/toggle`, { method: 'PATCH' });
       if (res && res.ok) {
         window.loadAdminBlogs();
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         alert('Could not update publication status.');
       }
@@ -1598,6 +1701,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await adminFetch(`/admin/blogs/${id}`, { method: 'DELETE' });
       if (res && res.ok) {
         window.loadAdminBlogs();
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
         alert('Could not delete article.');
       }
@@ -1798,7 +1902,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const badgeClass = check.status === 'PASS' ? 'diag-pill-pass' : (check.status === 'WARN' ? 'diag-pill-warn' : 'diag-pill-fail');
         const latencyStr = check.latency_ms !== undefined ? ` [${check.latency_ms}ms]` : '';
         logHtml += `
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 0.5rem 0; border-bottom: 1px dashed var(--grid-border);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 0.5rem 0; border-bottom: 1px dashed var(--grid-border); flex-wrap: wrap; gap: 0.5rem;">
             <div>
               <strong style="color:var(--text-primary); text-transform:uppercase;">${window.escapeHtml(key)}</strong>${latencyStr}:
               <span style="color:var(--text-secondary); margin-left: 6px;">${window.escapeHtml(check.detail)}</span>
@@ -1846,6 +1950,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Start with default tab
+  // Start with default tab & refresh operational pulse
   window.switchTab('events');
+  if (typeof window.refreshCuratorialPulse === 'function') {
+    window.refreshCuratorialPulse();
+  }
 });
