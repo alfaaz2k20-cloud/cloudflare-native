@@ -1,13 +1,14 @@
 import { Hono } from 'hono';
 import { Env, JwtUserPayload } from '../types';
 import { requireAuth } from '../middleware/auth';
+import { rateLimiter } from '../middleware/rate_limit';
 import { sendSystemEmail } from '../notifications/email';
 
 export const clubsRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
 
 const VALID_CLUBS = ["Art & Craft", "Film Club", "Photography", "Philosophy", "Literature"];
 
-clubsRouter.post('/apply', requireAuth, async (c) => {
+clubsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs: 60000 }), async (c) => {
   const user = c.get('user');
   const body = await c.req.json().catch(() => ({}));
   const clubName = String(body.club_name || '').trim();

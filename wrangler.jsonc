@@ -41,6 +41,12 @@
 			"id": "a199adbc0269462b9227f908a80025e2"
 		}
 	],
+	"r2_buckets": [
+		{
+			"binding": "VAULT_BUCKET",
+			"bucket_name": "alfaaz-vault"
+		}
+	],
 	"triggers": {
 		"crons": [
 			"0 10 * * SUN"

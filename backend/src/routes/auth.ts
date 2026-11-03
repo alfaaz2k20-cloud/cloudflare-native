@@ -22,7 +22,7 @@ authRouter.post('/send-otp', async (c) => {
   const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
   const turnstileToken = c.req.header('cf-turnstile-response') || body['cf-turnstile-response'] || body.turnstile_token;
   // Trust cf-connecting-ip from Cloudflare edge; fallback to x-forwarded-for only in test environment
-  const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for') || '127.0.0.1') : '127.0.0.1');
+  const ip = c.req.header('cf-connecting-ip') || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1') : '127.0.0.1');
 
   // 1. Bot Verification via Cloudflare Turnstile
   const turnstileValid = await verifyTurnstile(turnstileToken, c.env.TURNSTILE_SECRET_KEY, ip, c.env.ENV);

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Env, Variables } from '../types';
 import { requireAuth } from '../middleware/auth';
+import { rateLimiter } from '../middleware/rate_limit';
 
 const vaultRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -17,7 +18,7 @@ function isValidUrl(val: string): boolean {
 }
 
 // POST /vault/submit - Create creative vault submission
-vaultRouter.post('/submit', requireAuth, async (c) => {
+vaultRouter.post('/submit', requireAuth, rateLimiter({ limit: 10, windowMs: 60000 }), async (c) => {
   const user = c.get('user');
   const contentType = c.req.header('content-type') || '';
 
