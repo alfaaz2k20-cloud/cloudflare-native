@@ -254,6 +254,29 @@ describe('Admin Security & Control Subsystem (Real Route Integration)', () => {
       }, getTestEnv());
       expect(failedApplyRes.status).toBe(400);
 
+      // Attempting to apply with age: 15 but over_19: true on adult cycle must still fail server-side (no asymmetry)
+      const deceptiveApplyRes = await app.request('/exhibitions/apply', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${youthToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          full_name: 'Young Poet',
+          age: 15,
+          address: 'Downtown Srinagar',
+          whatsapp: '+919419099999',
+          genre: 'Poetry',
+          medium: 'Kashmiri Verse',
+          portfolio_url: 'https://example.com/verse',
+          over_19: true,
+          agreed_to_screening: true
+        })
+      }, getTestEnv());
+      expect(deceptiveApplyRes.status).toBe(400);
+      const deceptiveData: any = await deceptiveApplyRes.json();
+      expect(deceptiveData.detail).toMatch(/18 years of age or older/i);
+
       // Admin toggles exhibition to Youth cycle (require_over_18: 0)
       const toggleRes = await app.request('/admin/exhibitions/1/toggle-age', {
         method: 'PATCH',

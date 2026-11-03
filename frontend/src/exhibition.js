@@ -90,7 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
  const checkAgeContainer = document.getElementById('checkAgeContainer');
  const checkAge = document.getElementById('checkAge');
  const checkAgeLabel = document.getElementById('checkAgeLabel');
+ const ageHint = document.getElementById('ageFieldHint');
  if (config.require_over_18 === false) {
+  if (ageHint) ageHint.textContent = 'All ages welcome for youth / open cycle';
   if (checkAgeContainer) {
     checkAgeContainer.style.background = 'rgba(184, 134, 11, 0.05)';
     checkAgeContainer.style.padding = '0.6rem 0.8rem';
@@ -105,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAge.style.display = 'none';
   }
  } else {
+  if (ageHint) ageHint.textContent = 'Must be 18 or older to apply';
   if (checkAgeContainer) {
     checkAgeContainer.style.background = '';
     checkAgeContainer.style.padding = '';
@@ -176,17 +179,29 @@ document.addEventListener('DOMContentLoaded', () => {
  return;
  }
 
+ const ageVal = parseInt(document.getElementById('age').value, 10);
+ const isAdultCycle = !activeExhibitionConfig || activeExhibitionConfig.require_over_18 !== false;
+ if (isAdultCycle && ageVal < 18) {
+ if (msg) {
+ msg.style.color = 'var(--accent-red-text)';
+ msg.textContent = 'This exhibition cycle requires participants to be 18 years of age or older.';
+ }
+ return;
+ }
+
+ const isOver18Checked = isAdultCycle ? Boolean(document.getElementById('checkAge')?.checked) : true;
  const turnstileToken = window.turnstile ? (window.turnstile.getResponse() || '') : (document.querySelector('[name="cf-turnstile-response"]')?.value || '');
 
  const payload = {
  full_name: document.getElementById('fname').value.trim(),
- age: parseInt(document.getElementById('age').value),
+ age: ageVal,
  address: document.getElementById('address').value.trim(),
  whatsapp: document.getElementById('whatsapp').value.trim(),
  genre: document.getElementById('genre').value.trim(),
  medium: document.getElementById('medium').value.trim(),
  portfolio_url: uploadedPdfUrl,
- over_19: activeExhibitionConfig && activeExhibitionConfig.require_over_18 === false ? true : Boolean(document.getElementById('checkAge')?.checked),
+ over_18: isOver18Checked,
+ over_19: isOver18Checked,
  agreed_to_screening: document.getElementById('checkScreen').checked,
  applicant_note: document.getElementById('note').value.trim() || null,
  turnstile_token: turnstileToken

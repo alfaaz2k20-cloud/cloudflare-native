@@ -1051,6 +1051,24 @@ adminRouter.post('/diagnostics/probe', async (c) => {
     results.security = { status: 'PASS', detail: 'Cryptographic secrets and Turnstile configuration conform to security guidelines.' };
   }
 
+  // Probe 5: Federated Identity Gate (Google Identity Services)
+  if (c.env.GOOGLE_CLIENT_ID) {
+    results.google_identity = {
+      status: 'PASS',
+      detail: `Configured with client ID (${c.env.GOOGLE_CLIENT_ID.slice(0, 16)}...). 1-Tap Google authentication is active.`
+    };
+  } else if (c.env.ENV === 'production') {
+    results.google_identity = {
+      status: 'WARN',
+      detail: 'GOOGLE_CLIENT_ID is unconfigured in production. 1-Tap Google OAuth safely fails closed (401) until real client ID is provisioned.'
+    };
+  } else {
+    results.google_identity = {
+      status: 'PASS',
+      detail: 'Using local test client ID ("alfaaz-collective").'
+    };
+  }
+
   const isHealthy = !Object.values(results).some(r => r.status === 'FAIL');
 
   return c.json({

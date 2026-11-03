@@ -154,9 +154,9 @@ export async function verifyFederatedToken(
   // Issuer check: supports Google Identity Services (GIS) / direct Google OAuth
   const isGis = payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com';
   if (isGis) {
-    // CRITICAL SECURITY FIX: Prevent Audience Confusion & Token Replay Attacks
-    // Validates that Google ID tokens were explicitly issued for our client ID
-    if (expectedProjectId && payload.aud !== expectedProjectId) {
+    // CRITICAL SECURITY FIX: Strict Fail-Closed Audience Validation
+    // Validates that Google ID tokens were explicitly issued for our client ID; rejects if clientId is missing or mismatched
+    if (!expectedProjectId || payload.aud !== expectedProjectId) {
       return null;
     }
     if (!payload.email_verified && payload.email_verified !== 'true' as any) {

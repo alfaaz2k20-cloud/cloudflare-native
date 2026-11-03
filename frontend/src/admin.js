@@ -184,7 +184,16 @@ document.addEventListener('DOMContentLoaded', () => {
   window.refreshCuratorialPulse = async function() {
     try {
       const res = await adminFetch('/admin/diagnostics/system');
-      if (!res || !res.ok) return;
+      if (!res || !res.ok) {
+        const cycleTitleEl = document.getElementById('pulseCycleTitle');
+        if (cycleTitleEl) cycleTitleEl.textContent = 'Portal Offline';
+        const healthEl = document.getElementById('pulseSystemHealth');
+        if (healthEl) {
+          healthEl.textContent = res ? `Error (${res.status})` : 'Offline';
+          healthEl.style.color = 'var(--accent-red-text)';
+        }
+        return;
+      }
       const data = await res.json();
       const m = data.entity_metrics || {};
       const b = data.bindings || {};
@@ -241,6 +250,13 @@ document.addEventListener('DOMContentLoaded', () => {
       setBadge('count-diagnostics', b.d1_connected ? 'OK' : '!');
     } catch (e) {
       console.warn('Could not refresh curatorial pulse:', e);
+      const cycleTitleEl = document.getElementById('pulseCycleTitle');
+      if (cycleTitleEl && cycleTitleEl.textContent === 'Loading...') cycleTitleEl.textContent = 'Portal Offline';
+      const healthEl = document.getElementById('pulseSystemHealth');
+      if (healthEl && healthEl.textContent === 'Checking...') {
+        healthEl.textContent = 'Network Disconnected';
+        healthEl.style.color = 'var(--accent-red-text)';
+      }
     }
   };
 
