@@ -3,74 +3,135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#2d2722">
-  <title>Offline - Alfaaz Collective</title>
+  <meta name="theme-color" content="#2d312e">
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <title>Offline Archive // مخزنِ آف لائن — Alfaaz Collective</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Noto+Nastaliq+Urdu:wght@400..700&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light;
-      --bg: #f5f0e7;
-      --ink: #2d2722;
-      --muted: #6f6257;
-      --accent: #bd6f5d;
-      --line: rgba(45, 39, 34, 0.18);
+      --bg-primary: #f4f1ea;
+      --text-primary: #2d312e;
+      --text-secondary: #6e726e;
+      --accent-gold: #8c6d3b;
+      --grid-border: rgba(45, 49, 46, 0.14);
+      --font-heading: 'Alegreya', 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-urdu: 'Noto Nastaliq Urdu', serif;
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
       min-height: 100vh;
       display: grid;
       place-items: center;
-      padding: 2rem;
-      background: var(--bg);
-      color: var(--ink);
-      font-family: Georgia, "Times New Roman", serif;
+      padding: 1.5rem;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      line-height: 1.6;
     }
-    main {
-      width: min(100%, 620px);
-      border: 1px solid var(--line);
-      padding: clamp(2rem, 8vw, 4rem);
+    .offline-frame {
+      width: min(100%, 580px);
+      border: 1px solid var(--grid-border);
+      padding: clamp(2rem, 6vw, 3.5rem);
       text-align: center;
-      background: rgba(255, 255, 255, 0.32);
+      background: rgba(255, 255, 255, 0.45);
+      position: relative;
     }
-    .eyebrow {
-      margin: 0 0 1rem;
-      color: var(--accent);
-      font: 700 0.72rem Arial, sans-serif;
-      letter-spacing: 0.22em;
+    .offline-frame::before {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      right: 6px;
+      bottom: 6px;
+      border: 1px solid var(--grid-border);
+      pointer-events: none;
+    }
+    .kicker {
+      font-size: 0.68rem;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
+      color: var(--accent-gold);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .urdu-subtitle {
+      font-family: var(--font-urdu);
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      direction: rtl;
+      margin-bottom: 1.25rem;
+      line-height: 1.9;
     }
     h1 {
-      margin: 0;
-      font-size: clamp(2.4rem, 8vw, 4rem);
+      font-family: var(--font-heading);
+      font-size: clamp(2.2rem, 6vw, 3.2rem);
       font-weight: 400;
-      line-height: 0.96;
+      line-height: 1.1;
       text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 1.25rem;
     }
-    p {
-      margin: 1.5rem auto 0;
-      max-width: 32rem;
-      color: var(--muted);
-      font: 0.95rem/1.8 Arial, sans-serif;
+    p.description {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      max-width: 28rem;
+      margin: 0 auto 2rem;
+      line-height: 1.7;
     }
-    a {
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+      margin-top: 1.5rem;
+    }
+    .btn {
       display: inline-block;
-      margin-top: 2rem;
-      border: 1px solid var(--ink);
-      padding: 0.8rem 1.2rem;
-      color: var(--ink);
-      font: 700 0.68rem Arial, sans-serif;
+      padding: 0.75rem 1.4rem;
+      font-size: 0.72rem;
+      font-weight: 600;
       letter-spacing: 0.16em;
-      text-decoration: none;
       text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .btn-primary {
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      border: 1px solid var(--text-primary);
+    }
+    .btn-primary:hover {
+      background: var(--accent-gold);
+      border-color: var(--accent-gold);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--text-primary);
+    }
+    .btn-secondary:hover {
+      background: rgba(45, 49, 46, 0.06);
     }
   </style>
 </head>
 <body>
-  <main>
-    <p class="eyebrow">Offline Archive</p>
+  <main class="offline-frame">
+    <p class="kicker">Archive Disconnected</p>
     <h1>Alfaaz<br>Collective</h1>
-    <p>You are offline. Previously visited pages may still be available, and live notices or dashboard actions will reconnect when the network returns.</p>
-    <a href="/">Return Home</a>
+    <p class="urdu-subtitle">رابطہ منقطع ہے // مخزن آف لائن دستیاب ہے</p>
+    <p class="description">
+      You are currently offline. Pages you have already explored remain accessible in your local cache. Live notices, submissions, and account telemetry will reconnect automatically when signal returns.
+    </p>
+    <div class="action-group">
+      <button class="btn btn-primary" onclick="window.location.reload()">Retry Connection</button>
+      <a class="btn btn-secondary" href="/">Return Home</a>
+    </div>
   </main>
 </body>
 </html>

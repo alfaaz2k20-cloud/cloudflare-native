@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'alfaaz-pwa-v3';
+const CACHE_VERSION = 'alfaaz-pwa-v4';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -16,6 +16,7 @@ const PRECACHE_URLS = [
   '/admin.html',
   '/recruit.html',
   '/research.html',
+  '/tchandervar/index.html',
   '/offline.html',
   '/manifest.webmanifest',
   '/images/favicon.ico',
@@ -100,11 +101,11 @@ async function networkFirstNavigation(request) {
     }
     return response;
   } catch (error) {
-    return (
-      await caches.match(request) ||
-      await caches.match('/index.html') ||
-      await caches.match('/offline.html')
-    );
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) return cachedResponse;
+    const offlineShell = await caches.match('/offline.html');
+    if (offlineShell) return offlineShell;
+    return (await caches.match('/index.html')) || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
   }
 }
 
@@ -126,7 +127,7 @@ async function networkFirstStatic(request) {
     }
     return response;
   } catch (error) {
-    return await cache.match(request) || new Response('', { status: 504, statusText: 'Offline' });
+    return (await cache.match(request)) || new Response('', { status: 504, statusText: 'Offline' });
   }
 }
 
@@ -143,7 +144,7 @@ async function staleWhileRevalidate(request) {
     .catch(() => null);
 
   if (cached) return cached;
-  return await network || new Response('', { status: 504, statusText: 'Offline' });
+  return (await network) || new Response('', { status: 504, statusText: 'Offline' });
 }
 
 self.addEventListener('fetch', (event) => {

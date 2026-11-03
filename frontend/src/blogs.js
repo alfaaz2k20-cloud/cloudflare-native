@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const readTime = estimateReadTime(blog.excerpt);
 
       return `
-        <a href="post.html?id=${blog.id}" class="archive-card fade-in">
+        <a href="post.html?id=${blog.id}" class="archive-card">
           <div class="archive-meta">
             <span>${dateFormatted}</span>
             <span>//</span>
