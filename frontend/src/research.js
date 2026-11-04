@@ -53,19 +53,19 @@ async function loadSessionsList(selectedStatus = '') {
     const sessions = await resp.json();
 
     const filterToolbar = `
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white border border-[var(--grid-border)] p-4">
+    <div class="panel p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <div>
         <h2 class="text-base sm:text-lg text-[var(--text-primary)] font-serif">Applicant Assessment Records</h2>
-        <span class="text-xs text-black">Ordered strictly by submission time</span>
+        <span class="text-xs text-[var(--text-secondary)] tracking-wide">Ordered strictly by submission time &middot; Real-time D1 Registry</span>
       </div>
       <div class="flex items-center gap-3 flex-wrap">
-        <button id="manageInterviewHoursBtn" class="px-2.5 py-1 text-xs border border-[var(--grid-border)] bg-[#faf8f5] text-[var(--text-primary)] hover:bg-[#eae6dc] transition-colors flex items-center gap-1.5" title="Configure interview time windows and working days">
+        <button id="manageInterviewHoursBtn" class="action-btn gold" style="padding: 0.45rem 0.9rem; font-size: 10px; letter-spacing: 1.5px; min-height: 34px;" title="Configure interview time windows and working days">
           <span>⏱️</span>
           <span>Interview Hours</span>
         </button>
-        <div class="flex items-center gap-1.5">
-          <label for="statusFilter" class="text-xs uppercase tracking-wider text-black">Session Status:</label>
-          <select id="statusFilter" class="px-2 py-1 text-xs border border-[var(--grid-border)] bg-[#faf8f5] text-[var(--text-primary)] focus:outline-none">
+        <div class="flex items-center gap-2">
+          <label for="statusFilter" class="data-label text-[10px] uppercase tracking-wider text-[var(--text-secondary)] mb-0">Status:</label>
+          <select id="statusFilter" class="px-2.5 py-1 text-xs border border-[var(--grid-border)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-gold)]">
             <option value="" ${selectedStatus === '' ? 'selected' : ''}>All Operational Statuses</option>
             <option value="CONSENTED" ${selectedStatus === 'CONSENTED' ? 'selected' : ''}>Consented</option>
             <option value="SJT" ${selectedStatus === 'SJT' ? 'selected' : ''}>SJT</option>
@@ -80,9 +80,9 @@ async function loadSessionsList(selectedStatus = '') {
     if (!sessions || sessions.length === 0) {
       container.innerHTML = `
       ${filterToolbar}
-      <div class="p-12 text-center bg-white border border-[var(--grid-border)] mt-4 space-y-2">
-        <div class="text-[var(--text-primary)] font-medium">No assessment sessions found for this status.</div>
-        <div class="text-xs text-stone-500 max-w-md mx-auto">
+      <div class="panel p-12 text-center mt-4 space-y-2">
+        <div class="text-[var(--text-primary)] font-serif text-base">No assessment sessions found for this status.</div>
+        <div class="text-xs text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">
           Candidate records will appear here as applicants consent and begin their assessment journeys. You can also select &ldquo;All Operational Statuses&rdquo; to review in-progress candidate sessions.
         </div>
       </div>
@@ -99,24 +99,24 @@ async function loadSessionsList(selectedStatus = '') {
     const rowsHtml = sessions.map(s => {
       const booking = s.interview_booking;
       const bookingBadge = booking
-        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-[#eaf5ea] border border-[#bce0bc] text-[#1e6624] text-[10px] font-medium" title="Booked slot">
+        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--bg-primary)] border border-[var(--grid-border)] text-[var(--accent-green-text)] text-[10px] font-medium" title="Booked slot">
             <span>📅</span>
             <span>${window.escapeHtml(booking.slot_display || `${booking.slot_date} ${booking.slot_time}`)}</span>
           </span>`
-        : `<span class="text-stone-400 text-[10px] italic">Not scheduled</span>`;
+        : `<span class="text-[var(--text-secondary)] text-[10px] italic">Not scheduled</span>`;
 
       return `
       <tr class="border-b border-[var(--grid-border)] hover:bg-[#faf8f5] transition-colors">
         <td class="p-4 text-sm font-medium text-[var(--text-primary)]">${window.escapeHtml(s.full_name || 'Anonymous Applicant')}</td>
-        <td class="p-4 text-xs text-black">${window.escapeHtml(s.email || '—')}</td>
-        <td class="p-4 text-xs text-black">${s.linkedin_url ? `<a href="${window.escapeHtml(s.linkedin_url.startsWith('http') ? s.linkedin_url : 'https://' + s.linkedin_url)}" target="_blank" rel="noopener noreferrer" class="text-[var(--accent-gold)] hover:underline inline-flex items-center gap-1" title="${window.escapeHtml(s.linkedin_url)}">Link &nearr;</a>` : '—'}</td>
+        <td class="p-4 text-xs text-[var(--text-secondary)]">${window.escapeHtml(s.email || '—')}</td>
+        <td class="p-4 text-xs text-[var(--text-secondary)]">${s.linkedin_url ? `<a href="${window.escapeHtml(s.linkedin_url.startsWith('http') ? s.linkedin_url : 'https://' + s.linkedin_url)}" target="_blank" rel="noopener noreferrer" class="text-[var(--accent-gold)] hover:underline inline-flex items-center gap-1" title="${window.escapeHtml(s.linkedin_url)}">Link &nearr;</a>` : '—'}</td>
         <td class="p-4 text-xs">${bookingBadge}</td>
-        <td class="p-4 text-xs text-black">${s.created_at ? new Date(s.created_at).toLocaleString() : '—'}</td>
+        <td class="p-4 text-xs text-[var(--text-secondary)]">${s.created_at ? new Date(s.created_at).toLocaleString() : '—'}</td>
         <td class="p-4 text-xs">
-          <span class="px-2 py-0.5 bg-[#f4f1ea] border border-[var(--grid-border)] text-[10px] uppercase tracking-wider">${s.status}</span>
+          <span class="px-2 py-0.5 bg-[var(--bg-primary)] border border-[var(--grid-border)] text-[10px] uppercase tracking-wider">${s.status}</span>
         </td>
         <td class="p-4 text-right">
-          <button class="view-session-btn px-3 py-1 bg-[var(--text-primary)] text-white text-[10px] uppercase tracking-widest hover:bg-[var(--accent-gold)] transition-colors" data-id="${s.session_id}">
+          <button class="view-session-btn action-btn" style="padding: 0.4rem 0.8rem; font-size: 10px; letter-spacing: 1.5px; min-height: 32px;" data-id="${s.session_id}">
             View Evidence &rarr;
           </button>
         </td>
@@ -127,11 +127,11 @@ async function loadSessionsList(selectedStatus = '') {
     container.innerHTML = `
     <div class="space-y-4">
       ${filterToolbar}
-      <div class="bg-white border border-[var(--grid-border)] p-6 space-y-4">
+      <div class="panel p-0 overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-[#faf8f5] border-b border-[var(--grid-border)] text-[10px] uppercase tracking-wider text-black">
+              <tr class="bg-[var(--bg-primary)] border-b border-[var(--grid-border)] text-[10px] uppercase tracking-wider text-[var(--text-secondary)] font-semibold">
                 <th class="p-4">Applicant Name</th>
                 <th class="p-4">Email</th>
                 <th class="p-4">LinkedIn / CV</th>
@@ -169,10 +169,10 @@ async function loadSessionsList(selectedStatus = '') {
   } catch (err) {
     console.error('Failed to load applicant assessment sessions:', err);
     container.innerHTML = `
-      <div class="p-8 text-center bg-white border border-[var(--grid-border)] space-y-3">
-        <div class="text-red-700 font-medium">Unable to load applicant assessment sessions.</div>
-        <div class="text-xs text-stone-500">Please check your network connection or verify that the service is running.</div>
-        <button id="retrySessionsBtn" class="px-4 py-2 bg-[var(--text-primary)] text-white text-xs uppercase tracking-widest hover:bg-[var(--accent-gold)] transition-colors">
+      <div class="panel p-8 text-center space-y-3">
+        <div class="text-[var(--accent-red-text)] font-medium">Unable to load applicant assessment sessions.</div>
+        <div class="text-xs text-[var(--text-secondary)]">Please check your network connection or verify that the service is running.</div>
+        <button id="retrySessionsBtn" class="action-btn" style="padding: 0.5rem 1.2rem; font-size: 10px; letter-spacing: 1.5px;">
           Retry
         </button>
       </div>
@@ -187,9 +187,9 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
 
   container.innerHTML = `
   <div class="mb-4">
-    <button id="backToRegistryLoadingBtn" class="text-xs uppercase tracking-widest text-black hover:text-[var(--accent-gold)]">&larr; Back to Registry</button>
+    <button id="backToRegistryLoadingBtn" class="text-xs uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--accent-gold)] font-medium transition-colors">&larr; Back to Registry</button>
   </div>
-  <div class="p-12 text-center text-[var(--text-secondary)] font-serif text-lg bg-white border border-[var(--grid-border)]">
+  <div class="panel p-12 text-center text-[var(--text-secondary)] font-serif text-lg">
     Loading applicant dossier${forceRecompute ? ' (re-analyzing telemetry)...' : '...'}
   </div>
   `;
@@ -233,19 +233,19 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
     const completeness = summary.completeness || 'INSUFFICIENT';
 
     const levelBadge = (lvl) => {
-      if (lvl === 'RELATIVELY_STRONG') return '<span class="px-2 py-0.5 bg-[#f5efe6] text-[#8c651e] border border-[#d4be98] text-[10px] font-semibold uppercase tracking-wider">Relatively Strong</span>';
-      if (lvl === 'RELATIVELY_LOWER') return '<span class="px-2 py-0.5 bg-gray-100 text-black border border-gray-200 text-[10px] uppercase tracking-wider">Relatively Lower</span>';
-      if (lvl === 'ABOUT_EQUAL') return '<span class="px-2 py-0.5 bg-gray-100 text-gray-600 border border-gray-300 text-[10px] uppercase tracking-wider">About Equal</span>';
-      if (lvl === 'RELATIVELY_MIDDLE') return '<span class="px-2 py-0.5 bg-gray-50 text-gray-700 border border-gray-300 text-[10px] uppercase tracking-wider">Relatively Middle</span>';
-      return '<span class="px-2 py-0.5 bg-gray-50 text-black border border-gray-200 text-[10px] uppercase tracking-wider">Insufficient</span>';
+      if (lvl === 'RELATIVELY_STRONG') return '<span class="px-2 py-0.5 bg-[var(--bg-primary)] text-[var(--accent-gold-text)] border border-[var(--accent-gold)] text-[10px] font-semibold uppercase tracking-wider">Relatively Strong</span>';
+      if (lvl === 'RELATIVELY_LOWER') return '<span class="px-2 py-0.5 bg-[var(--bg-primary)] text-[var(--text-secondary)] border border-[var(--grid-border)] text-[10px] uppercase tracking-wider">Relatively Lower</span>';
+      if (lvl === 'ABOUT_EQUAL') return '<span class="px-2 py-0.5 bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--grid-border)] text-[10px] uppercase tracking-wider">About Equal</span>';
+      if (lvl === 'RELATIVELY_MIDDLE') return '<span class="px-2 py-0.5 bg-[var(--bg-primary)] text-[var(--text-secondary)] border border-[var(--grid-border)] text-[10px] uppercase tracking-wider">Relatively Middle</span>';
+      return '<span class="px-2 py-0.5 bg-[var(--bg-primary)] text-[var(--text-secondary)] border border-[var(--grid-border)] text-[10px] uppercase tracking-wider">Insufficient</span>';
     };
 
     const relBadge = (rel) => {
-      if (rel === 'ALIGNED') return '<span class="text-green-700 font-semibold uppercase text-[10px] tracking-wider">Aligned</span>';
+      if (rel === 'ALIGNED') return '<span class="text-[var(--accent-green-text)] font-semibold uppercase text-[10px] tracking-wider">Aligned</span>';
       if (rel === 'PARTLY_ALIGNED') return '<span class="text-[var(--text-primary)] font-semibold uppercase text-[10px] tracking-wider">Partly Aligned</span>';
-      if (rel === 'DIFFERENT') return '<span class="text-purple-700 font-semibold uppercase text-[10px] tracking-wider">Different</span>';
-      if (rel === 'NOT_ENOUGH_EVIDENCE') return '<span class="text-stone-500 text-[10px]">Not Enough Evidence</span>';
-      return '<span class="text-black text-[10px]">Not Available</span>';
+      if (rel === 'DIFFERENT') return '<span class="text-[var(--accent-gold-text)] font-semibold uppercase text-[10px] tracking-wider">Different</span>';
+      if (rel === 'NOT_ENOUGH_EVIDENCE') return '<span class="text-[var(--text-secondary)] text-[10px]">Not Enough Evidence</span>';
+      return '<span class="text-[var(--text-secondary)] text-[10px]">Not Available</span>';
     };
 
     const getDossierInterpretation = (d) => {
@@ -384,22 +384,22 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
         const interp = getDossierInterpretation(d);
         const rankNum = index + 1;
 
-        const sjtColStyle = mode === 'sjt' ? 'font-bold bg-[#faf8f5]' : '';
-        const gameColStyle = mode === 'game' ? 'font-bold bg-[#faf8f5]' : '';
-        const deltaColStyle = mode === 'delta' ? 'font-bold bg-[#faf8f5]' : '';
+        const sjtColStyle = mode === 'sjt' ? 'font-bold bg-[var(--bg-primary)]' : '';
+        const gameColStyle = mode === 'game' ? 'font-bold bg-[var(--bg-primary)]' : '';
+        const deltaColStyle = mode === 'delta' ? 'font-bold bg-[var(--bg-primary)]' : '';
 
         return `
         <tr class="group border-b border-[var(--grid-border)] hover:bg-[#faf9f6] transition-colors">
-          <td scope="row" class="p-3 text-center font-mono text-xs font-semibold text-stone-500 w-12 min-w-[48px] max-w-[48px] sticky-col-rank bg-white group-hover:bg-[#faf9f6] transition-colors">${rankNum}</td>
-          <td class="p-3 font-medium text-[var(--text-primary)] min-w-[200px] sticky-col-dim bg-white group-hover:bg-[#faf9f6] transition-colors">
+          <td scope="row" class="p-3 text-center font-mono text-xs font-semibold text-[var(--text-secondary)] w-12 min-w-[48px] max-w-[48px] sticky-col-rank bg-[var(--bg-secondary)] group-hover:bg-[#faf9f6] transition-colors">${rankNum}</td>
+          <td class="p-3 font-medium text-[var(--text-primary)] min-w-[200px] sticky-col-dim bg-[var(--bg-secondary)] group-hover:bg-[#faf9f6] transition-colors">
             <div>${safeName}</div>
-            <div class="text-[10px] text-stone-600 mt-0.5 line-clamp-2" title="${obs}">${obs}</div>
+            <div class="text-[10px] text-[var(--text-secondary)] mt-0.5 line-clamp-2" title="${obs}">${obs}</div>
           </td>
           <td class="p-3 text-center font-mono text-xs ${sjtColStyle}">${sjtRel}</td>
           <td class="p-3 text-center font-mono text-xs ${gameColStyle}">${gameRel}</td>
           <td class="p-3 text-center font-mono text-xs ${deltaColStyle}">${deltaDisp}</td>
           <td class="p-3 text-center text-xs whitespace-nowrap">${relDisp}</td>
-          <td class="p-3 text-center text-[10px] uppercase text-black font-semibold whitespace-nowrap">${confDisp}</td>
+          <td class="p-3 text-center text-[10px] uppercase text-[var(--text-primary)] font-semibold whitespace-nowrap">${confDisp}</td>
           <td class="p-3 text-xs text-[var(--text-primary)] leading-relaxed min-w-[280px]">${interp}</td>
         </tr>
         `;
@@ -479,16 +479,16 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
     const renderTaskTable = (tasks, roleLabel, badgeStyle) => {
       if (!tasks || tasks.length === 0) return '';
       return `
-      <div class="mb-4">
-        <div class="flex justify-between items-baseline mb-2">
+      <div class="panel p-0 overflow-hidden mb-5">
+        <div class="p-3 sm:p-4 bg-[var(--bg-primary)] border-b border-[var(--grid-border)] flex justify-between items-center">
           <h4 class="text-xs font-semibold tracking-wider uppercase text-[var(--text-primary)] flex items-center gap-2">
             <span class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider" style="${badgeStyle}">${roleLabel}</span>
             <span>Activities (${tasks.length})</span>
           </h4>
         </div>
-        <div class="overflow-x-auto border border-[var(--grid-border)] bg-white">
+        <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-[#f0eeea] text-[10px] uppercase tracking-wider text-black">
+            <thead class="bg-[var(--bg-primary)] text-[10px] uppercase tracking-wider text-[var(--text-secondary)] font-semibold border-b border-[var(--grid-border)]">
               <tr>
                 <th class="p-3">Activity</th>
                 <th class="p-3">World</th>
@@ -499,13 +499,13 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
             <tbody>
               ${tasks.map(t => {
                 const statusBg = (t.status === 'RECORDED' || t.status === 'USABLE') ? 'background:#eaf5ea; color:#1e6624; border:1px solid #bce0bc;' : (t.status === 'NOT_DERIVED' ? 'background:#f0eeea; color:var(--text-secondary); border:1px solid var(--grid-border);' : 'background:#fdf2e9; color:#9c4221; border:1px solid #f0cdb8;');
-                const dispText = t.status === 'NOT_DERIVED' ? '<span class="text-black italic">Unattempted &middot; Reserved in Research Bank</span>' : window.escapeHtml(t.display_text || '—');
+                const dispText = t.status === 'NOT_DERIVED' ? '<span class="text-[var(--text-secondary)] italic">Unattempted &middot; Reserved in Research Bank</span>' : window.escapeHtml(t.display_text || '—');
                 return `
-                <tr class="border-b border-[var(--grid-border)]">
+                <tr class="border-b border-[var(--grid-border)] hover:bg-[#faf9f6] transition-colors">
                   <td class="p-3 font-semibold text-[var(--text-primary)]">${t.game_id}: ${window.escapeHtml(t.game_name || t.game_id)}</td>
-                  <td class="p-3 text-black">${t.world_id}: ${window.escapeHtml(t.world_name || '')}</td>
+                  <td class="p-3 text-[var(--text-secondary)]">${t.world_id}: ${window.escapeHtml(t.world_name || '')}</td>
                   <td class="p-3"><span class="badge" style="font-size:10px; ${statusBg}">${t.status}</span></td>
-                  <td class="p-3 text-black leading-relaxed">${dispText}</td>
+                  <td class="p-3 text-[var(--text-primary)] leading-relaxed">${dispText}</td>
                 </tr>
                 `;
               }).join('')}
@@ -517,80 +517,80 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
     };
 
     container.innerHTML = `
-    <div class="mb-4 flex justify-between items-center">
-      <button id="backToRegistryBtn" class="text-xs uppercase tracking-widest text-black hover:text-[var(--accent-gold)]">&larr; Back to Registry</button>
-      <button id="recomputeTelemetryBtn" class="px-3 py-1 bg-[#f4f1ea] border border-[var(--grid-border)] text-[10px] uppercase tracking-wider hover:bg-[#eae6dc] transition-colors" title="Re-extracts and re-scores behavioral game telemetry from scratch (opt-in recalculation)">
+    <div class="mb-4 flex justify-between items-center flex-wrap gap-2">
+      <button id="backToRegistryBtn" class="text-xs uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--accent-gold)] font-medium inline-flex items-center gap-1.5 transition-colors">&larr; Back to Registry</button>
+      <button id="recomputeTelemetryBtn" class="action-btn gold" style="padding: 0.45rem 0.9rem; font-size: 10px; letter-spacing: 1.5px; min-height: 34px;" title="Re-extracts and re-scores behavioral game telemetry from scratch (opt-in recalculation)">
         Re-analyze Telemetry
       </button>
     </div>
     
-    <div class="bg-[#faf8f5] border border-[var(--grid-border)] p-6 mb-4">
-      <h3 class="text-xs font-semibold tracking-widest uppercase text-[var(--accent-gold)] mb-4">1. Candidate & Session Overview</h3>
+    <div class="panel p-6 mb-5">
+      <div class="section-label" style="color: var(--accent-gold-text); margin-bottom: 1rem;">1. Candidate &amp; Session Overview</div>
       <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-sm">
-        <div><strong class="block text-black text-xs uppercase tracking-wider mb-1">Name</strong>${candidateName}</div>
-        <div><strong class="block text-black text-xs uppercase tracking-wider mb-1">Email</strong>${candidateEmail}</div>
+        <div><span class="data-label">Name</span><div class="font-medium text-[var(--text-primary)]">${candidateName}</div></div>
+        <div><span class="data-label">Email</span><div class="text-xs text-[var(--text-secondary)] truncate" title="${candidateEmail}">${candidateEmail}</div></div>
         <div>
-          <strong class="block text-black text-xs uppercase tracking-wider mb-1">WhatsApp / Contact</strong>
-          <div>${candidatePhone}</div>
+          <span class="data-label">WhatsApp / Contact</span>
+          <div class="text-xs text-[var(--text-primary)]">${candidatePhone}</div>
           ${whatsappDirectLink}
         </div>
         <div>
-          <strong class="block text-black text-xs uppercase tracking-wider mb-1">Interview Slot</strong>
-          ${booking ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-[#eaf5ea] border border-[#bce0bc] text-[#1e6624] text-xs font-semibold">📅 ${window.escapeHtml(booking.slot_display || `${booking.slot_date} ${booking.slot_time}`)}</span>` : '<span class="text-stone-400 text-xs italic">Not scheduled</span>'}
+          <span class="data-label">Interview Slot</span>
+          ${booking ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--bg-primary)] border border-[var(--grid-border)] text-[var(--accent-green-text)] text-xs font-semibold">📅 ${window.escapeHtml(booking.slot_display || `${booking.slot_date} ${booking.slot_time}`)}</span>` : '<span class="text-[var(--text-secondary)] text-xs italic">Not scheduled</span>'}
         </div>
-        <div><strong class="block text-black text-xs uppercase tracking-wider mb-1">LinkedIn / CV</strong>${candidateLinkedin ? `<a href="${candidateLinkedin.startsWith('http') ? candidateLinkedin : 'https://' + candidateLinkedin}" target="_blank" rel="noopener noreferrer" class="text-[var(--accent-gold)] hover:underline block truncate" title="${candidateLinkedin}">Open Link &nearr;</a>` : '<span class="text-stone-400">—</span>'}</div>
-        <div><strong class="block text-black text-xs uppercase tracking-wider mb-1">Session Duration</strong>${durationMin}</div>
-        <div><strong class="block text-black text-xs uppercase tracking-wider mb-1">Battery Version</strong><span class="badge" style="font-size:10px; background:#f0eeea; color:var(--text-primary); border:1px solid var(--grid-border);">${batteryVer}</span></div>
+        <div><span class="data-label">LinkedIn / CV</span>${candidateLinkedin ? `<a href="${candidateLinkedin.startsWith('http') ? candidateLinkedin : 'https://' + candidateLinkedin}" target="_blank" rel="noopener noreferrer" class="text-[var(--accent-gold)] hover:underline block truncate" title="${candidateLinkedin}">Open Link &nearr;</a>` : '<span class="text-[var(--text-secondary)]">—</span>'}</div>
+        <div><span class="data-label">Session Duration</span><div class="text-xs text-[var(--text-primary)]">${durationMin}</div></div>
+        <div><span class="data-label">Battery Version</span><span class="badge" style="font-size:10px; background:var(--bg-primary); color:var(--text-primary); border:1px solid var(--grid-border);">${batteryVer}</span></div>
       </div>
       ${booking ? `
-      <div class="mt-4 pt-3 border-t border-[var(--grid-border)] flex flex-wrap items-center justify-between gap-3 text-xs bg-white p-3 border border-[#bce0bc]">
-        <div class="flex items-center gap-2 text-[#1e6624]">
+      <div class="mt-4 pt-3 border-t border-[var(--grid-border)] flex flex-wrap items-center justify-between gap-3 text-xs bg-[var(--bg-primary)] p-3 border border-[var(--grid-border)]">
+        <div class="flex items-center gap-2 text-[var(--accent-green-text)]">
           <span class="text-base">📅</span>
           <div>
             <span class="font-semibold uppercase tracking-wider text-[10px]">Confirmed Interview Slot:</span>
-            <span class="font-serif text-sm ml-1 text-black">${window.escapeHtml(booking.slot_display || `${booking.slot_date} at ${booking.slot_time}`)}</span>
+            <span class="font-serif text-sm ml-1 text-[var(--text-primary)]">${window.escapeHtml(booking.slot_display || `${booking.slot_date} at ${booking.slot_time}`)}</span>
           </div>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-          <button id="rescheduleBtn" class="px-2.5 py-1 bg-[var(--text-primary)] text-white text-[11px] font-medium hover:bg-[var(--accent-gold)] transition-colors inline-flex items-center gap-1">Change / Reschedule Slot</button>
+          <button id="rescheduleBtn" class="action-btn" style="padding: 0.4rem 0.8rem; font-size: 10px; letter-spacing: 1px; min-height: 32px;">Change / Reschedule Slot</button>
           ${cleanPhone ? `<a href="https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello ${applicant.full_name || ''}, this is the Alfaaz Collective recruitment team confirming your interview slot: ${booking.slot_display || `${booking.slot_date} ${booking.slot_time}`}.`)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 bg-[#25D366] text-white rounded text-[11px] font-medium hover:opacity-90 inline-flex items-center gap-1">Open WhatsApp Chat &nearr;</a>` : ''}
-          <a href="mailto:${window.escapeHtml(applicant.email || '')}?subject=${encodeURIComponent(`Alfaaz Collective — Interview Confirmation: ${booking.slot_display || booking.slot_date}`)}" class="px-2.5 py-1 border border-[var(--grid-border)] bg-[#faf8f5] text-black text-[11px] font-medium hover:bg-stone-100">Send Email</a>
+          <a href="mailto:${window.escapeHtml(applicant.email || '')}?subject=${encodeURIComponent(`Alfaaz Collective — Interview Confirmation: ${booking.slot_display || booking.slot_date}`)}" class="action-btn gold" style="padding: 0.4rem 0.8rem; font-size: 10px; letter-spacing: 1px; min-height: 32px; text-decoration: none;">Send Email</a>
         </div>
       </div>
       ` : `
-      <div class="mt-4 pt-3 border-t border-[var(--grid-border)] flex flex-wrap items-center justify-between gap-3 text-xs bg-white p-3 border border-[var(--grid-border)]">
-        <div class="text-stone-500 italic">Interview timing is currently unassigned for this candidate.</div>
+      <div class="mt-4 pt-3 border-t border-[var(--grid-border)] flex flex-wrap items-center justify-between gap-3 text-xs bg-[var(--bg-primary)] p-3 border border-[var(--grid-border)]">
+        <div class="text-[var(--text-secondary)] italic">Interview timing is currently unassigned for this candidate.</div>
         <div>
-          <button id="rescheduleBtn" class="px-2.5 py-1 bg-[var(--text-primary)] text-white text-[11px] font-medium hover:bg-[var(--accent-gold)] transition-colors inline-flex items-center gap-1">Assign / Schedule Slot</button>
+          <button id="rescheduleBtn" class="action-btn" style="padding: 0.4rem 0.8rem; font-size: 10px; letter-spacing: 1px; min-height: 32px;">Assign / Schedule Slot</button>
         </div>
       </div>
       `}
     </div>
 
-    <div class="bg-white border-l-4 border-[var(--accent-gold)] border-t border-r border-b border-[var(--grid-border)] p-4 mb-4 text-xs text-black leading-relaxed">
-      <strong class="text-[var(--text-primary)] uppercase tracking-wider">Psychometric Safeguard Notice:</strong>
+    <div class="panel border-l-4 border-l-[var(--accent-gold)] p-4 mb-5 text-xs text-[var(--text-primary)] leading-relaxed">
+      <strong class="text-[var(--accent-gold-text)] uppercase tracking-wider block mb-1">Psychometric Safeguard Notice:</strong>
       This dossier provides a <em>provisional within-person relative profile</em> for exploratory human review only. It reflects the relative emphasis among dimensions for this candidate, NOT normative trait scores, clinical evaluation, or automated hiring decisions. Cross-method convergence is exploratory; empirical normative calibration is pending.
       <div class="mt-2 text-[11px] text-[var(--text-secondary)] italic">${meta.safeguards?.sjt_emphasis_note || "Relative emphasis in this SJT's trade-offs: higher / middle / lower."}</div>
     </div>
 
     <!-- Key Observations & Method Triangulation Card -->
-    <details class="bg-white border border-[var(--grid-border)] p-4 mb-6 text-xs group" open>
-      <summary class="font-semibold text-xs uppercase tracking-widest text-[var(--accent-gold)] cursor-pointer flex justify-between items-center select-none">
-        <span>Key Observations & Method Triangulation</span>
-        <span class="text-[10px] text-stone-500 font-normal lowercase tracking-normal group-open:hidden">(click to expand)</span>
-        <span class="text-[10px] text-stone-500 font-normal lowercase tracking-normal hidden group-open:inline">(click to collapse)</span>
+    <details class="panel p-5 mb-5 text-xs group" open>
+      <summary class="font-semibold text-xs uppercase tracking-widest text-[var(--accent-gold-text)] cursor-pointer flex justify-between items-center select-none">
+        <span>Key Observations &amp; Method Triangulation</span>
+        <span class="text-[10px] text-[var(--text-secondary)] font-normal lowercase tracking-normal group-open:hidden">(click to expand)</span>
+        <span class="text-[10px] text-[var(--text-secondary)] font-normal lowercase tracking-normal hidden group-open:inline">(click to collapse)</span>
       </summary>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 pt-3 border-t border-[var(--grid-border)]">
         <div>
-          <span class="block text-[10px] uppercase tracking-wider text-black font-semibold mb-1">Top Method Divergence</span>
+          <span class="block text-[10px] uppercase tracking-wider text-[var(--text-secondary)] font-semibold mb-1">Top Method Divergence</span>
           ${topDivergenceHtml}
         </div>
         <div>
-          <span class="block text-[10px] uppercase tracking-wider text-black font-semibold mb-1">Confidence Distribution</span>
+          <span class="block text-[10px] uppercase tracking-wider text-[var(--text-secondary)] font-semibold mb-1">Confidence Distribution</span>
           ${confidenceDistHtml}
         </div>
         <div>
-          <span class="block text-[10px] uppercase tracking-wider text-black font-semibold mb-1">Profile Completeness</span>
+          <span class="block text-[10px] uppercase tracking-wider text-[var(--text-secondary)] font-semibold mb-1">Profile Completeness</span>
           ${completenessCardHtml}
         </div>
       </div>
@@ -600,55 +600,57 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
       <div class="flex flex-wrap justify-between items-center gap-3 mb-3">
         <div class="flex items-center gap-3 flex-wrap">
           <h3 class="text-xs font-semibold tracking-widest uppercase text-[var(--accent-gold)]">2. Evidence by parameter</h3>
-          <div class="inline-flex items-center gap-1.5 p-1 bg-[#f0eeea] border border-[var(--grid-border)]" role="group" aria-label="Sort dimensions">
-            <span class="text-[10px] uppercase font-mono tracking-wider text-black px-1.5 font-semibold">Rank By:</span>
-            <button id="sortBySjtBtn" class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${activeSortMode === 'sjt' ? 'bg-[var(--text-primary)] text-white' : 'text-stone-700 hover:bg-[#e4e1dc]'} ${!hasSjt ? 'opacity-40 cursor-not-allowed' : ''}" ${!hasSjt ? 'disabled title="No SJT data"' : 'title="Rank by Written Situational Trade-offs"'}>
+          <div class="inline-flex items-center gap-1.5 p-1 bg-[var(--bg-primary)] border border-[var(--grid-border)]" role="group" aria-label="Sort dimensions">
+            <span class="text-[10px] uppercase font-mono tracking-wider text-[var(--text-secondary)] px-1.5 font-semibold">Rank By:</span>
+            <button id="sortBySjtBtn" class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${activeSortMode === 'sjt' ? 'bg-[var(--text-primary)] text-white' : 'text-[var(--text-secondary)] hover:bg-[#e4e1dc]'} ${!hasSjt ? 'opacity-40 cursor-not-allowed' : ''}" ${!hasSjt ? 'disabled title="No SJT data"' : 'title="Rank by Written Situational Trade-offs"'}>
               Written (SJT) ${activeSortMode === 'sjt' ? '&darr;' : ''}
             </button>
-            <button id="sortByGameBtn" class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${activeSortMode === 'game' ? 'bg-[var(--text-primary)] text-white' : 'text-stone-700 hover:bg-[#e4e1dc]'} ${!hasGame ? 'opacity-40 cursor-not-allowed' : ''}" ${!hasGame ? 'disabled title="Game data pending"' : 'title="Rank by Practical Hands-On Game Performance"'}>
+            <button id="sortByGameBtn" class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${activeSortMode === 'game' ? 'bg-[var(--text-primary)] text-white' : 'text-[var(--text-secondary)] hover:bg-[#e4e1dc]'} ${!hasGame ? 'opacity-40 cursor-not-allowed' : ''}" ${!hasGame ? 'disabled title="Game data pending"' : 'title="Rank by Practical Hands-On Game Performance"'}>
               Hands-On (Games) ${activeSortMode === 'game' ? '&darr;' : ''}
             </button>
-            <button id="sortByDeltaBtn" class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${activeSortMode === 'delta' ? 'bg-[var(--text-primary)] text-white' : 'text-stone-700 hover:bg-[#e4e1dc]'} ${!hasDelta ? 'opacity-40 cursor-not-allowed' : ''}" ${!hasDelta ? 'disabled title="Requires both SJT and Game data"' : 'title="Rank by Largest Difference Between Words and Actions"'}>
+            <button id="sortByDeltaBtn" class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${activeSortMode === 'delta' ? 'bg-[var(--text-primary)] text-white' : 'text-[var(--text-secondary)] hover:bg-[#e4e1dc]'} ${!hasDelta ? 'opacity-40 cursor-not-allowed' : ''}" ${!hasDelta ? 'disabled title="Requires both SJT and Game data"' : 'title="Rank by Largest Difference Between Words and Actions"'}>
               Difference (&Delta;) ${activeSortMode === 'delta' ? '&darr;' : ''}
             </button>
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <div class="inline-flex items-center gap-1 p-0.5 bg-[#f0eeea] border border-[var(--grid-border)]" role="group" aria-label="Table density">
+          <div class="inline-flex items-center gap-1 p-0.5 bg-[var(--bg-primary)] border border-[var(--grid-border)]" role="group" aria-label="Table density">
             <button id="densityComfortableBtn" class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors bg-[var(--text-primary)] text-white" title="Comfortable row padding">Comfortable</button>
-            <button id="densityCompactBtn" class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors text-stone-700 hover:bg-[#e4e1dc]" title="Compact row padding">Compact</button>
+            <button id="densityCompactBtn" class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors text-[var(--text-secondary)] hover:bg-[#e4e1dc]" title="Compact row padding">Compact</button>
           </div>
-          <span class="text-xs uppercase tracking-wider text-black">Profile Completeness: <strong class="text-[var(--text-primary)]">${completeness}</strong></span>
+          <span class="text-xs uppercase tracking-wider text-[var(--text-secondary)]">Profile Completeness: <strong class="text-[var(--text-primary)]">${completeness}</strong></span>
         </div>
       </div>
-      <div class="overflow-x-auto border border-[var(--grid-border)] bg-white max-h-[600px]">
-        <table id="dimensionTable" class="w-full text-left text-sm border-collapse">
-          <thead class="bg-[#f0eeea] text-xs uppercase tracking-wider text-black select-none">
-            <tr>
-              <th scope="col" class="p-3 text-center w-12 min-w-[48px] max-w-[48px] sticky-th bg-[#f0eeea] sticky-col-rank sticky-th-corner">#</th>
-              <th scope="col" class="p-3 sticky-th bg-[#f0eeea] sticky-col-dim">Dimension & Observed Context</th>
-              <th scope="col" id="thSjt" class="p-3 text-center cursor-pointer hover:bg-[#e4e1dc] transition-colors sticky-th bg-[#f0eeea]" title="Click to rank by SJT" aria-sort="${activeSortMode === 'sjt' ? 'descending' : 'none'}" aria-label="Rank by Written Situational Trade-offs">SJT Rel <span id="thSjtArrow">${activeSortMode === 'sjt' ? '&darr;' : ''}</span></th>
-              <th scope="col" id="thGame" class="p-3 text-center cursor-pointer hover:bg-[#e4e1dc] transition-colors sticky-th bg-[#f0eeea]" title="Click to rank by Game" aria-sort="${activeSortMode === 'game' ? 'descending' : 'none'}" aria-label="Rank by Practical Hands-On Game Performance">Game Rel <span id="thGameArrow">${activeSortMode === 'game' ? '&darr;' : ''}</span></th>
-              <th scope="col" id="thDelta" class="p-3 text-center cursor-pointer hover:bg-[#e4e1dc] transition-colors sticky-th bg-[#f0eeea]" title="Click to rank by Delta" aria-sort="${activeSortMode === 'delta' ? 'descending' : 'none'}" aria-label="Rank by Largest Difference Between Words and Actions">Delta <span id="thDeltaArrow">${activeSortMode === 'delta' ? '&darr;' : ''}</span></th>
-              <th scope="col" class="p-3 text-center sticky-th bg-[#f0eeea]">Relationship</th>
-              <th scope="col" class="p-3 text-center sticky-th bg-[#f0eeea]">Confidence</th>
-              <th scope="col" class="p-3 sticky-th bg-[#f0eeea]">Interpretation</th>
-            </tr>
-          </thead>
-          <tbody id="dimensionTableBody">
-            ${renderDimensionRowsHtml(sortDimensions(activeSortMode), activeSortMode)}
-          </tbody>
-        </table>
-      </div>
-      <div class="bg-[#fcfbf9] border border-[var(--grid-border)] border-t-0 p-3 text-xs text-black leading-relaxed">
-        <strong class="text-[var(--text-primary)]">Delta is the absolute difference between the candidate's SJT-relative evidence and Game-SJT-relative evidence for this dimension.</strong> Larger Delta indicates greater divergence and reduces evidence confidence. Delta is not a measure of honesty, reliability, or validity.
+      <div class="panel p-0 overflow-hidden mb-5">
+        <div class="overflow-x-auto max-h-[600px]">
+          <table id="dimensionTable" class="w-full text-left text-sm border-collapse">
+            <thead class="bg-[var(--bg-primary)] text-xs uppercase tracking-wider text-[var(--text-secondary)] select-none border-b border-[var(--grid-border)]">
+              <tr>
+                <th scope="col" class="p-3 text-center w-12 min-w-[48px] max-w-[48px] sticky-th bg-[var(--bg-primary)] sticky-col-rank sticky-th-corner">#</th>
+                <th scope="col" class="p-3 sticky-th bg-[var(--bg-primary)] sticky-col-dim">Dimension &amp; Observed Context</th>
+                <th scope="col" id="thSjt" class="p-3 text-center cursor-pointer hover:bg-[#eae6dc] transition-colors sticky-th bg-[var(--bg-primary)]" title="Click to rank by SJT" aria-sort="${activeSortMode === 'sjt' ? 'descending' : 'none'}" aria-label="Rank by Written Situational Trade-offs">SJT Rel <span id="thSjtArrow">${activeSortMode === 'sjt' ? '&darr;' : ''}</span></th>
+                <th scope="col" id="thGame" class="p-3 text-center cursor-pointer hover:bg-[#eae6dc] transition-colors sticky-th bg-[var(--bg-primary)]" title="Click to rank by Game" aria-sort="${activeSortMode === 'game' ? 'descending' : 'none'}" aria-label="Rank by Practical Hands-On Game Performance">Game Rel <span id="thGameArrow">${activeSortMode === 'game' ? '&darr;' : ''}</span></th>
+                <th scope="col" id="thDelta" class="p-3 text-center cursor-pointer hover:bg-[#eae6dc] transition-colors sticky-th bg-[var(--bg-primary)]" title="Click to rank by Delta" aria-sort="${activeSortMode === 'delta' ? 'descending' : 'none'}" aria-label="Rank by Largest Difference Between Words and Actions">Delta <span id="thDeltaArrow">${activeSortMode === 'delta' ? '&darr;' : ''}</span></th>
+                <th scope="col" class="p-3 text-center sticky-th bg-[var(--bg-primary)]">Relationship</th>
+                <th scope="col" class="p-3 text-center sticky-th bg-[var(--bg-primary)]">Confidence</th>
+                <th scope="col" class="p-3 sticky-th bg-[var(--bg-primary)]">Interpretation</th>
+              </tr>
+            </thead>
+            <tbody id="dimensionTableBody">
+              ${renderDimensionRowsHtml(sortDimensions(activeSortMode), activeSortMode)}
+            </tbody>
+          </table>
+        </div>
+        <div class="bg-[var(--bg-primary)] border-t border-[var(--grid-border)] p-3 text-xs text-[var(--text-secondary)] leading-relaxed">
+          <strong class="text-[var(--text-primary)]">Delta is the absolute difference between the candidate's SJT-relative evidence and Game-SJT-relative evidence for this dimension.</strong> Larger Delta indicates greater divergence and reduces evidence confidence. Delta is not a measure of honesty, reliability, or validity.
+        </div>
       </div>
     </div>
 
     <div class="mb-6">
       <div class="flex justify-between items-baseline mb-3">
         <h3 class="text-xs font-semibold tracking-widest uppercase text-[var(--accent-gold)]">3. Interactive Activity Behavioral Records</h3>
-        <span class="text-xs text-black">${data.task_records_statement || 'Descriptive task counts; not a score.'}</span>
+        <span class="text-xs text-[var(--text-secondary)]">${data.task_records_statement || 'Descriptive task counts; not a score.'}</span>
       </div>
       ${renderTaskTable(coreTasks, 'Core Battery', 'background:#eaf5ea; color:#1e6624; border:1px solid #bce0bc;')}
       ${renderTaskTable(bankTasks, 'Research Bank', 'background:#f0eeea; color:var(--text-secondary); border:1px solid var(--grid-border);')}
@@ -728,14 +730,14 @@ async function loadSessionDetail(sessionId, forceRecompute = false) {
     console.error('Failed to load applicant dossier:', err);
     container.innerHTML = `
     <div class="mb-4">
-      <button id="backToRegistryErrBtn" class="text-xs uppercase tracking-widest text-black hover:text-[var(--accent-gold)]">&larr; Back to Registry</button>
+      <button id="backToRegistryErrBtn" class="text-xs uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--accent-gold)] font-medium transition-colors">&larr; Back to Registry</button>
     </div>
-    <div class="p-8 text-center bg-white border border-[var(--grid-border)] space-y-4">
-      <div class="text-red-700 font-semibold">Unable to load applicant dossier</div>
-      <div class="text-xs text-stone-600 max-w-md mx-auto">An error occurred while compiling the evidence record. You can attempt to reload or trigger an opt-in telemetry recalculation.</div>
+    <div class="panel p-8 text-center space-y-4">
+      <div class="text-[var(--accent-red-text)] font-semibold">Unable to load applicant dossier</div>
+      <div class="text-xs text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">An error occurred while compiling the evidence record. You can attempt to reload or trigger an opt-in telemetry recalculation.</div>
       <div class="flex justify-center gap-3 pt-2">
-        <button id="retryDossierBtn" class="px-4 py-2 bg-[var(--text-primary)] text-white text-xs uppercase tracking-widest hover:bg-[var(--accent-gold)] transition-colors">Retry</button>
-        <button id="recomputeDossierBtn" class="px-4 py-2 bg-[#f4f1ea] border border-[var(--grid-border)] text-xs uppercase tracking-widest hover:bg-[#eae6dc] transition-colors" title="Re-extracts and re-scores behavioral game telemetry from scratch (opt-in recalculation)">Re-analyze Telemetry</button>
+        <button id="retryDossierBtn" class="action-btn" style="padding: 0.5rem 1.2rem; font-size: 10px; letter-spacing: 1.5px;">Retry</button>
+        <button id="recomputeDossierBtn" class="action-btn gold" style="padding: 0.5rem 1.2rem; font-size: 10px; letter-spacing: 1.5px;" title="Re-extracts and re-scores behavioral game telemetry from scratch (opt-in recalculation)">Re-analyze Telemetry</button>
       </div>
     </div>
     `;
@@ -759,12 +761,12 @@ async function openInterviewSettingsModal() {
     document.body.appendChild(modal);
   }
   
-  modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+  modal.className = 'fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4';
   modal.innerHTML = `
-    <div class="bg-white border border-[var(--grid-border)] max-w-lg w-full p-6 space-y-4 shadow-xl">
+    <div class="panel max-w-lg w-full p-6 space-y-4 shadow-2xl">
       <div class="flex justify-between items-center border-b border-[var(--grid-border)] pb-3">
-        <h3 class="font-serif text-lg text-[var(--text-primary)]">Interview Schedule & Working Hours</h3>
-        <button id="closeSettingsModalBtn" class="text-stone-400 hover:text-black text-lg">&times;</button>
+        <h3 class="font-serif text-lg text-[var(--text-primary)]">Interview Schedule &amp; Working Hours</h3>
+        <button id="closeSettingsModalBtn" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xl">&times;</button>
       </div>
       <div id="settingsModalBody" class="space-y-4 text-xs">
         <div class="text-stone-500">Loading current configuration...</div>
@@ -788,7 +790,7 @@ async function openInterviewSettingsModal() {
           Available Time Slots (Comma-separated)
         </label>
         <p class="text-[11px] text-stone-500 mb-2">Candidates will be offered these time windows on active interview days (e.g. 11:00 AM, 03:00 PM, 05:30 PM, 07:00 PM).</p>
-        <input type="text" id="settingsSlotsInput" value="${window.escapeHtml(currentSlots)}" class="w-full p-2 border border-[var(--grid-border)] text-xs font-mono focus:outline-none focus:border-[var(--accent-gold)]" placeholder="11:00 AM, 03:00 PM, 05:30 PM, 07:00 PM" />
+        <input type="text" id="settingsSlotsInput" value="${window.escapeHtml(currentSlots)}" class="w-full p-2 border border-[var(--grid-border)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs font-mono focus:outline-none focus:border-[var(--accent-gold)]" placeholder="11:00 AM, 03:00 PM, 05:30 PM, 07:00 PM" />
       </div>
 
       <div>
@@ -814,8 +816,8 @@ async function openInterviewSettingsModal() {
           Click &ldquo;Detect new values&rdquo; in Make.com, then click below to transmit the standard <code>to</code>, <code>subject</code>, and <code>text</code> payload.
         </p>
         <div class="flex items-center gap-2">
-          <input type="text" id="customWebhookUrlInput" placeholder="Optional: Paste Webhook URL if not configured in Render" class="flex-grow p-1.5 border border-[var(--grid-border)] text-xs font-mono focus:outline-none" />
-          <button type="button" id="sendTestWebhookBtn" class="px-3 py-1.5 bg-[#f4f1ea] border border-[var(--grid-border)] text-xs text-[var(--text-primary)] hover:bg-[#eae6dc] transition-colors whitespace-nowrap">
+          <input type="text" id="customWebhookUrlInput" placeholder="Optional: Paste Webhook URL if not configured in Render" class="flex-grow p-1.5 border border-[var(--grid-border)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs font-mono focus:outline-none focus:border-[var(--accent-gold)]" />
+          <button type="button" id="sendTestWebhookBtn" class="action-btn gold" style="padding: 0.4rem 0.8rem; font-size: 10px; letter-spacing: 1px; min-height: 32px; white-space: nowrap;">
             📡 Send Test Payload
           </button>
         </div>
@@ -825,8 +827,8 @@ async function openInterviewSettingsModal() {
       <div id="settingsFeedback" class="text-[11px] hidden"></div>
 
       <div class="pt-3 border-t border-[var(--grid-border)] flex justify-end gap-2">
-        <button id="cancelSettingsBtn" class="px-3 py-1.5 border border-[var(--grid-border)] text-xs text-stone-600 hover:bg-stone-50">Cancel</button>
-        <button id="saveSettingsBtn" class="px-4 py-1.5 bg-[var(--text-primary)] text-white text-xs uppercase tracking-wider hover:bg-[var(--accent-gold)] transition-colors">
+        <button id="cancelSettingsBtn" class="action-btn gold" style="padding: 0.45rem 1rem; font-size: 10px; letter-spacing: 1px;">Cancel</button>
+        <button id="saveSettingsBtn" class="action-btn" style="padding: 0.45rem 1.2rem; font-size: 10px; letter-spacing: 1px;">
           Save Schedule
         </button>
       </div>
@@ -914,15 +916,15 @@ async function openRescheduleModal(sessionId, applicant, currentBooking) {
     document.body.appendChild(modal);
   }
   
-  modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+  modal.className = 'fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4';
   modal.innerHTML = `
-    <div class="bg-white border border-[var(--grid-border)] max-w-lg w-full p-6 space-y-4 shadow-xl">
+    <div class="panel max-w-lg w-full p-6 space-y-4 shadow-2xl">
       <div class="flex justify-between items-center border-b border-[var(--grid-border)] pb-3">
         <div>
           <h3 class="font-serif text-lg text-[var(--text-primary)]">Change / Reschedule Interview</h3>
-          <div class="text-xs text-stone-500">${window.escapeHtml(applicant.full_name || 'Candidate')} &middot; ${window.escapeHtml(applicant.email || '')}</div>
+          <div class="text-xs text-[var(--text-secondary)]">${window.escapeHtml(applicant.full_name || 'Candidate')} &middot; ${window.escapeHtml(applicant.email || '')}</div>
         </div>
-        <button id="closeRescheduleModalBtn" class="text-stone-400 hover:text-black text-lg">&times;</button>
+        <button id="closeRescheduleModalBtn" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xl">&times;</button>
       </div>
 
       <div id="rescheduleModalBody" class="space-y-4 text-xs">
@@ -954,16 +956,16 @@ async function openRescheduleModal(sessionId, applicant, currentBooking) {
 
     const bodyEl = document.getElementById('rescheduleModalBody');
     bodyEl.innerHTML = `
-      <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)]">
-        <span class="text-[10px] uppercase font-semibold text-stone-500 block">Current Interview Slot:</span>
-        <span class="text-sm font-serif text-black">${window.escapeHtml(currentDisplay)}</span>
+      <div class="p-3 bg-[var(--bg-primary)] border border-[var(--grid-border)]">
+        <span class="data-label text-[10px] uppercase tracking-wider text-[var(--text-secondary)] block mb-1">Current Interview Slot</span>
+        <span class="text-sm font-serif text-[var(--text-primary)] font-medium">${window.escapeHtml(currentDisplay)}</span>
       </div>
 
       <div class="space-y-2">
         <label class="block font-semibold uppercase tracking-wider text-[11px] text-[var(--text-primary)]">
           Option 1: Choose from Open System Slots
         </label>
-        <select id="openSlotSelect" class="w-full p-2 border border-[var(--grid-border)] bg-white text-xs focus:outline-none focus:border-[var(--accent-gold)]">
+        <select id="openSlotSelect" class="w-full p-2 border border-[var(--grid-border)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--accent-gold)]">
           <option value="">-- Choose an available slot --</option>
           ${availableOptions.map(o => `
             <option value="${o.date}|${o.time}|${o.display}">${o.fullDisplay}</option>
@@ -980,24 +982,24 @@ async function openRescheduleModal(sessionId, applicant, currentBooking) {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="block font-semibold uppercase tracking-wider text-[10px] text-stone-600 mb-1">Custom Date</label>
-          <input type="date" id="customDateInput" class="w-full p-2 border border-[var(--grid-border)] text-xs focus:outline-none" />
+          <input type="date" id="customDateInput" class="w-full p-2 border border-[var(--grid-border)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--accent-gold)]" />
         </div>
         <div>
           <label class="block font-semibold uppercase tracking-wider text-[10px] text-stone-600 mb-1">Custom Time (e.g. 04:00 PM IST)</label>
-          <input type="text" id="customTimeInput" placeholder="04:00 PM IST" class="w-full p-2 border border-[var(--grid-border)] text-xs focus:outline-none" />
+          <input type="text" id="customTimeInput" placeholder="04:00 PM IST" class="w-full p-2 border border-[var(--grid-border)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--accent-gold)]" />
         </div>
       </div>
 
       <div>
         <label class="block font-semibold uppercase tracking-wider text-[10px] text-stone-600 mb-1">Recruiter Notes (Optional)</label>
-        <input type="text" id="rescheduleNotesInput" placeholder="e.g. Candidate requested evening call" class="w-full p-2 border border-[var(--grid-border)] text-xs focus:outline-none" />
+        <input type="text" id="rescheduleNotesInput" placeholder="e.g. Candidate requested evening call" class="w-full p-2 border border-[var(--grid-border)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--accent-gold)]" />
       </div>
 
       <div id="rescheduleFeedback" class="text-[11px] hidden"></div>
 
       <div class="pt-3 border-t border-[var(--grid-border)] flex justify-end gap-2">
-        <button id="cancelRescheduleBtn" class="px-3 py-1.5 border border-[var(--grid-border)] text-xs text-stone-600 hover:bg-stone-50">Cancel</button>
-        <button id="confirmRescheduleBtn" class="px-4 py-1.5 bg-[var(--text-primary)] text-white text-xs uppercase tracking-wider hover:bg-[var(--accent-gold)] transition-colors">
+        <button id="cancelRescheduleBtn" class="action-btn gold" style="padding: 0.45rem 1rem; font-size: 10px; letter-spacing: 1px;">Cancel</button>
+        <button id="confirmRescheduleBtn" class="action-btn" style="padding: 0.45rem 1.2rem; font-size: 10px; letter-spacing: 1px;">
           Confirm Reschedule
         </button>
       </div>

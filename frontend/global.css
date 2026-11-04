@@ -2,7 +2,7 @@
    ALFAAZ COLLECTIVE — GLOBAL STYLES
    Consolidated & Corrected
 ================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya+Sans:wght@300;400;500&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;1,400;1,500&family=Alegreya+Sans:wght@300;400;500&family=Amiri:ital,wght@0,400;0,700;1,400&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
 
 /* ── TOKENS ─────────────────────────────────── */
 :root {
@@ -24,7 +24,8 @@
 
   --font-heading: 'Alegreya', serif;
   --font-body:    'Alegreya Sans', sans-serif;
-  --font-urdu:    'Noto Nastaliq Urdu', serif;
+  --font-amiri:   'Amiri', serif;
+  --font-urdu:    'Amiri', 'Noto Nastaliq Urdu', serif;
 
   --grid-border:  rgba(45, 49, 46, 0.12);
   --shadow-base:  0 4px 20px -2px rgba(0,0,0,0.03), 0 0 3px rgba(0,0,0,0.02);
@@ -244,11 +245,11 @@ nav.hidden {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) translateY(6px);
-  font-family: var(--font-urdu);
-  font-size: 1.35em;
+  font-family: var(--font-amiri), var(--font-urdu), serif;
+  font-size: 1.25em;
   line-height: 1.2;
   font-style: normal;
-  font-weight: 400;
+  font-weight: 700;
   color: var(--accent-gold);
   opacity: 0;
   pointer-events: none;
@@ -256,6 +257,7 @@ nav.hidden {
   transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
   backface-visibility: hidden;
+  direction: rtl;
 }
 
 /* Trigger: hover or JS-toggled class */

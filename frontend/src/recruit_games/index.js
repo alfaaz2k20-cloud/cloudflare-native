@@ -55,8 +55,8 @@ export function renderGameShell({
  <h2 class="text-base sm:text-xl font-serif text-[var(--text-primary)] mt-0.5">${title}</h2>
  </div>
  <div class="text-right shrink-0 ml-4">
- ${meta.name_ur ? `<span class="font-serif text-lg sm:text-2xl text-[var(--text-secondary)] block" style="font-family: var(--font-urdu); direction: rtl;">${meta.name_ur}</span>` : ''}
- ${cleanBadge ? `<span class="text-[10px] sm:text-[11px] text-[var(--accent-gold)] uppercase tracking-wider block mt-1">${cleanBadge}</span>` : ''}
+ ${meta.name_ur ? `<span class="font-serif text-lg sm:text-2xl text-[var(--text-secondary)] block font-bold" style="font-family: var(--font-amiri), var(--font-urdu), serif; direction: rtl; line-height: 1.25; margin-bottom: 0.35rem;">${meta.name_ur}</span>` : ''}
+ ${cleanBadge ? `<span class="text-[10px] sm:text-[11px] text-[var(--accent-gold)] uppercase tracking-wider block">${cleanBadge}</span>` : ''}
  </div>
  </div>
 
@@ -275,7 +275,7 @@ export function runMiniGame(context) {
  <p class="text-sm text-[var(--text-secondary)] mt-1 leading-relaxed">${mgDesc}</p>
  </div>
  <div class="text-right shrink-0">
- ${meta.name_ur ? `<span class="font-serif text-2xl sm:text-3xl text-[var(--text-secondary)] block" style="font-family: var(--font-urdu); direction: rtl;">${meta.name_ur}</span>` : ''}
+ ${meta.name_ur ? `<span class="font-serif text-2xl sm:text-3xl text-[var(--text-secondary)] block font-bold" style="font-family: var(--font-amiri), var(--font-urdu), serif; direction: rtl; line-height: 1.25; margin-bottom: 0.35rem;">${meta.name_ur}</span>` : ''}
  </div>
  </div>
  `;

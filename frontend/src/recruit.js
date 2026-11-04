@@ -1265,8 +1265,8 @@ function renderSjtBriefing(app) {
  <h1 class="text-xl sm:text-3xl font-serif text-[var(--text-primary)]">Situational Scenarios</h1>
  </div>
  <div class="text-right shrink-0">
- <span class="font-serif text-xl sm:text-3xl text-[var(--text-secondary)] block" style="font-family: var(--font-urdu); direction: rtl;">تفہیم و ارادہ</span>
- <span class="text-[10px] sm:text-xs text-[var(--accent-gold)] uppercase tracking-wider block mt-1">7 Scenarios</span>
+ <span class="font-serif text-xl sm:text-3xl text-[var(--text-secondary)] block font-bold" style="font-family: var(--font-amiri), var(--font-urdu), serif; direction: rtl; line-height: 1.25; margin-bottom: 0.35rem;">تفہیم و ارادہ</span>
+ <span class="text-[10px] sm:text-xs text-[var(--accent-gold)] uppercase tracking-wider block">7 Scenarios</span>
  </div>
  </div>
 
@@ -1398,8 +1398,8 @@ function renderSjtBriefing(app) {
  <h2 class="text-base sm:text-xl font-serif text-[var(--text-primary)] mt-0.5">${scenario.act_title_en}</h2>
  </div>
  <div class="text-right shrink-0">
- ${scenario.act_title_ur ? `<span class="font-serif text-lg sm:text-2xl text-[var(--text-secondary)] block" style="font-family: var(--font-urdu); direction: rtl;">${scenario.act_title_ur}</span>` : ''}
- <span class="text-[10px] sm:text-xs text-[var(--accent-gold)] uppercase tracking-wider block mt-1">Section 1 &middot; ${current} of ${total}</span>
+ ${scenario.act_title_ur ? `<span class="font-serif text-lg sm:text-2xl text-[var(--text-secondary)] block font-bold" style="font-family: var(--font-amiri), var(--font-urdu), serif; direction: rtl; line-height: 1.25; margin-bottom: 0.35rem;">${scenario.act_title_ur}</span>` : ''}
+ <span class="text-[10px] sm:text-xs text-[var(--accent-gold)] uppercase tracking-wider block">Section 1 &middot; ${current} of ${total}</span>
  </div>
  </div>
 
@@ -1557,8 +1557,8 @@ function renderGbaBriefing(app) {
  <h1 class="text-xl sm:text-3xl font-serif text-[var(--text-primary)]">Interactive Studio Activities</h1>
  </div>
  <div class="text-right shrink-0">
- <span class="font-serif text-xl sm:text-3xl text-[var(--text-secondary)] block" style="font-family: var(--font-urdu); direction: rtl;">عملی مشاغل</span>
- <span class="text-[10px] sm:text-xs text-[var(--accent-gold)] uppercase tracking-wider block mt-1">14 Activities</span>
+ <span class="font-serif text-xl sm:text-3xl text-[var(--text-secondary)] block font-bold" style="font-family: var(--font-amiri), var(--font-urdu), serif; direction: rtl; line-height: 1.25; margin-bottom: 0.35rem;">عملی مشاغل</span>
+ <span class="text-[10px] sm:text-xs text-[var(--accent-gold)] uppercase tracking-wider block">14 Activities</span>
  </div>
  </div>
 
