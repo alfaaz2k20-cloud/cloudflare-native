@@ -5,6 +5,10 @@ export class TelemetryCapReachedException extends Error {
   }
 }
 
+function fingerprint(action: string, miniGame: string | null, trial: number | null): string {
+  return `${action}|${miniGame ?? ''}|${trial ?? ''}`;
+}
+
 export async function ingestTelemetryBatch(
   db: D1Database,
   sessionId: string,
@@ -52,29 +56,57 @@ export async function ingestTelemetryBatch(
     throw new TelemetryCapReachedException("Session event limit of 50,000 reached");
   }
 
-  // Fetch existing seqs
-  const existingSeqs = new Set<number>();
+  // Fetch existing seqs alongside a payload fingerprint, so an idempotent client
+  // resupply (lost response, outbox replay, sendBeacon on unload) is not mistaken
+  // for a real seq collision.
+  const existingSeqs = new Map<number, string>();
   const seqRows = await db
-    .prepare("SELECT seq FROM telemetry_events WHERE session_id = ?")
+    .prepare("SELECT seq, action, mini_game, trial FROM telemetry_events WHERE session_id = ?")
     .bind(sessionId)
-    .all<{ seq: number }>();
+    .all<{ seq: number; action: string; mini_game: string | null; trial: number | null }>();
   for (const r of seqRows.results || []) {
-    existingSeqs.add(r.seq);
+    existingSeqs.set(Number(r.seq), fingerprint(r.action, r.mini_game, r.trial));
+  }
+
+  // A flagged collision stays flagged; don't re-insert it on every retry.
+  const flaggedScopes = new Set<string>();
+  const flagRows = await db
+    .prepare("SELECT scope FROM data_quality_flags WHERE session_id = ? AND flag = 'seq_conflict'")
+    .bind(sessionId)
+    .all<{ scope: string }>();
+  for (const r of flagRows.results || []) {
+    flaggedScopes.add(r.scope);
   }
 
   let ingested = 0;
   let duplicates = 0;
 
   const stmts: D1PreparedStatement[] = [];
+  const batchSeqs = new Map<number, string>();
 
   for (const ev of filteredEvents) {
     const seq = Number(ev.seq);
     if (isNaN(seq)) continue;
 
-    if (existingSeqs.has(seq)) {
+    const action = ev.action || 'event';
+    const miniGame = ev.game || ev.mini_game || null;
+    const trial = ev.trial ?? null;
+    const fp = fingerprint(action, miniGame, trial);
+
+    const storedFp = existingSeqs.get(seq) ?? batchSeqs.get(seq);
+    if (storedFp !== undefined) {
       duplicates++;
+      const scope = `seq_${seq}`;
+      if (storedFp !== fp && !flaggedScopes.has(scope)) {
+        flaggedScopes.add(scope);
+        stmts.push(
+          db.prepare("INSERT INTO data_quality_flags (session_id, scope, flag, detail) VALUES (?, ?, 'seq_conflict', ?)")
+            .bind(sessionId, scope, `Seq ${seq} resupplied with a different payload`)
+        );
+      }
       continue;
     }
+    batchSeqs.set(seq, fp);
 
     const stateJson = ev.state ? JSON.stringify(ev.state) : (ev.state_json || null);
     const dataJson = ev.data ? JSON.stringify(ev.data) : (ev.data_json || null);
@@ -99,9 +131,9 @@ export async function ingestTelemetryBatch(
         ev.t_ms || 0,
         ev.screen || 'games',
         ev.world || ev.game_world || null,
-        ev.game || ev.mini_game || null,
-        ev.trial ?? null,
-        ev.action || 'event',
+        miniGame,
+        trial,
+        action,
         ev.input_type || null,
         ev.task_def_version || '2.0',
         stateJson,

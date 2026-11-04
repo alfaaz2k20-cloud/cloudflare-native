@@ -48,11 +48,11 @@ function runM1Minimum(app, renderHeader, logEvent, onComplete) {
  </div>
  ${renderTutorialCard({
  icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>`,
- goal: 'Apply wax seals to 3 invitation envelopes.',
+ goal: 'Apply wax seals to 2 invitation envelopes.',
  steps: [
  'Look at the named recipient on the envelope.',
  'Click the button to apply the wax seal.',
- 'Completing all 3 envelopes finishes this activity.'
+ 'Completing both envelopes finishes this activity.'
  ]
  })}
  </div>
@@ -73,7 +73,7 @@ function runM1Minimum(app, renderHeader, logEvent, onComplete) {
     worldCode: 'W7',
     worldIndex: 6,
     title: 'The Ceremonial Seal',
-    goal: 'Apply wax seals to event invitations across 3 rounds.',
+    goal: 'Apply wax seals to event invitations across 2 rounds.',
     subtitle: 'Apply wax seals to event invitations.',
     instructionPrompt: 'Your Task',
     instruction: 'Choose your seal technique below, then apply the wax seal to the invitation.',
@@ -91,9 +91,9 @@ function runM1Minimum(app, renderHeader, logEvent, onComplete) {
     `,
     interactionContent: `
       <div class="space-y-3">
-        <div class="options-directive">
-          <span>Choose how you want to press the stamp:</span>
-          <span style="font-size:0.75rem; color:var(--text-secondary);">Tap to select</span>
+        <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between mb-2">
+          <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</span>
+          <span class="text-[11px] text-[var(--text-secondary)]">Select how you want to press the stamp</span>
         </div>
         <div class="outside-options space-y-2.5">
           <button type="button" class="outside-opt-card seal-opt ${selectedPress === 'seal_gentle' ? 'selected' : ''}" data-press="seal_gentle" tabindex="0">
@@ -122,7 +122,7 @@ function runM1Minimum(app, renderHeader, logEvent, onComplete) {
     `,
     summaryContent: `
       <span>Stamp technique: <strong class="text-[var(--text-primary)]">Ready to seal</strong></span>
-      <span class="text-sm text-black">Envelope ${currentIdx + 1} of ${units.length}</span>
+      <span class="text-sm text-[var(--text-primary)]">Envelope ${currentIdx + 1} of ${units.length}</span>
     `,
     actionButtonId: 'stampBtn',
     actionButtonText: (currentIdx === units.length - 1) ? 'Confirm & Finish &rarr;' : 'Apply Wax Seal &rarr;',
@@ -217,7 +217,7 @@ function runM2Optional(app, renderHeader, logEvent, onComplete) {
  steps: [
  'Stamp the 2 required guest folders.',
  'After folder 2, you choose whether to finish or do optional extras.',
- 'Stopping after 2 is completely fine and has no penalty.'
+ 'Completing 2 fulfills the baseline requirement; optional extras demonstrate proactive diligence.'
  ]
  })}
  </div>
@@ -312,15 +312,15 @@ function runM2Optional(app, renderHeader, logEvent, onComplete) {
           <div style="width:90%; background:#2f261e; border:1px solid #4a3d31; border-radius:10px; padding:16px; text-align:center; margin:0 auto;">
             <div style="font-size:0.75rem; text-transform:uppercase; color:#8cd39e; font-weight:700; margin-bottom:4px;">✓ Requirement Satisfied</div>
             <div style="font-size:1.05rem; font-weight:700; color:#fff; margin:6px 0;">2 Required Folders Completed</div>
-            <div style="font-size:0.82rem; color:#baa38c; margin-top:6px;">Stopping now fulfills the activity completely. You may finish or do extra.</div>
+            <div style="font-size:0.82rem; color:#baa38c; margin-top:6px;">Baseline requirement fulfilled. Completing optional folders demonstrates proactive diligence.</div>
           </div>
         </div>
       `,
       interactionContent: `
         <div class="space-y-3">
-          <div class="options-directive">
-            <span>Required folders completed! You may finish or do extra:</span>
-            <span style="font-size:0.75rem; color:var(--text-secondary);">Your choice</span>
+          <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between mb-2">
+            <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</span>
+            <span class="text-[11px] text-[var(--text-secondary)]">Baseline completed &mdash; finish now or assemble extra</span>
           </div>
           <div class="grid grid-cols-1 gap-3">
             <button type="button" id="concludeBtn" class="btn primary full min-h-[48px] py-3.5" style="background:#2d6a3e; color:#fff; font-weight:700; border-radius:var(--radius-sm);" tabindex="0">
@@ -376,7 +376,7 @@ function runM2Optional(app, renderHeader, logEvent, onComplete) {
  title: 'The Courtesy Sleeves',
  subtitle: 'Voluntary extra folder preparation.',
  instructionPrompt: 'Voluntary Extra',
- instruction: 'You may assemble this extra folder or finish at any time. Stopping is completely neutral.',
+ instruction: 'You may assemble this extra folder to demonstrate proactive diligence, or conclude at any time.',
  stimulusContent: `
  <div class="p-6 sm:p-8 bg-[#faf8f5] border border-[var(--grid-border)] text-center shadow-xs rounded-xs">
  <div class="max-w-sm mx-auto p-4 bg-white border border-[var(--grid-border)] rounded-xs">
@@ -530,7 +530,7 @@ function runM3ReducedReward(app, renderHeader, logEvent, onComplete) {
  <!-- TASK HEADER -->
  <div class="mb-4">
  <h2 class="text-xl sm:text-2xl text-[var(--text-primary)]">The Evening Registry</h2>
- <p class="text-base text-black mt-0.5">
+ <p class="text-base text-[var(--text-primary)] mt-0.5">
  ${hasMetMinimum ? 'Requirement met (3/3). You may conclude now or continue.' : 'Mandatory requirement: 3 rows. Completing 3 satisfies the activity.'}
  </p>
  </div>
@@ -558,7 +558,7 @@ function runM3ReducedReward(app, renderHeader, logEvent, onComplete) {
  <!-- LOOK AT THIS: Registry Row Item -->
  <div class="p-6 sm:p-8 bg-[#faf8f5] border border-[var(--grid-border)] mb-5 text-center shadow-xs rounded-xs candidate-content-protected">
  <div class="max-w-md mx-auto p-4 bg-white border border-[var(--grid-border)] rounded-xs">
- <span class="text-sm uppercase tracking-wider text-black ">Checklist Item</span>
+ <span class="text-sm uppercase tracking-wider text-[var(--text-primary)] ">Checklist Item</span>
  <div class="text-sm font-semibold text-[var(--text-primary)] mt-1">${u.row_name}</div>
  </div>
  </div>
@@ -578,7 +578,7 @@ function runM3ReducedReward(app, renderHeader, logEvent, onComplete) {
  </div>
 
  <!-- Progress Footer -->
- <div class="text-right text-[11px] text-black ">
+ <div class="text-right text-[11px] text-[var(--text-primary)] ">
  Row ${currentIdx + 1} of ${allUnits.length}
  </div>
  </div>

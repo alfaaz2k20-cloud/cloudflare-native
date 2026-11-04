@@ -86,7 +86,7 @@ export function determineConfidence(
     return "LIMITED";
   }
 
-  const baseConfidence = (nUsableGames >= 3 && consistency === "CONSISTENT") ? "SUBSTANTIAL" : "MODERATE";
+  const baseConfidence = (nUsableGames >= 2 && consistency === "CONSISTENT") ? "SUBSTANTIAL" : "MODERATE";
 
   if (delta !== null) {
     if (delta <= 0.15) {
@@ -146,7 +146,7 @@ export async function integrateSessionEvidence(
     .prepare("SELECT flag FROM data_quality_flags WHERE session_id = ?")
     .bind(sessionId)
     .all<{ flag: string }>();
-  const criticalFlags = new Set(["seq_conflict", "events_cap_reached"]);
+  const criticalFlags = new Set(["seq_conflict", "events_cap_reached", "sjt_conflict", "event_oversize", "interrupted"]);
   const hasCriticalFlag = (flagRows.results || []).some(f => criticalFlags.has(f.flag));
 
   // 4. Supersede old evidence records if forceRecompute (deferred to final atomic batch)

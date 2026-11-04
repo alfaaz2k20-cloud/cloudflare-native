@@ -14,6 +14,7 @@ export interface Env {
   PHANTOM_SECRET_TOKEN?: string;
   TURNSTILE_SECRET_KEY?: string;
   GOOGLE_CLIENT_ID?: string;
+  STIMULUS_HMAC_KEY?: string;
 
   // Email Configuration
   EMAIL_PROVIDER?: 'dev' | 'webhook' | 'cloudflare';

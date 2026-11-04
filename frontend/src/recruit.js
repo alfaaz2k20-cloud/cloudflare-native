@@ -338,19 +338,12 @@ async function restoreLocalState() {
  logEvent(state.screen, 'segment_start', { segment_id: state.segmentId });
 
  // If reload occurred inside an active mini-game:
- // - mark that mini-game INSUFFICIENT
- // - flag interrupted
- // - resume only at a completed mini-game boundary
+ // - log interrupted with mini_game set cleanly in the database column
+ // - restart the current minigame from trial 0 without auto-skipping
  if (saved.activeMiniGameInProgress && saved.screen === 'games') {
  const currentWorldCode = state.worldSequence[state.currentWorldIndex];
  const mgId = getMiniGameId(currentWorldCode, state.currentMiniGameIndex);
- logEvent('game', 'interrupted', { mini_game: mgId, reason: 'page_reload' });
- if (state.currentMiniGameIndex < 1) {
- state.currentMiniGameIndex++;
- } else {
- state.currentMiniGameIndex = 0;
- state.currentWorldIndex++;
- }
+ logEvent('game', 'interrupted', { mini_game: mgId, reason: 'page_reload' }, {}, 'system', mgId);
  state.activeMiniGameInProgress = false;
  }
 
@@ -735,7 +728,7 @@ function renderConsent(app) {
  <div class="mb-12 text-center space-y-4">
  <span class="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-medium">Prologue &middot; Consent & Compliance</span>
  <h1 class="text-3xl text-[var(--text-primary)]">The Studio Assessment</h1>
- <p class="text-sm text-black italic max-w-lg mx-auto leading-relaxed">
+ <p class="text-sm text-[var(--text-primary)] italic max-w-lg mx-auto leading-relaxed">
  Before we begin our creative exchange, we require your explicit consent to ensure a safe and transparent environment.
  </p>
  </div>
@@ -745,7 +738,7 @@ function renderConsent(app) {
  <div class="relative pl-6 border-l border-[var(--grid-border)]">
  <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-[var(--bg-primary)] border border-[var(--accent-gold)]"></div>
  <h2 class="text-lg text-[var(--text-primary)] mb-2">The Experience</h2>
- <p class="text-sm text-black leading-relaxed">
+ <p class="text-sm text-[var(--text-primary)] leading-relaxed">
  This is an 11–14 minute exploratory journey. You will encounter situational judgments and creative micro-tasks.
  There are no right or wrong answers—only different perspectives. You may pause, skip, or withdraw at any time without penalty.
  </p>
@@ -755,14 +748,14 @@ function renderConsent(app) {
  <div class="relative pl-6 border-l border-[var(--grid-border)]">
  <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-[var(--bg-primary)] border border-[var(--accent-green)]"></div>
  <h2 class="text-lg text-[var(--text-primary)] mb-2">Why We Observe</h2>
- <p class="text-sm text-black leading-relaxed">
+ <p class="text-sm text-[var(--text-primary)] leading-relaxed">
  As you interact with the tasks, we collect behavioral telemetry.
  <strong>Why do we do this?</strong> To understand your intuitive working style. It helps us match you to the right
  creative roles within the collective.
  Your assessment data is strictly confidential, linked securely to your application record, and will never be used for automated rejection or sold to third parties.
  </p>
- <p class="text-sm text-black leading-relaxed">
- Contact Us: <a href="mailto:alfaaz2k20@gmail.com" class="text-[var(--accent-gold)] hover:underline">alfaaz2k20@gmail.com</a>
+ <p class="text-sm text-[var(--text-primary)] leading-relaxed">
+ Contact Us: <a href="mailto:curator@alfaazcollective.org" class="text-[var(--accent-gold)] hover:underline">curator@alfaazcollective.org</a>
  </p>
  </div>
  </div>
@@ -912,15 +905,15 @@ function renderIdentity(app) {
 
     <form id="identityForm" class="space-y-4 pt-1">
       <div>
-        <label for="fullName" class="block text-xs uppercase tracking-wider text-black mb-1">Full Name *</label>
+        <label for="fullName" class="block text-xs uppercase tracking-wider text-[var(--text-primary)] mb-1">Full Name *</label>
         <input type="text" id="fullName" required class="w-full p-2.5 bg-white border border-[var(--grid-border)] focus:border-[var(--accent-gold)] focus:outline-none" placeholder="Your full name">
       </div>
       <div>
-        <label for="email" class="block text-xs uppercase tracking-wider text-black mb-1">Email Address *</label>
+        <label for="email" class="block text-xs uppercase tracking-wider text-[var(--text-primary)] mb-1">Email Address *</label>
         <input type="email" id="email" required class="w-full p-2.5 bg-white border border-[var(--grid-border)] focus:border-[var(--accent-gold)] focus:outline-none" placeholder="you@example.com">
       </div>
       <div>
-        <label for="whatsappNo" class="block text-xs uppercase tracking-wider text-black mb-1">WhatsApp Number *</label>
+        <label for="whatsappNo" class="block text-xs uppercase tracking-wider text-[var(--text-primary)] mb-1">WhatsApp Number *</label>
         <input type="tel" id="whatsappNo" required class="w-full p-2.5 bg-white border border-[var(--grid-border)] focus:border-[var(--accent-gold)] focus:outline-none" placeholder="+91 ... or WhatsApp number with country code">
       </div>
       <div>
@@ -1015,7 +1008,7 @@ function renderAccessibility(app) {
  <div class="border-b border-[var(--grid-border)] pb-3 text-center">
  <span class="act-badge">Preferences · ترجیحات</span>
  <h2 class="text-2xl text-[var(--text-primary)]">Display & Comfort Preferences</h2>
- <p class="text-xs text-black mt-2 max-w-lg mx-auto leading-relaxed">
+ <p class="text-xs text-[var(--text-secondary)] mt-2 max-w-lg mx-auto leading-relaxed">
  Make your screen comfortable before beginning. You can adjust the visual display, reading style, or motion settings to best match your eyes and device. These options only adjust how items appear on your screen—they never affect your assessment or evaluation. Choose any adjustments you'd like, or select &ldquo;No adjustments needed&rdquo; to continue with standard settings.
  </p>
  </div>
@@ -1025,34 +1018,34 @@ function renderAccessibility(app) {
  <input type="checkbox" id="a11y_none" class="mt-1 accent-[#bd6f5d]" ${!hasAccommodations ? 'checked' : ''}>
  <div>
  <div class="text-sm font-medium text-[var(--text-primary)]">No adjustments needed (Standard Display)</div>
- <div class="text-xs text-black mt-0.5">I do not require visual, reading, or motion adjustments. Continue with standard studio settings.</div>
+ <div class="text-xs text-[var(--text-secondary)] mt-0.5">I do not require visual, reading, or motion adjustments. Continue with standard studio settings.</div>
  </div>
  </label>
  <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer hover:bg-white transition-colors">
  <input type="checkbox" id="a11y_contrast" class="mt-1 accent-[#bd6f5d]" ${modes.includes('high_contrast') ? 'checked' : ''}>
  <div>
  <div class="text-sm font-medium text-[var(--text-primary)]">High Contrast Display</div>
- <div class="text-xs text-black mt-0.5">Increases text contrast, element borders, and background separation for clearer visibility.</div>
+ <div class="text-xs text-[var(--text-secondary)] mt-0.5">Increases text contrast, element borders, and background separation for clearer visibility.</div>
  </div>
  </label>
  <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer hover:bg-white transition-colors">
  <input type="checkbox" id="a11y_dyslexia" class="mt-1 accent-[#bd6f5d]" ${modes.includes('dyslexia_font') ? 'checked' : ''}>
  <div>
  <div class="text-sm font-medium text-[var(--text-primary)]">Dyslexia-Friendly Typography</div>
- <div class="text-xs text-black mt-0.5">Applies a high-legibility sans-serif typeface with enhanced letter and line spacing.</div>
+ <div class="text-xs text-[var(--text-secondary)] mt-0.5">Applies a high-legibility sans-serif typeface with enhanced letter and line spacing.</div>
  </div>
  </label>
  <label class="flex items-start gap-3 p-3 bg-[#faf8f5] border border-[var(--grid-border)] cursor-pointer hover:bg-white transition-colors">
  <input type="checkbox" id="a11y_motion" class="mt-1 accent-[#bd6f5d]" ${modes.includes('reduced_motion') ? 'checked' : ''}>
  <div>
  <div class="text-sm font-medium text-[var(--text-primary)]">Reduced Motion</div>
- <div class="text-xs text-black mt-0.5">Removes non-essential animations, pulsing transitions, and rapid movement.</div>
+ <div class="text-xs text-[var(--text-secondary)] mt-0.5">Removes non-essential animations, pulsing transitions, and rapid movement.</div>
  </div>
  </label>
  </div>
 
  <div class="pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
- <span class="text-xs text-black italic">Preferences are strictly for your comfort and never lower your result or count against you in any way.</span>
+ <span class="text-xs text-[var(--text-secondary)] italic">Preferences are strictly for your comfort and never lower your result or count against you in any way.</span>
  <button id="saveA11yBtn" class="min-h-[44px] px-8 py-2.5 bg-[var(--text-primary)] text-white text-xs uppercase tracking-widest hover:bg-[var(--accent-gold)] shadow-sm rounded-xs">
  Continue &rarr;
  </button>
@@ -1138,7 +1131,7 @@ function renderWarmup(app) {
  <div class="space-y-6 text-center py-4 ">
  <span class="act-badge">Device Check · رہنمائی</span>
  <h2 class="text-2xl text-[var(--text-primary)]">Screen & Rhythm Check</h2>
- <p class="text-xs text-black max-w-md mx-auto leading-relaxed">
+ <p class="text-xs text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">
  Please tap or click the center circle 3 times at a natural, comfortable pace to check your device.
  </p>
 
@@ -1148,7 +1141,7 @@ function renderWarmup(app) {
  </button>
  </div>
 
- <div id="warmupStatus" class="text-xs text-black tracking-wider uppercase font-medium">
+ <div id="warmupStatus" class="text-xs text-[var(--text-primary)] tracking-wider uppercase font-medium">
  Waiting for tap 1 of 3...
  </div>
  </div>
@@ -1194,7 +1187,7 @@ function renderWarmup(app) {
  <div class="space-y-6 text-center py-16 ">
  <div class="waiting-spinner"></div>
  <h2 class="text-xl text-[var(--text-primary)]">Loading Scenarios...</h2>
- <p class="text-xs text-black max-w-sm mx-auto leading-relaxed">
+ <p class="text-xs text-[var(--text-secondary)] max-w-sm mx-auto leading-relaxed">
  Connecting to the assessment server. This may take a few moments if starting from cold.
  </p>
  </div>
@@ -1231,7 +1224,7 @@ function renderWarmup(app) {
  <div class="space-y-6 text-center py-12 ">
  <div class="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 text-[var(--text-primary)] flex items-center justify-center mx-auto text-xl ">!</div>
  <h2 class="text-xl text-[var(--text-primary)]">Connection Notice</h2>
- <p class="text-xs text-black max-w-sm mx-auto leading-relaxed">
+ <p class="text-xs text-[var(--text-secondary)] max-w-sm mx-auto leading-relaxed">
  The server is taking longer than expected to respond. Your device check is safely saved.
  </p>
  <div class="pt-2">
@@ -1384,7 +1377,7 @@ function renderSjtBriefing(app) {
  const segmentProgress = document.getElementById('segmentProgress');
  if (segmentProgress) {
  const remainingMins = Math.max(1, Math.round(((total - current + 1) * 35 + 14 * 32) / 60));
- segmentProgress.innerHTML = `<span class="text-black hidden sm:inline mr-2 text-[10px] sm:text-xs font-normal">About ${remainingMins} mins remaining</span><span>Judgment ${current} / ${total}</span>`;
+ segmentProgress.innerHTML = `<span class="text-[var(--text-secondary)] hidden sm:inline mr-2 text-[10px] sm:text-xs font-normal">About ${remainingMins} mins remaining</span><span>Judgment ${current} / ${total}</span>`;
  }
 
  const selectedOptId = state.sjtResponses[scenario.id] || null;
@@ -1491,7 +1484,7 @@ async function submitSjtAndProceed() {
  <div class="space-y-6 text-center py-16 ">
  <div class="waiting-spinner"></div>
  <h2 class="text-xl text-[var(--text-primary)]">Saving Judgments...</h2>
- <p class="text-xs text-black">Recording your situation judgments to your session profile.</p>
+ <p class="text-xs text-[var(--text-secondary)]">Recording your situation judgments to your session profile.</p>
  </div>
  `;
  }
@@ -1520,7 +1513,7 @@ async function submitSjtAndProceed() {
  <div class="space-y-6 text-center py-12 ">
  <div class="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 text-[var(--text-primary)] flex items-center justify-center mx-auto text-xl ">!</div>
  <h2 class="text-xl text-[var(--text-primary)]">Submission Notice</h2>
- <p class="text-xs text-black max-w-sm mx-auto leading-relaxed">
+ <p class="text-xs text-[var(--text-secondary)] max-w-sm mx-auto leading-relaxed">
  Could not record responses due to a temporary server connection delay. Your choices are safely kept.
  </p>
  <div class="pt-2">
@@ -1637,7 +1630,7 @@ function renderGames(app, progressBarFill) {
  if (segmentProgress) {
  const remainingActivities = totalActivities - currentActivityNumber + 1;
  const remainingMins = Math.max(1, Math.round((remainingActivities * 32) / 60));
- segmentProgress.innerHTML = `<span class="text-black hidden sm:inline mr-2 text-[10px] sm:text-xs font-normal">About ${remainingMins} min${remainingMins > 1 ? 's' : ''} remaining</span><span>Activities ${currentActivityNumber} / ${totalActivities}</span>`;
+ segmentProgress.innerHTML = `<span class="text-[var(--text-secondary)] hidden sm:inline mr-2 text-[10px] sm:text-xs font-normal">About ${remainingMins} min${remainingMins > 1 ? 's' : ''} remaining</span><span>Activities ${currentActivityNumber} / ${totalActivities}</span>`;
  }
 
  if (progressBarFill) {
@@ -1697,7 +1690,7 @@ function renderFinalizationRetry(app, message) {
  <div class="space-y-6 text-center py-16 ">
  <div class="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 text-[var(--text-primary)] flex items-center justify-center mx-auto text-xl ">!</div>
  <h2 class="text-2xl text-[var(--text-primary)]">Connection Notice</h2>
- <p class="text-xs text-black max-w-md mx-auto leading-relaxed">${message}</p>
+ <p class="text-xs text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">${message}</p>
  <div class="pt-2">
  <button id="retryFinalizationBtn" class="min-h-[44px] px-6 py-2.5 bg-[var(--text-primary)] text-white text-xs uppercase tracking-widest hover:bg-[var(--accent-gold)] shadow-sm rounded-xs">Retry Finalization &rarr;</button>
  </div>
@@ -1725,7 +1718,7 @@ async function finishAssessment() {
  <div class="space-y-6 text-center py-16 ">
  <div class="waiting-spinner"></div>
  <h2 id="finalizingHeading" class="text-2xl text-[var(--text-primary)]">Synchronizing activity...</h2>
- <p id="finalizingSubtext" class="text-xs text-black">Saving your completed activity... Please keep this page open.</p>
+ <p id="finalizingSubtext" class="text-xs text-[var(--text-secondary)]">Saving your completed activity... Please keep this page open.</p>
  </div>
  `;
  }
@@ -1799,7 +1792,7 @@ function renderPaused(app) {
  app.innerHTML = `
  <div class="space-y-6 text-center py-12">
  <h2 class="text-3xl text-[var(--text-primary)]">Session Paused</h2>
- <p class="text-sm text-black max-w-md mx-auto">
+ <p class="text-sm text-[var(--text-secondary)] max-w-md mx-auto">
  Your progress has been preserved. Take as much time as you need. Timing metrics are suspended while paused.
  </p>
  <div class="pt-4">
@@ -1895,7 +1888,7 @@ async function renderComplete(app) {
 
       <!-- Step 1: Date Selection -->
       <div>
-        <label class="block text-xs uppercase tracking-wider text-black font-semibold mb-2">1. Choose Date</label>
+        <label class="block text-xs uppercase tracking-wider text-[var(--text-primary)] font-semibold mb-2">1. Choose Date</label>
         <div id="datePillsContainer" class="flex flex-wrap gap-2">
           ${availableDays.map((day, idx) => `
             <button type="button" class="date-pill px-3 py-2 text-xs border border-[var(--grid-border)] bg-white hover:border-[var(--accent-gold)] transition-colors text-stone-800 ${idx === 0 ? 'selected-date border-[var(--accent-gold)] bg-[#fdfaf3] font-bold' : ''}" data-date="${day.date}" data-label="${day.full_date_label}">
@@ -1907,7 +1900,7 @@ async function renderComplete(app) {
 
       <!-- Step 2: Time Selection -->
       <div>
-        <label class="block text-xs uppercase tracking-wider text-black font-semibold mb-2">2. Choose Time Slot (IST)</label>
+        <label class="block text-xs uppercase tracking-wider text-[var(--text-primary)] font-semibold mb-2">2. Choose Time Slot (IST)</label>
         <div id="timePillsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <!-- Populated dynamically based on selected date -->
         </div>

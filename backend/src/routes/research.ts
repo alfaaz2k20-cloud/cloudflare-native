@@ -5,6 +5,7 @@ import { getSessionTaskRecords, DOSSIER_STATEMENT, LOCKED_GAMES } from '../servi
 import { getEmailProvider } from '../notifications/email';
 import { extractSessionFeatures } from '../services/features';
 import { integrateSessionEvidence, PARAM_MINIGAMES, CANDIDATE_CORE_MINIGAMES } from '../services/evidence';
+import { validateInterviewSlot } from '../services/interview';
 
 const researchRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -160,7 +161,11 @@ researchRouter.get('/sessions/:session_id', async (c) => {
   // Check existing evidence
   let evidenceList = (await c.env.DB.prepare('SELECT * FROM evidence WHERE session_id = ? AND is_superseded = 0').bind(sessionId).all<any>()).results || [];
 
-  const needsRecompute = forceRecompute || evidenceList.length === 0 || (eventsCount > 0 && evidenceList.every((e: any) => e.game_raw === null));
+  const needsRecompute = forceRecompute || evidenceList.length === 0 || (
+    session.status === 'COMPLETE' &&
+    eventsCount > 0 &&
+    evidenceList.every((e: any) => e.game_raw === null)
+  );
 
   if (needsRecompute) {
     try {
@@ -258,7 +263,7 @@ researchRouter.get('/sessions/:session_id', async (c) => {
         consistency: ev?.consistency || 'INSUFFICIENT',
         consistency_spread: ev?.game_consistency_spread ?? null,
         usable_count: usableCount,
-        total_count: gameIds.length
+        total_count: CANDIDATE_CORE_MINIGAMES[paramName] ? CANDIDATE_CORE_MINIGAMES[paramName].length : gameIds.length
       },
       game_relative: ev?.game_relative ?? null,
       cross_method_delta: ev?.cross_method_delta ?? null,
@@ -306,10 +311,13 @@ researchRouter.get('/sessions/:session_id', async (c) => {
 
   if (hasAnySjt) {
     dimensions.sort((a, b) => ((b.sjt?.relative ?? -999) - (a.sjt?.relative ?? -999)));
+    dimensions.forEach((d, idx) => { d.rank = idx + 1; });
   } else if (hasAnyGame) {
     dimensions.sort((a, b) => ((b.game_relative ?? -999) - (a.game_relative ?? -999)));
+    dimensions.forEach((d, idx) => { d.rank = idx + 1; });
+  } else {
+    dimensions.forEach((d) => { d.rank = null; });
   }
-  dimensions.forEach((d, idx) => { d.rank = idx + 1; });
 
   // Measurement comparisons
   const measurementComparisons: Record<string, any> = {};
@@ -450,17 +458,25 @@ researchRouter.post('/sessions/:session_id/reschedule', async (c) => {
   const body = await c.req.json().catch(() => ({}));
 
   if (body.action === 'CANCEL') {
-    await c.env.DB.prepare('DELETE FROM interview_bookings WHERE session_id = ?').bind(sessionId).run();
+    const res = await c.env.DB.prepare('DELETE FROM interview_bookings WHERE session_id = ?').bind(sessionId).run();
+    if ((res.meta?.changes ?? 0) === 0) {
+      return c.json({ error: 'No active interview booking found to cancel', detail: 'No active interview booking found to cancel' }, 404);
+    }
     return c.json({ status: 'CANCELLED' });
   }
 
   const slotDate = (body.slot_date || '').trim();
   const slotTime = (body.slot_time || '').trim();
-  const slotDisplay = (body.slot_display || `${slotDate} ${slotTime}`).trim();
 
   if (!slotDate || !slotTime) {
     return c.json({ error: 'slot_date and slot_time are required', detail: 'slot_date and slot_time are required' }, 400);
   }
+
+  const validation = await validateInterviewSlot(c.env.DB, slotDate, slotTime, body.slot_display);
+  if (!validation.valid) {
+    return c.json({ error: validation.error, detail: validation.error }, 400);
+  }
+  const cleanSlotDisplay = validation.slotDisplay || `${slotDate} ${slotTime}`;
 
   // Check collision against another active booking on the exact same date and time slot
   const collision = await c.env.DB.prepare("SELECT id FROM interview_bookings WHERE slot_date = ? AND slot_time = ? AND session_id != ? AND status = 'SCHEDULED'").bind(slotDate, slotTime, sessionId).first();
@@ -469,11 +485,15 @@ researchRouter.post('/sessions/:session_id/reschedule', async (c) => {
   }
 
   try {
-    await c.env.DB.prepare(`
+    const updateRes = await c.env.DB.prepare(`
       UPDATE interview_bookings
       SET slot_date = ?, slot_time = ?, slot_display = ?
       WHERE session_id = ?
-    `).bind(slotDate, slotTime, slotDisplay, sessionId).run();
+    `).bind(slotDate, slotTime, cleanSlotDisplay, sessionId).run();
+
+    if ((updateRes.meta?.changes ?? 0) === 0) {
+      return c.json({ error: 'No active interview booking found for this session', detail: 'No active interview booking found for this session' }, 404);
+    }
   } catch (err: any) {
     if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
       return c.json({ error: 'This interview slot is already scheduled for another candidate. Please select a different slot.', detail: 'This interview slot is already scheduled for another candidate.' }, 409);

@@ -90,9 +90,9 @@ function runE1RuleShift(app, renderHeader, logEvent, onComplete) {
     `,
     interactionContent: `
       <div class="space-y-3">
-        <div class="options-directive">
-          <span>Tap Container 1 or Container 2 to place tile now:</span>
-          <span style="font-size:0.75rem; color:var(--text-secondary);">Direct tap to sort</span>
+        <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</span>
+          <span class="text-[11px] text-[var(--text-secondary)]">Tap Container 1 or Container 2 to place this tile</span>
         </div>
         <div class="mosaic-containers-row">
           <button type="button" class="container-box-btn bin-btn" data-choice="container_1" id="btnContainer1" tabindex="0">
@@ -114,7 +114,7 @@ function runE1RuleShift(app, renderHeader, logEvent, onComplete) {
     `,
     summaryContent: `
       <span>Sorting progress:</span>
-      <span class="text-sm text-black">${currentIdx + 1} / ${trials.length}</span>
+      <span class="text-sm text-[var(--text-primary)]">${currentIdx + 1} / ${trials.length}</span>
     `,
     progressText: `Tile ${currentIdx + 1} of ${trials.length}`
   });
@@ -313,9 +313,9 @@ function runE2SetbackRecovery(app, renderHeader, logEvent, onComplete) {
     `,
     interactionContent: `
       <div class="space-y-3">
-        <div class="options-directive">
-          <span>Choose what you would do right now:</span>
-          <span style="font-size:0.75rem; color:var(--text-secondary);">Tap to select</span>
+        <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</span>
+          <span class="text-[11px] text-[var(--text-secondary)]">Select what you would do right now in response</span>
         </div>
         <div class="outside-options space-y-2.5">
           ${s.options.map((opt, idx) => {
@@ -336,7 +336,7 @@ function runE2SetbackRecovery(app, renderHeader, logEvent, onComplete) {
     `,
     summaryContent: `
       <span>${selectedAction ? `You selected: <strong class="text-[var(--text-primary)]">${activeOpt?.label}</strong>` : 'Select an option above to continue.'}</span>
-      <span class="text-sm text-black">${currentSeq + 1} / ${sequences.length}</span>
+      <span class="text-sm text-[var(--text-primary)]">${currentSeq + 1} / ${sequences.length}</span>
     `,
     actionButtonId: 'confirmE2Btn',
     actionButtonText: currentSeq < sequences.length - 1 ? 'Confirm Choice &rarr;' : 'Confirm & Finish &rarr;',
@@ -492,7 +492,7 @@ function runE3ChangingConditions(app, renderHeader, logEvent, onComplete) {
  <!-- TASK HEADER -->
  <div class="mb-4">
  <h2 class="text-xl sm:text-2xl text-[var(--text-primary)]">The Shifting Medium</h2>
- <p class="text-base text-black mt-0.5">Adapt design layout to active studio conditions.</p>
+ <p class="text-base text-[var(--text-primary)] mt-0.5">Adapt design layout to active studio conditions.</p>
  </div>
 
  <!-- YOUR TASK -->
@@ -513,7 +513,7 @@ function runE3ChangingConditions(app, renderHeader, logEvent, onComplete) {
 
  <!-- INTERACTION AREA -->
  <div class="p-5 bg-[#faf8f5] border border-[var(--grid-border)] mb-4 rounded-xs shadow-xs candidate-content-protected">
- <div class="text-sm text-black uppercase tracking-wider mb-2.5">Layout Options:</div>
+ <div class="text-sm text-[var(--text-primary)] uppercase tracking-wider mb-2.5">Layout Options:</div>
  <div class="space-y-2.5">
  ${c.options.map(opt => `
  <div class="e3-opt p-3.5 bg-white border ${selectedLayout === opt.id ? 'border-[var(--accent-gold)] bg-amber-50/70 shadow-xs' : 'border-[var(--grid-border)]'} rounded-xs cursor-pointer interactive-option text-base flex items-center justify-between min-h-[48px]" data-layout="${opt.id}" tabindex="0" role="button">
@@ -528,9 +528,9 @@ function runE3ChangingConditions(app, renderHeader, logEvent, onComplete) {
  </div>
 
  <!-- YOUR CHOICE -->
- <div class="p-3 bg-white border border-[var(--grid-border)] rounded-xs mb-4 text-base text-black flex justify-between items-center">
+ <div class="p-3 bg-white border border-[var(--grid-border)] rounded-xs mb-4 text-base text-[var(--text-primary)] flex justify-between items-center">
  <span>${selectedLayout ? `You selected: <strong class="text-[var(--text-primary)]">${activeLayout?.label}</strong>` : 'Select a layout above to continue.'}</span>
- <span class="text-sm text-black ">${currentCondition + 1} / ${conditions.length}</span>
+ <span class="text-sm text-[var(--text-primary)] ">${currentCondition + 1} / ${conditions.length}</span>
  </div>
 
  <!-- PRIMARY ACTION BUTTON -->

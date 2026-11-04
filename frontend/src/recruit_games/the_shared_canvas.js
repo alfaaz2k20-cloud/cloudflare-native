@@ -113,15 +113,23 @@ function runC1ResourceCooperation(app, renderHeader, logEvent, onComplete) {
       </div>
     `,
     interactionContent: `
-      <div class="space-y-4">
-        <div class="p-4 bg-white border border-[var(--grid-border)] rounded-xs space-y-3">
+      <div class="space-y-5">
+        <!-- STEP 2: SHARE CERAMIC TILES -->
+        <div class="p-4 sm:p-5 bg-white border border-[var(--grid-border)] rounded-xs space-y-3 shadow-xs">
           <div class="flex items-center justify-between pb-2 border-b border-[var(--grid-border)]">
-            <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Round ${currentRound + 1} of ${rounds.length}: ${r.title}</span>
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-[var(--accent-gold)] text-white text-xs font-bold flex items-center justify-center font-serif">2</span>
+              <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 2: Allocate Shared Tiles</span>
+            </div>
             <span class="text-xs text-[var(--text-secondary)]">${r.context_note}</span>
           </div>
           <p class="text-sm sm:text-base text-[var(--text-primary)] leading-relaxed">
             ${r.description}
           </p>
+          <div class="pt-1">
+            <div class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</div>
+            <div class="text-[11px] text-[var(--text-secondary)]">Use the plus and minus buttons to transfer tiles to your partner</div>
+          </div>
           <div class="p-4 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs text-center">
             <div class="counter-controls">
               <button type="button" class="counter-btn" id="minusTileBtn" aria-label="Decrease shared tiles">−</button>
@@ -135,7 +143,7 @@ function runC1ResourceCooperation(app, renderHeader, logEvent, onComplete) {
     `,
     summaryContent: `
       <span>Sharing: <strong class="text-[var(--text-primary)]">${transferCount} tiles</strong> (You keep ${userTotal})</span>
-      <span class="text-sm text-black">Round ${currentRound + 1} of ${rounds.length}</span>
+      <span class="text-sm text-[var(--text-primary)]">Round ${currentRound + 1} of ${rounds.length}</span>
     `,
     actionButtonId: 'confirmTransferBtn',
     actionButtonText: currentRound < rounds.length - 1 ? 'Confirm Allocation &rarr;' : 'Confirm & Finish &rarr;',
@@ -295,9 +303,9 @@ function runC2Coordination(app, renderHeader, logEvent, onComplete) {
     `,
     interactionContent: `
       <div class="space-y-3">
-        <div class="options-directive">
-          <span>Choose where on the wall to hang your artwork:</span>
-          <span style="font-size:0.75rem; color:var(--text-secondary);">Tap to select</span>
+        <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between mb-2">
+          <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</span>
+          <span class="text-[11px] text-[var(--text-secondary)]">Select where on the wall to hang your artwork</span>
         </div>
         <div class="outside-options space-y-2.5">
           ${r.slots.map((s, idx) => {
@@ -318,7 +326,7 @@ function runC2Coordination(app, renderHeader, logEvent, onComplete) {
     `,
     summaryContent: `
       <span>${chosenSlot ? `You selected: <strong class="text-[var(--text-primary)]">${activeSlot?.label}</strong>` : 'Select a spot above to continue.'}</span>
-      <span class="text-sm text-black">Round ${currentRound + 1} of ${rounds.length}</span>
+      <span class="text-sm text-[var(--text-primary)]">Round ${currentRound + 1} of ${rounds.length}</span>
     `,
     actionButtonId: 'confirmWallBtn',
     actionButtonText: currentRound < rounds.length - 1 ? 'Confirm Placement &rarr;' : 'Confirm & Finish &rarr;',
@@ -492,7 +500,7 @@ function runC3CollaborationRepair(app, renderHeader, logEvent, onComplete) {
  <!-- TASK HEADER -->
  <div class="mb-4">
  <h2 class="text-xl sm:text-2xl text-[var(--text-primary)]">The Dual Lanterns</h2>
- <p class="text-base text-black mt-0.5">Resolve studio issues to keep exhibition work moving.</p>
+ <p class="text-base text-[var(--text-primary)] mt-0.5">Resolve studio issues to keep exhibition work moving.</p>
  </div>
 
  <!-- YOUR TASK -->
@@ -511,45 +519,65 @@ function runC3CollaborationRepair(app, renderHeader, logEvent, onComplete) {
  <span class="text-sm uppercase tracking-wider text-[var(--accent-gold)] font-medium">Stage ${currentOpportunity + 1} of 3</span>
  </div>
 
- <!-- INTERACTION AREA -->
- <div class="p-5 bg-[#faf8f5] border border-[var(--grid-border)] mb-4 rounded-xs shadow-xs candidate-content-protected">
- <!-- Step 1: Identify Breakdown -->
- <div class="mb-4">
- <div class="text-base font-semibold uppercase tracking-wider text-[var(--text-primary)] mb-2 ">
- Step 1: What is the issue?
- </div>
- <div class="space-y-2">
- ${opp.fault_options.map(f => `
- <div class="fault-opt p-3 bg-white border ${selectedFault === f.id ? 'border-[var(--accent-gold)] bg-amber-50/70 shadow-xs font-medium' : 'border-[var(--grid-border)] '} rounded-xs cursor-pointer interactive-option text-base flex items-center gap-2 min-h-[44px]" data-fault="${f.id}" tabindex="0" role="button">
- <span class="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center text-[8px] ${selectedFault === f.id ? 'bg-[var(--accent-gold)] text-white' : 'text-stone-300'}">${selectedFault === f.id ? '✓' : ''}</span>
- <span class="text-[var(--text-primary)]">${f.label}</span>
- </div>
- `).join('')}
- </div>
- </div>
+ <!-- INTERACTION AREA: TWO DISTINCT SPACED CARDS -->
+ <div class="space-y-5 mb-5 candidate-content-protected">
+   <!-- Step 1 Card: Identify Breakdown -->
+   <div class="p-4 sm:p-5 bg-white border border-[var(--grid-border)] rounded-xs shadow-xs space-y-3">
+     <div class="flex items-center justify-between pb-2 border-b border-[var(--grid-border)]">
+       <div class="flex items-center gap-2">
+         <span class="w-6 h-6 rounded-full bg-[var(--accent-gold)] text-white text-xs font-bold flex items-center justify-center font-serif">1</span>
+         <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 1: Identify the Issue</span>
+       </div>
+       <span class="text-[11px] text-[var(--text-secondary)] font-medium">Studio Diagnosis</span>
+     </div>
+     <div>
+       <div class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</div>
+       <div class="text-[11px] text-[var(--text-secondary)]">What went wrong in the studio?</div>
+     </div>
+     <div class="space-y-2 pt-1">
+       ${opp.fault_options.map(f => `
+       <div class="fault-opt p-3.5 bg-white border ${selectedFault === f.id ? 'border-[var(--accent-gold)] bg-amber-50/70 shadow-xs font-medium' : 'border-[var(--grid-border)] '} rounded-xs cursor-pointer interactive-option text-base flex items-center gap-2.5 min-h-[46px]" data-fault="${f.id}" tabindex="0" role="button">
+         <span class="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center text-[8px] ${selectedFault === f.id ? 'bg-[var(--accent-gold)] text-white' : 'text-stone-300'}">${selectedFault === f.id ? '✓' : ''}</span>
+         <span class="text-[var(--text-primary)]">${f.label}</span>
+       </div>
+       `).join('')}
+     </div>
+   </div>
 
- <!-- Step 2: Perform Constructive Repair -->
- ${selectedFault ? `
- <div class="pt-4 border-t border-[var(--grid-border)] ">
- <div class="text-base font-semibold uppercase tracking-wider text-[var(--text-primary)] mb-2 ">
- Step 2: Choose a constructive fix:
- </div>
- <div class="space-y-2">
- ${opp.repair_options.map(r => `
- <div class="repair-opt p-3 bg-white border ${selectedRepair === r.id ? 'border-[var(--accent-gold)] bg-amber-50/70 shadow-xs font-medium' : 'border-[var(--grid-border)] '} rounded-xs cursor-pointer interactive-option text-base flex items-center gap-2 min-h-[44px]" data-repair="${r.id}" tabindex="0" role="button">
- <span class="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center text-[8px] ${selectedRepair === r.id ? 'bg-[var(--accent-gold)] text-white' : 'text-stone-300'}">${selectedRepair === r.id ? '✓' : ''}</span>
- <span class="text-[var(--text-primary)]">${r.label}</span>
- </div>
- `).join('')}
- </div>
- </div>
- ` : ''}
+   <!-- Step 2 Card: Perform Constructive Repair (Spaced Distinct Card) -->
+   ${selectedFault ? `
+   <div class="p-4 sm:p-5 bg-white border border-[var(--grid-border)] rounded-xs shadow-xs space-y-3">
+     <div class="flex items-center justify-between pb-2 border-b border-[var(--grid-border)]">
+       <div class="flex items-center gap-2">
+         <span class="w-6 h-6 rounded-full bg-[var(--accent-gold)] text-white text-xs font-bold flex items-center justify-center font-serif">2</span>
+         <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 2: Choose a Constructive Fix</span>
+       </div>
+       <span class="text-[11px] text-[var(--text-secondary)] font-medium">Repair Action</span>
+     </div>
+     <div>
+       <div class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</div>
+       <div class="text-[11px] text-[var(--text-secondary)]">Select the most constructive repair to resolve this breakdown</div>
+     </div>
+     <div class="space-y-2 pt-1">
+       ${opp.repair_options.map(r => `
+       <div class="repair-opt p-3.5 bg-white border ${selectedRepair === r.id ? 'border-[var(--accent-gold)] bg-amber-50/70 shadow-xs font-medium' : 'border-[var(--grid-border)] '} rounded-xs cursor-pointer interactive-option text-base flex items-center gap-2.5 min-h-[46px]" data-repair="${r.id}" tabindex="0" role="button">
+         <span class="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center text-[8px] ${selectedRepair === r.id ? 'bg-[var(--accent-gold)] text-white' : 'text-stone-300'}">${selectedRepair === r.id ? '✓' : ''}</span>
+         <span class="text-[var(--text-primary)]">${r.label}</span>
+       </div>
+       `).join('')}
+     </div>
+   </div>
+   ` : `
+   <div class="p-4 bg-[#faf8f5] border border-dashed border-[var(--grid-border)] rounded-xs text-center text-xs text-[var(--text-secondary)]">
+     Select an issue in Step 1 above to unlock Step 2 repair options.
+   </div>
+   `}
  </div>
 
  <!-- YOUR CHOICE -->
- <div class="p-3 bg-white border border-[var(--grid-border)] rounded-xs mb-4 text-base text-black flex justify-between items-center">
+ <div class="p-3 bg-white border border-[var(--grid-border)] rounded-xs mb-4 text-base text-[var(--text-primary)] flex justify-between items-center">
  <span>${selectedFault && selectedRepair ? `Fix selected: <strong class="text-[var(--text-primary)]">${activeRepair?.label}</strong>` : (selectedFault ? 'Now choose a fix in Step 2.' : 'Select an issue in Step 1.')}</span>
- <span class="text-sm text-black ">${currentOpportunity + 1} / 3</span>
+ <span class="text-sm text-[var(--text-primary)] ">${currentOpportunity + 1} / 3</span>
  </div>
 
  <!-- PRIMARY ACTION BUTTON -->

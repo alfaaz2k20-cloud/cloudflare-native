@@ -32,3 +32,7 @@ GROQ_API_KEY=
 # In development/test, 1x0000000000000000000000000000000AA is the official Cloudflare dummy pass secret key.
 # In production, set your real Cloudflare Turnstile Secret Key via `npx wrangler secret put TURNSTILE_SECRET_KEY`.
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+
+# 5. Recruitment Stimulus HMAC Seed Key (Optional in local dev)
+# In production, configure via `npx wrangler secret put STIMULUS_HMAC_KEY`.
+# STIMULUS_HMAC_KEY=<redacted — rotated 2026-11-04>

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { generateMinigameSeeds, LATIN_SQUARE_14 } from '../backend/src/services/world_order';
 import { ingestTelemetryBatch } from '../backend/src/services/telemetry';
 import { computeCrossMethodDelta, determineRelationship, determineConfidence } from '../backend/src/services/evidence';
+import { validateInterviewSlot } from '../backend/src/services/interview';
 
 describe('Telemetry & Evidence Engine', () => {
   describe('Latin Square & Deterministic HMAC Seeds', () => {
@@ -87,6 +88,85 @@ describe('Telemetry & Evidence Engine', () => {
     });
   });
 
+  describe('Seq Conflict Flagging', () => {
+    function createReplayDb(stored: any[] = [], flaggedScopes: string[] = []) {
+      const flagInserts: Array<{ sql: string; params: any[] }> = [];
+      const db = {
+        prepare: vi.fn((sql: string) => ({
+          bind: vi.fn((...params: any[]) => {
+            if (sql.includes('INSERT INTO data_quality_flags')) flagInserts.push({ sql, params });
+            return {
+              first: vi.fn(async () => {
+                if (sql.includes('recruit_sessions')) return { status: 'CONSENTED' };
+                return { cnt: stored.length };
+              }),
+              run: vi.fn(async () => ({ success: true })),
+              all: vi.fn(async () => {
+                if (sql.includes('SELECT seq, action, mini_game, trial')) return { results: stored };
+                if (sql.includes('SELECT scope FROM data_quality_flags')) {
+                  return { results: flaggedScopes.map(scope => ({ scope })) };
+                }
+                return { results: [] };
+              })
+            };
+          })
+        })) as any,
+        batch: vi.fn(async (stmts: any[]) => stmts.map(() => ({ success: true })))
+      } as unknown as D1Database;
+      return { db, flagInserts };
+    }
+
+    const storedTap = [{ seq: 5, action: 'tap', mini_game: 'F1', trial: 1 }];
+
+    it('treats an identical resupply as a benign duplicate, not a conflict', async () => {
+      const { db, flagInserts } = createReplayDb(storedTap);
+
+      const res = await ingestTelemetryBatch(db, 'test-session', [
+        { seq: 5, action: 'tap', mini_game: 'F1', trial: 1, t_ms: 100 }
+      ]);
+
+      expect(res.ingested_count).toBe(0);
+      expect(res.ignored_duplicates).toBe(1);
+      expect(flagInserts).toHaveLength(0);
+    });
+
+    it('flags only a genuine collision where the same seq carries a different payload', async () => {
+      const { db, flagInserts } = createReplayDb(storedTap);
+
+      const res = await ingestTelemetryBatch(db, 'test-session', [
+        { seq: 5, action: 'submit', mini_game: 'F1', trial: 1, t_ms: 100 }
+      ]);
+
+      expect(res.ignored_duplicates).toBe(1);
+      expect(flagInserts).toHaveLength(1);
+      expect(flagInserts[0].sql).toContain("'seq_conflict'");
+      expect(flagInserts[0].params).toContain('seq_5');
+    });
+
+    it('does not re-insert a flag that already exists for the colliding seq', async () => {
+      const { db, flagInserts } = createReplayDb(storedTap, ['seq_5']);
+
+      await ingestTelemetryBatch(db, 'test-session', [
+        { seq: 5, action: 'submit', mini_game: 'F1', trial: 1, t_ms: 100 }
+      ]);
+
+      expect(flagInserts).toHaveLength(0);
+    });
+
+    it('treats a repeated seq inside one batch as benign when payloads match', async () => {
+      const { db, flagInserts } = createReplayDb([]);
+
+      const res = await ingestTelemetryBatch(db, 'test-session', [
+        { seq: 7, action: 'tap', mini_game: 'F1', trial: 2, t_ms: 100 },
+        { seq: 7, action: 'tap', mini_game: 'F1', trial: 2, t_ms: 100 }
+      ]);
+
+      expect(res.ingested_count).toBe(1);
+      expect(res.ignored_duplicates).toBe(1);
+      expect(flagInserts).toHaveLength(0);
+    });
+  });
+
   describe('Evidence Synthesis Logic (Cross-Method Delta & Confidence)', () => {
     it('computes cross-method delta correctly and returns null on missing values', () => {
       expect(computeCrossMethodDelta(0.85, 0.70)).toBe(0.15);
@@ -123,11 +203,48 @@ describe('Telemetry & Evidence Engine', () => {
       // 3 usable games + CONSISTENT + moderate delta (0.15 < delta <= 0.30) yields MODERATE
       expect(determineConfidence(true, 3, 'CONSISTENT', 0.25, false)).toBe('MODERATE');
 
-      // 2 usable games + low delta yields MODERATE (needs >= 3 usable for SUBSTANTIAL)
-      expect(determineConfidence(true, 2, 'CONSISTENT', 0.10, false)).toBe('MODERATE');
+      // 2 usable games + CONSISTENT + low delta (<= 0.15) yields SUBSTANTIAL under 2-game candidate battery
+      expect(determineConfidence(true, 2, 'CONSISTENT', 0.10, false)).toBe('SUBSTANTIAL');
+
+      // 2 usable games + VARIED spread yields MODERATE
+      expect(determineConfidence(true, 2, 'VARIED', 0.10, false)).toBe('MODERATE');
 
       // High delta (> 0.30) forces LIMITED
       expect(determineConfidence(true, 3, 'CONSISTENT', 0.35, false)).toBe('LIMITED');
+    });
+  });
+
+  describe('Shared Interview Slot Validation', () => {
+    function createSettingsDb(slotsJson: string | null = null) {
+      return {
+        prepare: vi.fn(() => ({
+          first: vi.fn(async () => slotsJson ? { slots_json: slotsJson } : null)
+        }))
+      } as any;
+    }
+
+    it('validates date format, calendar date, future timeframe, and offered slot', async () => {
+      const db = createSettingsDb();
+
+      // Missing values
+      expect((await validateInterviewSlot(db, '', '')).valid).toBe(false);
+
+      // Invalid format
+      expect((await validateInterviewSlot(db, '2026/12/01', '11:00 AM')).error).toContain('YYYY-MM-DD');
+
+      // Invalid calendar day
+      expect((await validateInterviewSlot(db, '2026-02-31', '11:00 AM')).error).toContain('valid calendar date');
+
+      // Past date
+      expect((await validateInterviewSlot(db, '2020-01-01', '11:00 AM')).error).toContain('cannot be in the past');
+
+      // Unoffered time
+      expect((await validateInterviewSlot(db, '2026-12-01', '01:00 AM')).error).toContain('not an offered interview time');
+
+      // Valid offered future slot
+      const res = await validateInterviewSlot(db, '2026-12-01', '11:00 AM', 'Dec 1 at 11:00 AM');
+      expect(res.valid).toBe(true);
+      expect(res.slotDisplay).toBe('Dec 1 at 11:00 AM');
     });
   });
 });

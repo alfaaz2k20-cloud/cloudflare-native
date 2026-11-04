@@ -20,13 +20,14 @@ export const ALL_MINIGAMES = [
   "E1", "E2", "E3", "Q1", "Q2", "Q3", "CR1", "CR2", "CR3", "M1", "M2", "M3"
 ];
 
-const STIMULUS_HMAC_KEY = "alfaaz-recruit-stimulus-seed-key-2026";
+const DEFAULT_STIMULUS_HMAC_KEY = "alfaaz-recruit-stimulus-seed-key-fallback";
 
-export async function generateMinigameSeeds(sessionId: string): Promise<Record<string, number>> {
+export async function generateMinigameSeeds(sessionId: string, hmacKey?: string): Promise<Record<string, number>> {
   const enc = new TextEncoder();
+  const effectiveKey = hmacKey || DEFAULT_STIMULUS_HMAC_KEY;
   const key = await crypto.subtle.importKey(
     "raw",
-    enc.encode(STIMULUS_HMAC_KEY),
+    enc.encode(effectiveKey),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
@@ -45,7 +46,8 @@ export async function generateMinigameSeeds(sessionId: string): Promise<Record<s
 
 export async function assignWorldOrder(
   db: D1Database,
-  sessionId: string
+  sessionId: string,
+  hmacKey?: string
 ): Promise<{ orderId: number; sequence: string[]; seeds: Record<string, number> }> {
   const rows = await db
     .prepare("SELECT world_order_id, COUNT(*) as cnt FROM task_assignments GROUP BY world_order_id")
@@ -66,7 +68,7 @@ export async function assignWorldOrder(
 
   const chosenOrderId = leastUsed[Math.floor(Math.random() * leastUsed.length)];
   const sequence = [...LATIN_SQUARE_14[chosenOrderId]];
-  const seeds = await generateMinigameSeeds(sessionId);
+  const seeds = await generateMinigameSeeds(sessionId, hmacKey);
 
   return {
     orderId: chosenOrderId,

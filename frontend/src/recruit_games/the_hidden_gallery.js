@@ -32,6 +32,7 @@ function runQ1InformationSeeking(app, renderHeader, logEvent, onComplete) {
  let currentDecision = 0;
  let selectedChoice = null;
  let viewedResources = {};
+ let openedTips = {};
  let lastInputModality = 'mouse';
 
  const decisions = [
@@ -109,7 +110,7 @@ function runQ1InformationSeeking(app, renderHeader, logEvent, onComplete) {
  }
 
   const d = decisions[currentDecision];
-  const hasTipOpened = Object.keys(viewedResources).length > 0;
+  const hasTipOpened = Boolean(openedTips[currentDecision]);
 
   app.innerHTML = renderGameShell({
     worldCode: 'W5',
@@ -142,9 +143,9 @@ function runQ1InformationSeeking(app, renderHeader, logEvent, onComplete) {
       <div class="space-y-4">
         <!-- Outside Actions with A, B, C bullets -->
         <div class="space-y-3">
-          <div class="options-directive">
-            <span>Choose how to care for this object:</span>
-            <span style="font-size:0.75rem; color:var(--text-secondary);">Tap to select</span>
+          <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between mb-2">
+            <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</span>
+            <span class="text-[11px] text-[var(--text-secondary)]">Select how you want to care for this object</span>
           </div>
           <div class="outside-options space-y-2.5">
             ${d.options.map((opt, idx) => {
@@ -166,7 +167,7 @@ function runQ1InformationSeeking(app, renderHeader, logEvent, onComplete) {
     `,
     summaryContent: `
       <span>${selectedChoice ? `You selected: <strong class="text-[var(--text-primary)]">${d.options.find(o => o.id === selectedChoice)?.label}</strong>` : 'Select an action above to continue.'}</span>
-      <span class="text-sm text-black">${currentDecision + 1} / ${decisions.length}</span>
+      <span class="text-sm text-[var(--text-primary)]">${currentDecision + 1} / ${decisions.length}</span>
     `,
     actionButtonId: 'confirmQ1Btn',
     actionButtonText: currentDecision < decisions.length - 1 ? 'Confirm Decision &rarr;' : 'Confirm & Finish &rarr;',
@@ -178,12 +179,12 @@ function runQ1InformationSeeking(app, renderHeader, logEvent, onComplete) {
   if (tipBtn) {
     tipBtn.onclick = () => {
       const resId = d.optional_resources[0]?.id || 'OPT_USEFUL_1';
-      viewedResources[resId] = true;
-      logEvent('optional_resource_viewed', {
+      openedTips[currentDecision] = true;
+      logEvent('help_requested', {
         trial_index: currentDecision,
         stimulus_id: d.stimulus_id,
         resource_id: resId,
-        input_modality: 'mouse',
+        input_modality: lastInputModality || 'mouse',
         task_def_version: '1.0'
       });
       render();
@@ -236,6 +237,7 @@ function runQ1InformationSeeking(app, renderHeader, logEvent, onComplete) {
  currentDecision++;
       selectedChoice = null;
       viewedResources = {};
+      openedTips = {};
       logDecisionPresented();
       render();
       scrollToTop();
@@ -417,7 +419,7 @@ function runQ2InvestigationUnderUncertainty(app, renderHeader, logEvent, onCompl
         <div class="p-4 bg-white border border-[var(--grid-border)] rounded-xs space-y-3">
           <div class="flex items-center gap-2 pb-2 border-b border-[var(--grid-border)]">
             <span class="w-6 h-6 rounded-full bg-[var(--accent-gold)] text-white text-xs font-bold flex items-center justify-center font-serif">1</span>
-            <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 1: Tap to check clues on this ${v.noun}</span>
+            <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 1: Inspect Physical Clues</span>
           </div>
           <div class="flex gap-2 flex-wrap" id="clueRow">
             ${r.clues.map(c => `
@@ -433,9 +435,9 @@ function runQ2InvestigationUnderUncertainty(app, renderHeader, logEvent, onCompl
 
         <!-- Step 2 Outside Tile: Origin Attributions -->
         <div class="space-y-3">
-          <div class="options-directive">
-            <span>Step 2: Choose where this ${v.noun} came from:</span>
-            <span style="font-size:0.75rem; color:var(--text-secondary);">Tap to select</span>
+          <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between mb-2">
+            <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</span>
+            <span class="text-[11px] text-[var(--text-secondary)]">Step 2: Choose where this ${v.noun} originated</span>
           </div>
           <div class="outside-options space-y-2.5">
             ${r.attributions.map((attr, idx) => {
@@ -457,7 +459,7 @@ function runQ2InvestigationUnderUncertainty(app, renderHeader, logEvent, onCompl
     `,
     summaryContent: `
       <span>${selectedAttribution ? `You selected: <strong class="text-[var(--text-primary)]">${r.attributions.find(a => a.id === selectedAttribution)?.label}</strong>` : 'Inspect clues and select an origin.'}</span>
-      <span class="text-sm text-black">${currentTrial + 1} / ${relics.length}</span>
+      <span class="text-sm text-[var(--text-primary)]">${currentTrial + 1} / ${relics.length}</span>
     `,
     actionButtonId: 'confirmQ2Btn',
     actionButtonText: currentTrial < relics.length - 1 ? 'Confirm Origin &rarr;' : 'Confirm & Finish &rarr;',
@@ -654,7 +656,7 @@ function runQ3KnowledgeIntegration(app, renderHeader, logEvent, onComplete) {
  <!-- TASK HEADER -->
  <div class="mb-4">
  <h2 class="text-xl sm:text-2xl text-[var(--text-primary)]">The Weaver's Chronicle</h2>
- <p class="text-base text-black mt-0.5">Connect historical clues to solve catalog questions.</p>
+ <p class="text-base text-[var(--text-primary)] mt-0.5">Connect historical clues to solve catalog questions.</p>
  </div>
 
  <!-- YOUR TASK -->
@@ -672,7 +674,7 @@ function runQ3KnowledgeIntegration(app, renderHeader, logEvent, onComplete) {
  <span class="text-sm text-[var(--accent-gold)] uppercase font-medium">Case ${currentEpisode + 1} of 3</span>
  </div>
  <div class="text-sm sm:text-base font-semibold text-[var(--text-primary)]">${ep.title}</div>
- <div class="text-base text-black mt-1.5 leading-relaxed">${ep.ambiguity_text}</div>
+ <div class="text-base text-[var(--text-primary)] mt-1.5 leading-relaxed">${ep.ambiguity_text}</div>
  </div>
 
  <!-- INTERACTION AREA 1: Optional Context Retrieval -->
@@ -692,7 +694,7 @@ function runQ3KnowledgeIntegration(app, renderHeader, logEvent, onComplete) {
  <div>${ep.context_text}</div>
  </div>
  ` : `
- <div class="text-base text-black italic">
+ <div class="text-base text-[var(--text-primary)] italic">
  Optional research notes are available to clarify historic details.
  </div>
  `}
@@ -700,7 +702,7 @@ function runQ3KnowledgeIntegration(app, renderHeader, logEvent, onComplete) {
 
  <!-- YOUR CHOICE: Downstream Integration Decision -->
  <div class="p-4 sm:p-5 bg-white border border-[var(--grid-border)] mb-5 shadow-xs rounded-xs candidate-content-protected">
- <div class="text-sm text-black uppercase tracking-wider mb-2.5">${ep.decision_question}</div>
+ <div class="text-sm text-[var(--text-primary)] uppercase tracking-wider mb-2.5">${ep.decision_question}</div>
  <div class="space-y-2.5">
  ${ep.choices.map(c => `
  <div class="q3-choice p-3.5 bg-white border ${selectedIntegrationChoice === c.id ? 'border-[var(--accent-gold)] bg-amber-50/50 shadow-xs' : 'border-[var(--grid-border)]'} rounded-xs cursor-pointer interactive-option text-base flex items-center justify-between min-h-[48px]" data-choice="${c.id}" tabindex="0" role="button">
@@ -722,7 +724,7 @@ function runQ3KnowledgeIntegration(app, renderHeader, logEvent, onComplete) {
  </div>
 
  <!-- Progress Footer -->
- <div class="text-right text-[11px] text-black ">
+ <div class="text-right text-[11px] text-[var(--text-primary)] ">
  Episode ${currentEpisode + 1} of ${episodes.length}
  </div>
  </div>

@@ -74,7 +74,7 @@ function runA1Classification(app, renderHeader, logEvent, onComplete, worldIndex
  ${renderHeader('The Manuscript Folios', 'Sort each historical page onto its proper shelf.')}
  ${renderTutorialCard({
  icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>`,
- goal: 'File each document onto the correct shelf across 5 rounds.',
+ goal: 'File each document onto the correct shelf across 4 rounds.',
  steps: [
  'Check the date and description on each document card.',
  'Click the matching shelf to file it.',
@@ -131,7 +131,12 @@ function runA1Classification(app, renderHeader, logEvent, onComplete, worldIndex
 
  const interactionContent = `
  <div>
- <div class="text-base uppercase tracking-wider text-black mb-2 ">Select Destination Shelf:</div>
+ <div class="space-y-2 mb-3">
+	<div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between">
+	  <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</span>
+	  <span class="text-[11px] text-[var(--text-secondary)]">Select the shelf that matches the active sorting rule</span>
+	</div>
+	</div>
  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
  ${folders.map(f => {
  const isSelected = selectedFolder === f.id;
@@ -151,7 +156,7 @@ function runA1Classification(app, renderHeader, logEvent, onComplete, worldIndex
 
  const summaryContent = `
  <span>${selectedFolder ? `Selected shelf: <strong class="text-[var(--text-primary)]">${activeFolder?.label}</strong>` : 'Select a shelf above, then click Confirm.'}</span>
- <span class="text-sm text-black ">${currentDocIdx + 1} / ${documents.length}</span>
+ <span class="text-sm text-[var(--text-primary)] ">${currentDocIdx + 1} / ${documents.length}</span>
  `;
 
  app.innerHTML = renderGameShell({
@@ -310,37 +315,57 @@ function runA2ExceptionHandling(app, renderHeader, logEvent, onComplete, worldIn
  const activeAct = actions.find(a => a.id === chosenAction);
 
  const stimulusContent = `
-    <div class="p-5 sm:p-6 bg-[#faf8f5] border-l-4 border-l-[var(--accent-gold)] border border-[var(--grid-border)] rounded-xs shadow-xs space-y-2">
-      <div class="flex items-center justify-between mb-1">
-        <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">${t.title}</span>
-        <span class="text-xs text-[var(--text-secondary)] uppercase bg-white px-2 py-0.5 border border-[var(--grid-border)] rounded-xs">${t.type_note}</span>
+    <!-- STEP 1 CARD: INSPECT CONDITION -->
+    <div class="p-4 sm:p-5 bg-white border border-[var(--grid-border)] rounded-xs space-y-3 shadow-xs mb-4">
+      <div class="flex items-center justify-between pb-2 border-b border-[var(--grid-border)]">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-[var(--accent-gold)] text-white text-xs font-bold flex items-center justify-center font-serif">1</span>
+          <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 1: Inspect Folio Condition</span>
+        </div>
+        <span class="text-xs text-[var(--text-secondary)] uppercase bg-[#faf8f5] px-2.5 py-0.5 border border-[var(--grid-border)] rounded-xs">${t.type_note}</span>
       </div>
-      <p class="text-base sm:text-lg font-serif text-[var(--text-primary)] leading-relaxed">
-        ${t.anomaly_description}
-      </p>
+      <div class="p-3.5 bg-[#faf8f5] border-l-4 border-l-[var(--accent-gold)] border border-[var(--grid-border)] rounded-xs">
+        <div class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold mb-1">${t.title}</div>
+        <p class="text-base sm:text-lg font-serif text-[var(--text-primary)] leading-relaxed italic m-0">
+          ${t.anomaly_description}
+        </p>
+      </div>
     </div>
   `;
 
  const interactionContent = `
- <div class="space-y-2.5">
- <div class="text-base uppercase tracking-wider text-black mb-1 ">Choose handling action:</div>
- ${actions.map(a => `
- <div class="a2-opt p-3.5 bg-white border ${chosenAction === a.id ? 'border-[var(--accent-gold)] bg-amber-50/70 shadow-xs ring-1 ring-[var(--accent-gold)]/40' : 'border-[var(--grid-border)]'} cursor-pointer interactive-option rounded-xs min-h-[52px]" data-action="${a.id}" tabindex="0" role="button">
- <div class="flex justify-between items-center mb-0.5">
- <div class="text-base font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
- <span class="w-2 h-2 rounded-full ${chosenAction === a.id ? 'bg-[var(--accent-gold)]' : 'bg-stone-300'}"></span>
- ${a.title}
- </div>
- </div>
- <div class="text-[11px] text-black leading-relaxed pl-3.5">${a.desc}</div>
- </div>
- `).join('')}
+ <!-- STEP 2 CARD: PROTOCOL SELECTION -->
+ <div class="p-4 sm:p-5 bg-white border border-[var(--grid-border)] rounded-xs space-y-3 shadow-xs">
+   <div class="flex items-center justify-between pb-2 border-b border-[var(--grid-border)]">
+     <div class="flex items-center gap-2">
+       <span class="w-6 h-6 rounded-full bg-[var(--accent-gold)] text-white text-xs font-bold flex items-center justify-center font-serif">2</span>
+       <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 2: Choose Preservation Protocol</span>
+     </div>
+     <span class="text-[11px] text-[var(--text-secondary)] font-medium">Handling Action</span>
+   </div>
+   <div class="pt-1">
+     <div class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</div>
+     <div class="text-[11px] text-[var(--text-secondary)]">Select how you want to handle this page</div>
+   </div>
+   <div class="space-y-2.5 pt-1">
+     ${actions.map(a => `
+     <div class="a2-opt p-3.5 bg-white border ${chosenAction === a.id ? 'border-[var(--accent-gold)] bg-amber-50/70 shadow-xs ring-1 ring-[var(--accent-gold)]/40' : 'border-[var(--grid-border)]'} cursor-pointer interactive-option rounded-xs min-h-[52px]" data-action="${a.id}" tabindex="0" role="button">
+       <div class="flex justify-between items-center mb-0.5">
+         <div class="text-base font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+           <span class="w-2 h-2 rounded-full ${chosenAction === a.id ? 'bg-[var(--accent-gold)]' : 'bg-stone-300'}"></span>
+           ${a.title}
+         </div>
+       </div>
+       <div class="text-[11px] text-[var(--text-primary)] leading-relaxed pl-3.5">${a.desc}</div>
+     </div>
+     `).join('')}
+   </div>
  </div>
  `;
 
  const summaryContent = `
  <span>${chosenAction ? `You selected: <strong class="text-[var(--text-primary)]">${activeAct?.title}</strong>` : 'Select an option above to continue.'}</span>
- <span class="text-sm text-black ">${currentTrial + 1} / 4</span>
+ <span class="text-sm text-[var(--text-primary)] ">${currentTrial + 1} / 4</span>
  `;
 
  app.innerHTML = renderGameShell({
@@ -490,7 +515,7 @@ function runA3QualityControl(app, renderHeader, logEvent, onComplete) {
  <!-- TASK HEADER -->
  <div class="mb-4">
  <h2 class="text-xl sm:text-2xl text-[var(--text-primary)]">The Exhibition Ledger</h2>
- <p class="text-base text-black mt-0.5">Proofread all 5 display cards. Flag any card that has an error.</p>
+ <p class="text-base text-[var(--text-primary)] mt-0.5">Proofread all 5 display cards. Flag any card that has an error.</p>
  </div>
 
  <!-- YOUR TASK -->
@@ -502,7 +527,11 @@ function runA3QualityControl(app, renderHeader, logEvent, onComplete) {
  </div>
 
  <!-- LOOK AT THIS & INTERACTION AREA -->
- <div class="space-y-3 mb-5 candidate-content-protected">
+ <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between mb-3 candidate-content-protected">
+    <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Review cards below and flag any clear mistakes:</span>
+    <span class="text-[11px] text-[var(--text-secondary)]">Clean cards should remain unflagged</span>
+  </div>
+  <div class="space-y-3 mb-5 candidate-content-protected">
  ${records.map((r, idx) => {
  const isFlagged = flaggedRecords.has(r.id);
  return `
@@ -512,12 +541,12 @@ function runA3QualityControl(app, renderHeader, logEvent, onComplete) {
  <span class="text-sm text-[var(--accent-gold)] uppercase tracking-wider font-semibold">Ledger Card ${idx + 1} of 5</span>
  </div>
  <div class="text-base font-semibold text-[var(--text-primary)]">${r.title}</div>
- <div class="text-base text-black leading-relaxed bg-[#faf8f5] p-2.5 border border-[var(--grid-border)]/60 rounded-xs mt-1">
+ <div class="text-base text-[var(--text-primary)] leading-relaxed bg-[#faf8f5] p-2.5 border border-[var(--grid-border)]/60 rounded-xs mt-1">
  ${r.text}
  </div>
  </div>
 
- <button type="button" class="toggle-flag-btn px-4 py-2.5 border text-base uppercase tracking-wider shrink-0 interactive-option rounded-xs min-h-[44px] w-full sm:w-auto ${isFlagged ? 'bg-[var(--text-primary)] text-white border-[var(--text-primary)]' : 'bg-white text-black border-[var(--grid-border)] '}" data-id="${r.id}">
+ <button type="button" class="toggle-flag-btn px-4 py-2.5 border text-base uppercase tracking-wider shrink-0 interactive-option rounded-xs min-h-[44px] w-full sm:w-auto ${isFlagged ? 'bg-[var(--text-primary)] text-white border-[var(--text-primary)]' : 'bg-white text-[var(--text-primary)] border-[var(--grid-border)] '}" data-id="${r.id}">
  ${isFlagged ? 'Mistake Flagged ✓' : 'Flag Mistake'}
  </button>
  </div>
@@ -526,9 +555,9 @@ function runA3QualityControl(app, renderHeader, logEvent, onComplete) {
  </div>
 
  <!-- YOUR CHOICE -->
- <div class="p-3 bg-white border border-[var(--grid-border)] rounded-xs mb-4 text-base text-black flex justify-between items-center">
+ <div class="p-3 bg-white border border-[var(--grid-border)] rounded-xs mb-4 text-base text-[var(--text-primary)] flex justify-between items-center">
  <span>Cards flagged: <strong class="text-[var(--text-primary)]">${flaggedRecords.size} of 5</strong></span>
- <span class="text-sm text-black ">Clean cards remain unflagged</span>
+ <span class="text-sm text-[var(--text-primary)] ">Clean cards remain unflagged</span>
  </div>
 
  <!-- PRIMARY ACTION BUTTON -->

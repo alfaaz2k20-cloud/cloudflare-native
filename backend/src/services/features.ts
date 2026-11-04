@@ -73,7 +73,7 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     F3: ['transition_completed', 'trial_submit'],
     A1: ['item_sorted', 'document_filed'],
     A2: ['decision_logged', 'exception_resolved'],
-    A3: ['item_inspected', 'record_flagged'],
+    A3: ['item_inspected', 'record_flagged', 'record_inspected', 'discrepancy_toggled', 'verification_finalized'],
     C1: ['allocation_confirmed', 'resource_transferred'],
     C2: ['placement_confirmed', 'placement_attempted'],
     C3: ['repair_executed', 'breakdown_resolved'],
@@ -187,13 +187,31 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     return ev.data || {};
   };
 
+  const BOOKKEEPING_ACTIONS = new Set([
+    'minigame_start',
+    'minigame_end',
+    'guide_viewed',
+    'tutorial_viewed',
+    'interrupted',
+    'help_requested',
+    'dialogue_presented',
+    'stage_presented',
+    'round_presented',
+    'task_presented',
+    'instruction_viewed',
+    'unit_presented',
+    'item_presented',
+    'decision_presented'
+  ]);
+
   for (const [mg, evs] of Object.entries(mgEvents)) {
     const param = GAME_TO_PARAM[mg];
     if (!param) continue;
 
     const bounds = GAME_BOUNDS[mg] || { min: 0, max: 1, min_obs: 1 };
-    const obsCount = evs.length;
-    const isUsable = obsCount >= bounds.min_obs;
+    const decisionEvents = evs.filter(e => !BOOKKEEPING_ACTIONS.has(e.action));
+    const obsCount = decisionEvents.length;
+    let isUsable = obsCount >= bounds.min_obs && obsCount > 0;
 
     // Ground-truth performance scoring ported from alfaaz-project game_scoring_engine
     let rawScore = 0;
@@ -251,70 +269,68 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
     } else if (mg === 'A2') {
       // A2 measures exception_flagging_precision: true_positives / (true_positives + false_positives)
       // Ground truth: EXC_01, EXC_03, EXC_04 are genuine exceptions; EXC_02 is clean control.
-      let genuineEvaluated = 0;
+      const genuineStimuli = new Set(['EXC_01', 'EXC_03', 'EXC_04']);
+      const evaluatedGenuine = new Set<string>();
+      let controlEvaluated = false;
       let truePositives = 0;
       let falsePositives = 0;
-      let generalPositives = 0;
 
       for (const ev of evs) {
         const d = parseEvData(ev);
         const stimId = d.stimulus_id || (ev.trial !== null && ev.trial !== undefined ? `EXC_0${Number(ev.trial) + 1}` : null);
         const actId = d.action_id || ev.action || '';
 
-        if (stimId === 'EXC_01' || stimId === 'EXC_03' || stimId === 'EXC_04') {
-          genuineEvaluated++;
+        if (stimId && genuineStimuli.has(stimId)) {
+          evaluatedGenuine.add(stimId);
           if (actId === 'flag_exception' || actId === 'defer_review' || actId === 'exception_resolved' || ['correct', 'success'].includes(ev.action)) {
             truePositives++;
           }
         } else if (stimId === 'EXC_02') {
           // Clean control - should NOT be flagged as an exception
+          controlEvaluated = true;
           if (actId === 'flag_exception' || actId === 'defer_review') {
             falsePositives++;
-          }
-        } else {
-          // Synthetic / general event fallback
-          if (['correct', 'success', 'confirm', 'complete', 'flag_exception'].includes(ev.action) || ['correct', 'success'].includes(actId)) {
-            generalPositives++;
           }
         }
       }
 
-      if (genuineEvaluated >= 3) {
+      if (evaluatedGenuine.size >= 2 && controlEvaluated) {
         const totalFlagged = truePositives + falsePositives;
         rawScore = totalFlagged > 0 ? Number((truePositives / totalFlagged).toFixed(4)) : 0;
-      } else if (obsCount >= bounds.min_obs) {
-        rawScore = Number((generalPositives / obsCount).toFixed(4));
       } else {
         rawScore = 0;
+        isUsable = false;
       }
     } else if (mg === 'C1') {
       const baselines: Record<string, { user: number; partner: number }> = {
-        C1_R1: { user: 4, partner: 1 },
-        C1_R2: { user: 3, partner: 3 },
-        C1_R3: { user: 1, partner: 4 }
+        C1_R1: { user: 8, partner: 2 },
+        C1_R3: { user: 3, partner: 7 }
       };
-      const transfers: Record<string, number> = { C1_R1: 0, C1_R2: 0, C1_R3: 0 };
+      const transfers: Record<string, number> = { C1_R1: 0, C1_R3: 0 };
       const confirmed: Record<string, boolean> = {};
 
       for (const ev of evs) {
         const d = parseEvData(ev);
-        const sId = d.stimulus_id || (d.trial_index !== undefined ? `C1_R${Number(d.trial_index) + 1}` : null);
+        const sId = d.stimulus_id || (d.trial_index !== undefined ? (Number(d.trial_index) === 0 ? 'C1_R1' : 'C1_R3') : null);
         if (!sId || !(sId in baselines)) continue;
 
         if (['resource_transferred', 'tile_transferred', 'allocation_adjusted'].includes(ev.action)) {
           if (d.delta !== undefined) {
-            transfers[sId] = Math.max(0, transfers[sId] + Number(d.delta));
+            transfers[sId] += Number(d.delta);
           } else if (d.allocated_amount !== undefined) {
-            transfers[sId] = Math.max(0, Number(d.allocated_amount));
+            transfers[sId] = Number(d.allocated_amount);
           }
         } else if (['allocation_confirmed', 'round_submit'].includes(ev.action)) {
           confirmed[sId] = true;
         }
       }
 
+      for (const sId of Object.keys(transfers)) {
+        transfers[sId] = Math.max(0, transfers[sId]);
+      }
+
       if (Object.keys(confirmed).length > 0) {
         if (confirmed['C1_R1'] && transfers['C1_R1'] >= 2) rawScore++;
-        if (confirmed['C1_R2'] && (transfers['C1_R2'] === 0 || transfers['C1_R2'] === 1)) rawScore++;
         if (confirmed['C1_R3'] && transfers['C1_R3'] === 0) rawScore++;
       } else {
         rawScore = evs.filter(e => ['correct', 'success'].includes(e.action)).length;
@@ -413,7 +429,7 @@ export async function extractSessionFeatures(db: D1Database, sessionId: string):
                 }
                 return true;
               })
-            : true;
+            : false;
           if (isValid) rawScore++;
         }
       } else {

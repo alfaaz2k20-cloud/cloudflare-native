@@ -129,9 +129,9 @@ function runCR1OpenConstruction(app, renderHeader, logEvent, onComplete) {
       <div class="space-y-4">
         <!-- Step 1: Materials Options on Workbench -->
         <div class="space-y-2">
-          <div class="options-directive">
-            <span>Tap items below to equip or remove from workbench:</span>
-            <span style="font-size:0.75rem; color:var(--text-secondary);">Add or remove</span>
+          <div class="p-3 bg-[#faf8f5] border border-[var(--grid-border)] rounded-xs flex items-center justify-between mb-2">
+            <span class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</span>
+            <span class="text-[11px] text-[var(--text-secondary)]">Tap items to equip or remove from your workbench</span>
           </div>
           <div class="materials-chip-grid" id="matGrid">
             ${st.materials.map(m => {
@@ -165,7 +165,7 @@ function runCR1OpenConstruction(app, renderHeader, logEvent, onComplete) {
     `,
     summaryContent: `
       <span>Equipped: <strong class="text-[var(--text-primary)]">${selectedParts.length > 0 ? selectedParts.map(id => st.materials.find(m => m.id === id)?.name).join(' + ') : 'None'}</strong></span>
-      <span class="text-sm text-black">Stage ${currentStageIdx + 1} of ${stages.length}</span>
+      <span class="text-sm text-[var(--text-primary)]">Stage ${currentStageIdx + 1} of ${stages.length}</span>
     `,
     actionButtonId: 'confirmStageBtn',
     actionButtonText: currentStageIdx < stages.length - 1 ? 'Confirm Assembly &rarr;' : 'Confirm & Finish &rarr;',
@@ -382,7 +382,7 @@ function runCR2ConstraintShift(app, renderHeader, logEvent, onComplete) {
  <!-- TASK HEADER -->
  <div class="mb-4">
  <h2 class="text-xl sm:text-2xl text-[var(--text-primary)]">The Spatial Pivot</h2>
- <p class="text-base text-black mt-0.5">Adapt room layouts when conditions shift.</p>
+ <p class="text-base text-[var(--text-primary)] mt-0.5">Adapt room layouts when conditions shift.</p>
  </div>
 
  <!-- YOUR TASK -->
@@ -400,19 +400,19 @@ function runCR2ConstraintShift(app, renderHeader, logEvent, onComplete) {
  <span class="text-sm text-[var(--accent-gold)] font-medium uppercase">Episode ${currentEpisode + 1} of ${episodes.length}</span>
  </div>
  <div class="text-sm sm:text-base font-semibold text-[var(--text-primary)] mb-1">${ep.title}</div>
- <div class="text-base text-black leading-relaxed">${ep.pre_context}</div>
+ <div class="text-base text-[var(--text-primary)] leading-relaxed">${ep.pre_context}</div>
  </div>
 
  <!-- INTERACTION AREA: Initial Strategy Selection -->
  <div class="mb-5 space-y-2.5 candidate-content-protected">
- <div class="text-sm text-black uppercase tracking-wider">Select Initial Curation Concept:</div>
+ <div class="text-sm text-[var(--text-primary)] uppercase tracking-wider">Select Initial Curation Concept:</div>
  ${ep.pre_strategies.map(s => {
  const isSelected = initialStrategy === s.id;
  return `
  <div class="pre-strat-card p-3.5 sm:p-4 bg-white border ${isSelected ? 'border-[var(--accent-gold)] bg-amber-50/50 shadow-xs' : 'border-[var(--grid-border)]'} rounded-xs cursor-pointer interactive-option text-base flex items-center justify-between min-h-[48px]" data-id="${s.id}" tabindex="0" role="button" aria-label="${s.label}">
  <div>
  <div class="font-medium text-[var(--text-primary)]">${s.label}</div>
- <div class="text-[11px] text-black mt-0.5">${s.desc}</div>
+ <div class="text-[11px] text-[var(--text-primary)] mt-0.5">${s.desc}</div>
  </div>
  <span class="w-4 h-4 rounded-full border border-current flex items-center justify-center text-sm shrink-0 ${isSelected ? 'bg-[var(--accent-gold)] text-white' : 'text-stone-300'}">${isSelected ? '&#10003;' : ''}</span>
  </div>
@@ -428,7 +428,7 @@ function runCR2ConstraintShift(app, renderHeader, logEvent, onComplete) {
  </div>
 
  <!-- Progress Footer -->
- <div class="text-right text-[11px] text-black ">
+ <div class="text-right text-[11px] text-[var(--text-primary)] ">
  Episode ${currentEpisode + 1} of ${episodes.length} &middot; Step 1
  </div>
  </div>
@@ -488,7 +488,7 @@ function runCR2ConstraintShift(app, renderHeader, logEvent, onComplete) {
  <!-- TASK HEADER -->
  <div class="mb-4">
  <h2 class="text-xl sm:text-2xl text-[var(--text-primary)]">The Spatial Pivot</h2>
- <p class="text-base text-black mt-0.5">Adapt room layouts when conditions shift.</p>
+ <p class="text-base text-[var(--text-primary)] mt-0.5">Adapt room layouts when conditions shift.</p>
  </div>
 
  <!-- Constraint Shift Notification Banner -->
@@ -505,14 +505,14 @@ function runCR2ConstraintShift(app, renderHeader, logEvent, onComplete) {
 
  <!-- INTERACTION AREA: Post-Shift Strategy Selection -->
  <div class="mb-5 space-y-2.5 candidate-content-protected">
- <div class="text-sm text-black uppercase tracking-wider">Choose Adapted Layout:</div>
+ <div class="text-sm text-[var(--text-primary)] uppercase tracking-wider">Choose Adapted Layout:</div>
  ${ep.post_strategies.map(s => {
  const isSelected = revisedStrategy === s.id;
  return `
  <div class="post-strat-card p-3.5 sm:p-4 bg-white border ${isSelected ? 'border-[var(--accent-gold)] bg-amber-50/50 shadow-xs' : 'border-[var(--grid-border)]'} rounded-xs cursor-pointer interactive-option text-base flex items-center justify-between min-h-[48px]" data-id="${s.id}" tabindex="0" role="button" aria-label="${s.label}">
  <div>
  <div class="font-medium text-[var(--text-primary)]">${s.label}</div>
- <div class="text-sm text-black mt-0.5">${s.note}</div>
+ <div class="text-sm text-[var(--text-primary)] mt-0.5">${s.note}</div>
  </div>
  <span class="w-4 h-4 rounded-full border border-current flex items-center justify-center text-sm shrink-0 ${isSelected ? 'bg-[var(--accent-gold)] text-white' : 'text-stone-300'}">${isSelected ? '&#10003;' : ''}</span>
  </div>
@@ -528,7 +528,7 @@ function runCR2ConstraintShift(app, renderHeader, logEvent, onComplete) {
  </div>
 
  <!-- Progress Footer -->
- <div class="text-right text-[11px] text-black ">
+ <div class="text-right text-[11px] text-[var(--text-primary)] ">
  Episode ${currentEpisode + 1} of ${episodes.length} &middot; Step 2
  </div>
  </div>
@@ -733,7 +733,11 @@ function runCR3UnspecifiedToolUse(app, renderHeader, logEvent, onComplete) {
         <div class="p-4 sm:p-5 bg-white border border-[var(--grid-border)] rounded-xs space-y-3">
           <div class="flex items-center gap-2 pb-2 border-b border-[var(--grid-border)]">
             <span class="w-6 h-6 rounded-full bg-[var(--accent-gold)] text-white text-xs font-bold flex items-center justify-center font-serif">1</span>
-            <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 1: Pick an implement</span>
+            <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 1: Pick an Implement</span>
+          </div>
+          <div class="pt-1">
+            <div class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</div>
+            <div class="text-[11px] text-[var(--text-secondary)]">Select which tool you want to use from the workbench</div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             ${tr.tools.map((t, idx) => {
@@ -756,7 +760,11 @@ function runCR3UnspecifiedToolUse(app, renderHeader, logEvent, onComplete) {
         <div class="p-4 sm:p-5 bg-white border border-[var(--grid-border)] rounded-xs space-y-3">
           <div class="flex items-center gap-2 pb-2 border-b border-[var(--grid-border)]">
             <span class="w-6 h-6 rounded-full bg-[var(--accent-gold)] text-white text-xs font-bold flex items-center justify-center font-serif">2</span>
-            <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 2: Choose action method</span>
+            <span class="text-xs uppercase tracking-wider text-[var(--text-primary)] font-bold">Step 2: Choose Action Method</span>
+          </div>
+          <div class="pt-1">
+            <div class="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">Choose an option below:</div>
+            <div class="text-[11px] text-[var(--text-secondary)]">Select how you want to apply this tool to the material</div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             ${tr.methods.map((m, idx) => {
@@ -791,7 +799,7 @@ function runCR3UnspecifiedToolUse(app, renderHeader, logEvent, onComplete) {
     `,
     summaryContent: `
       <span>Technique: <strong class="text-[var(--text-primary)]">${selectedTool && selectedMethod ? 'Ready to confirm' : 'In progress'}</strong></span>
-      <span class="text-sm text-black">Round ${currentTrial + 1} of ${trials.length}</span>
+      <span class="text-sm text-[var(--text-primary)]">Round ${currentTrial + 1} of ${trials.length}</span>
     `,
     actionButtonId: 'confirmTrialBtn',
     actionButtonText: currentTrial < trials.length - 1 ? 'Confirm Technique &rarr;' : 'Confirm & Finish &rarr;',

@@ -9,12 +9,13 @@ import { integrateSessionEvidence } from '../services/evidence';
 import { getEmailProvider } from '../notifications/email';
 import { verifyTurnstile } from '../middleware/rate_limit';
 import { verifyToken, getJwtSecret } from '../auth/crypto';
+import { validateInterviewSlot } from '../services/interview';
 
 const recruitRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // Helper: Ensure session exists and has consent
 async function requireConsentedSession(db: D1Database, sessionId: string) {
-  const session = await db.prepare('SELECT * FROM recruit_sessions WHERE session_id = ?').bind(sessionId).first();
+  const session = await db.prepare('SELECT * FROM recruit_sessions WHERE session_id = ?').bind(sessionId).first<{ status: string }>();
   if (!session) {
     throw new HTTPException(404, {
       res: new Response(JSON.stringify({ error: 'Session not found', detail: 'Session not found' }), {
@@ -58,7 +59,7 @@ recruitRouter.post('/consent', async (c) => {
   const sessionId = crypto.randomUUID();
   const configHash = getConfigHash();
 
-  const { orderId, sequence, seeds } = await assignWorldOrder(c.env.DB, sessionId);
+  const { orderId, sequence, seeds } = await assignWorldOrder(c.env.DB, sessionId, c.env.STIMULUS_HMAC_KEY);
 
   await c.env.DB.batch([
     c.env.DB.prepare(`
@@ -313,12 +314,41 @@ recruitRouter.post('/complete', async (c) => {
     });
   }
 
-  // Mark session completed
-  await c.env.DB.prepare(`
+  const validPreCompleteStatuses = new Set(['ACTIVE', 'CONSENTED', 'IDENTIFIED']);
+  if (!validPreCompleteStatuses.has(session.status)) {
+    return c.json({ error: 'Session is not in an active or valid state', detail: 'Session is not in an active or valid state' }, 400);
+  }
+
+  // In production, strictly enforce that all 7 SJT scenarios have been answered
+  if (c.env.ENV === 'production') {
+    const sjtCountRow = await c.env.DB
+      .prepare('SELECT COUNT(DISTINCT scenario_id) as cnt FROM sjt_responses WHERE session_id = ?')
+      .bind(sessionId)
+      .first<{ cnt: number }>();
+    if ((sjtCountRow?.cnt || 0) < 7) {
+      return c.json({
+        error: 'Situational Judgment Assessment incomplete. All 7 scenarios must be answered.',
+        detail: 'Situational Judgment Assessment incomplete. All 7 scenarios must be answered.'
+      }, 400);
+    }
+  }
+
+  // Atomic update to mark session completed
+  const updateRes = await c.env.DB.prepare(`
     UPDATE recruit_sessions
     SET status = 'COMPLETE', current_screen = 'complete', completed_at = CURRENT_TIMESTAMP
-    WHERE session_id = ?
+    WHERE session_id = ? AND status != 'COMPLETE' AND status != 'COMPLETED'
   `).bind(sessionId).run();
+
+  const isNewlyCompleted = (updateRes.meta?.changes ?? 0) > 0;
+  if (!isNewlyCompleted) {
+    return c.json({
+      status: 'SUCCESS',
+      session_status: 'COMPLETE',
+      message: 'Assessment already completed.',
+      is_already_completed: true
+    });
+  }
 
   // Extract features and integrate psychometric evidence
   try {
@@ -423,30 +453,11 @@ recruitRouter.post('/schedule-interview', async (c) => {
     return c.json({ error: 'session_id, slot_date, and slot_time are required', detail: 'session_id, slot_date, and slot_time are required' }, 400);
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(slotDate)) {
-    return c.json({ error: 'slot_date must use YYYY-MM-DD format', detail: 'slot_date must use YYYY-MM-DD format' }, 400);
+  const validation = await validateInterviewSlot(c.env.DB, slotDate, slotTime, slotDisplay);
+  if (!validation.valid) {
+    return c.json({ error: validation.error, detail: validation.error }, 400);
   }
-  const slotDay = new Date(`${slotDate}T00:00:00Z`);
-  if (Number.isNaN(slotDay.getTime()) || slotDay.toISOString().slice(0, 10) !== slotDate) {
-    return c.json({ error: 'slot_date is not a valid calendar date', detail: 'slot_date is not a valid calendar date' }, 400);
-  }
-  const startOfTodayUtc = new Date();
-  startOfTodayUtc.setUTCHours(0, 0, 0, 0);
-  if (slotDay.getTime() < startOfTodayUtc.getTime()) {
-    return c.json({ error: 'slot_date cannot be in the past', detail: 'slot_date cannot be in the past' }, 400);
-  }
-
-  const settingsRow = await c.env.DB.prepare('SELECT slots_json FROM interview_settings WHERE id = 1').first<{ slots_json: string }>();
-  let allowedTimes = ["11:00 AM", "03:00 PM", "05:30 PM", "07:00 PM"];
-  if (settingsRow?.slots_json) {
-    try {
-      const parsed = JSON.parse(settingsRow.slots_json);
-      if (Array.isArray(parsed) && parsed.length > 0) allowedTimes = parsed;
-    } catch {}
-  }
-  if (!allowedTimes.includes(slotTime)) {
-    return c.json({ error: 'slot_time is not an offered interview time', detail: 'slot_time is not an offered interview time' }, 400);
-  }
+  const cleanSlotDisplay = validation.slotDisplay || slotDisplay;
 
   await requireConsentedSession(c.env.DB, sessionId);
 
@@ -460,6 +471,10 @@ recruitRouter.post('/schedule-interview', async (c) => {
   const candidateName = (identity?.full_name || body.candidate_name || 'Candidate').toString().trim().slice(0, 120);
   const candidateEmail = (identity?.email || body.candidate_email || '').toString().trim().slice(0, 254);
   const candidatePhone = (identity?.phone_or_contact || body.candidate_phone || null);
+
+  if (!identity && !candidateEmail) {
+    return c.json({ error: 'Applicant identity must be registered before scheduling an interview', detail: 'Applicant identity must be registered before scheduling an interview' }, 400);
+  }
 
   // Check collision: if already booked
   const existing = await c.env.DB.prepare("SELECT id FROM interview_bookings WHERE slot_date = ? AND slot_time = ? AND status = 'SCHEDULED'").bind(slotDate, slotTime).first();
@@ -482,7 +497,7 @@ recruitRouter.post('/schedule-interview', async (c) => {
         slot_display = excluded.slot_display,
         notes = excluded.notes,
         status = 'SCHEDULED'
-    `).bind(sessionId, candidateName, candidateEmail, candidatePhone, slotDate, slotTime, slotDisplay, notes).run();
+    `).bind(sessionId, candidateName, candidateEmail, candidatePhone, slotDate, slotTime, cleanSlotDisplay, notes).run();
   } catch (err: any) {
     if (err.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
       return c.json({ error: 'This interview slot was just taken. Please choose another time.', detail: 'This interview slot was just taken. Please choose another time.' }, 409);
@@ -546,7 +561,7 @@ recruitRouter.get('/interview-booking/:session_id', async (c) => {
     return c.json({ booking: null });
   }
 
-  // Check optional auth header for admin privileges
+  // Check optional auth header for admin privileges (with live D1 status & revocation validation)
   const authHeader = c.req.header('Authorization');
   let isAdmin = false;
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -554,8 +569,17 @@ recruitRouter.get('/interview-booking/:session_id', async (c) => {
       const token = authHeader.substring(7).trim();
       const secret = getJwtSecret(c.env);
       const payload = await verifyToken(token, secret);
-      if (payload && payload.status === 'ADMIN') {
-        isAdmin = true;
+      if (payload && payload.status === 'ADMIN' && payload.email) {
+        const userRow = await c.env.DB.prepare(
+          'SELECT status, password_reset_at FROM users WHERE email = ?'
+        ).bind(payload.email.toLowerCase()).first<{ status: string; password_reset_at: string | null }>();
+
+        if (userRow && userRow.status === 'ADMIN') {
+          const resetSec = userRow.password_reset_at ? Math.floor(new Date(userRow.password_reset_at).getTime() / 1000) : 0;
+          if (!resetSec || (payload.iat || 0) >= resetSec) {
+            isAdmin = true;
+          }
+        }
       }
     } catch {
       // ignore token verification failure
