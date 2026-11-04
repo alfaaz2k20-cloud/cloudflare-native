@@ -23,6 +23,10 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
   const failTurnstileSecret = '2x0000000000000000000000000000000AA';
   const dummyTurnstileToken = '0x4AAAAAAtestdummytoken';
 
+  // Google Identity Services OAuth client ID. Production reads this from GOOGLE_CLIENT_ID;
+  // without it the verifier cannot check the audience claim and must accept nothing.
+  const googleClientId = 'test-gis-client-id.apps.googleusercontent.com';
+
   function getTestEnv(overrides: Record<string, any> = {}) {
     return {
       DB: mockDb as any,
@@ -30,13 +34,14 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       CACHE_KV: mockKv as any,
       JWT_SECRET: jwtSecret,
       TURNSTILE_SECRET_KEY: passTurnstileSecret,
+      GOOGLE_CLIENT_ID: googleClientId,
       ENV: 'test',
       EMAIL_PROVIDER: 'dev' as const,
       ...overrides
     };
   }
 
-  // Generate Web Crypto RS256 keypair for Firebase ID token emulation
+  // Generate Web Crypto RS256 keypair for Google Identity Services ID token emulation
   beforeAll(async () => {
     testKeyPair = await crypto.subtle.generateKey(
       {
@@ -48,7 +53,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       true,
       ['sign', 'verify']
     );
-    (globalThis as any).__TEST_FIREBASE_PUBLIC_KEY__ = testKeyPair.publicKey;
+    (globalThis as any).__TEST_FEDERATED_PUBLIC_KEY__ = testKeyPair.publicKey;
   });
 
   beforeEach(async () => {
@@ -58,14 +63,15 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
   });
 
   /**
-   * Helper to generate cryptographically signed RS256 Firebase ID Tokens
+   * Helper to generate cryptographically signed RS256 Google Identity Services ID tokens.
+   * Defaults to the GIS issuer and this suite's OAuth client ID, so a token produced with no
+   * overrides is one the verifier should accept. Override `iss` or `aud` to exercise rejection.
    */
-  async function createMockFirebaseToken(payload: {
+  async function createMockFederatedToken(payload: {
     uid: string;
     email?: string;
     email_verified?: boolean;
     provider?: string;
-    phone_number?: string;
     name?: string;
     exp?: number;
     iss?: string;
@@ -74,10 +80,10 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
   }, keyPair: CryptoKeyPair = testKeyPair): Promise<string> {
     const now = Math.floor(Date.now() / 1000);
     const alg = payload.alg || 'RS256';
-    const header = { alg, typ: 'JWT', kid: 'mock-firebase-key-1' };
+    const header = { alg, typ: 'JWT', kid: 'mock-gis-key-1' };
     const fullPayload = {
-      iss: payload.iss || 'https://securetoken.google.com/alfaaz-collective',
-      aud: payload.aud || 'alfaaz-collective',
+      iss: payload.iss || 'https://accounts.google.com',
+      aud: payload.aud || googleClientId,
       auth_time: now - 10,
       user_id: payload.uid,
       sub: payload.uid,
@@ -85,12 +91,9 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       exp: payload.exp !== undefined ? payload.exp : now + 3600,
       email: payload.email,
       email_verified: payload.email_verified !== undefined ? payload.email_verified : Boolean(payload.email),
-      phone_number: payload.phone_number,
       name: payload.name || 'Alfaaz Member',
-      firebase: {
-        identities: {},
-        sign_in_provider: payload.provider || (payload.phone_number ? 'phone' : 'google.com')
-      }
+      // Only present so tests can prove the verifier overrides a forged provider claim.
+      sign_in_provider: payload.provider || 'google.com'
     };
 
     const enc = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64url');
@@ -179,7 +182,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
 
     describe('R2. Multi-Provider Authentication Suite', () => {
       it('T1_R2_02: POST /auth/federated-login contract: Google 1-tap provider returns sovereign JWT', async () => {
-        const idToken = await createMockFirebaseToken({ uid: 'google_uid_101', email: 'scholar@gmail.com', name: 'Al-Biruni' });
+        const idToken = await createMockFederatedToken({ uid: 'google_uid_101', email: 'scholar@gmail.com', name: 'Al-Biruni' });
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -194,8 +197,71 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         });
       });
 
-      it('T1_R2_03: POST /auth/federated-login contract: Apple ID social provider returns sovereign JWT', async () => {
-        const idToken = await createMockFirebaseToken({ uid: 'apple_uid_202', email: 'member@privaterelay.appleid.com', name: 'Curatorial Member', provider: 'apple.com' });
+      it('T1_R2_03: decommissioned Apple ID issuer is rejected with 401 (AGENTS.md §3)', async () => {
+        const idToken = await createMockFederatedToken({
+          uid: 'apple_uid_202',
+          email: 'member@privaterelay.appleid.com',
+          name: 'Curatorial Member',
+          provider: 'apple.com',
+          iss: 'https://appleid.apple.com',
+          aud: googleClientId
+        });
+        const res = await app.request('/auth/federated-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: idToken, provider: 'apple.com' })
+        }, getTestEnv());
+
+        expect(res.status).toBe(401);
+        const data: any = await res.json();
+        expect(data.token).toBeUndefined();
+      });
+
+      it('T1_R2_04: decommissioned Meta / Facebook issuer is rejected with 401 (AGENTS.md §3)', async () => {
+        const idToken = await createMockFederatedToken({
+          uid: 'meta_uid_303',
+          email: 'artist@meta.com',
+          name: 'Zeenat Mahal',
+          provider: 'facebook.com',
+          iss: 'https://www.facebook.com',
+          aud: googleClientId
+        });
+        const res = await app.request('/auth/federated-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: idToken, provider: 'facebook.com' })
+        }, getTestEnv());
+
+        expect(res.status).toBe(401);
+        const data: any = await res.json();
+        expect(data.token).toBeUndefined();
+      });
+
+      it('T1_R2_05: decommissioned Firebase securetoken issuer is rejected with 401 (AGENTS.md §3)', async () => {
+        const idToken = await createMockFederatedToken({
+          uid: 'firebase_uid_404',
+          email: 'legacy@alfaaz.org',
+          iss: 'https://securetoken.google.com/alfaaz-collective',
+          aud: googleClientId
+        });
+        const res = await app.request('/auth/federated-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: idToken })
+        }, getTestEnv());
+
+        expect(res.status).toBe(401);
+        const data: any = await res.json();
+        expect(data.token).toBeUndefined();
+      });
+
+      it('T1_R2_06: a forged provider claim cannot steer auth_provider away from google.com', async () => {
+        const idToken = await createMockFederatedToken({
+          uid: 'forged_provider_505',
+          email: 'forged@alfaaz.org',
+          name: 'Forged Claim',
+          provider: 'phone'
+        });
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -203,38 +269,24 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         }, getTestEnv());
 
         await assertContract(res, 200, (data) => {
-          expect(data.token).toBeDefined();
-          expect(data.user.auth_provider).toBe('apple.com');
+          expect(data.user.auth_provider).toBe('google.com');
         });
       });
 
-      it('T1_R2_04: POST /auth/federated-login contract: Meta / Facebook social provider returns sovereign JWT', async () => {
-        const idToken = await createMockFirebaseToken({ uid: 'meta_uid_303', email: 'artist@meta.com', name: 'Zeenat Mahal', provider: 'facebook.com' });
+      it('T1_R2_07: a deployment with no GOOGLE_CLIENT_ID accepts no federated token at all', async () => {
+        const idToken = await createMockFederatedToken({
+          uid: 'unconfigured_606',
+          email: 'unconfigured@alfaaz.org'
+        });
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_token: idToken, provider: 'facebook.com' })
-        }, getTestEnv());
+          body: JSON.stringify({ id_token: idToken })
+        }, getTestEnv({ GOOGLE_CLIENT_ID: undefined }));
 
-        await assertContract(res, 200, (data) => {
-          expect(data.token).toBeDefined();
-          expect(data.user.auth_provider).toBe('facebook.com');
-        });
-      });
-
-      it('T1_R2_05: POST /auth/federated-login contract: Phone OTP user verification returns sovereign JWT', async () => {
-        const idToken = await createMockFirebaseToken({ uid: 'phone_uid_404', phone_number: '+14155552671' });
-        const res = await app.request('/auth/federated-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_token: idToken, provider: 'phone' })
-        }, getTestEnv());
-
-        await assertContract(res, 200, (data) => {
-          expect(data.token).toBeDefined();
-          expect(data.user.phone).toBe('+14155552671');
-          expect(data.user.auth_provider).toBe('phone');
-        });
+        expect(res.status).toBe(401);
+        const data: any = await res.json();
+        expect(data.token).toBeUndefined();
       });
     });
 
@@ -247,7 +299,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
 
     describe('R4. Backend Federated Authentication & Sovereign Session Issuance', () => {
       it('T1_R4_01: POST /auth/federated-login verifies valid RS256 token and issues sovereign session JWT', async () => {
-        const idToken = await createMockFirebaseToken({ uid: 'valid_fb_1', email: 'poet@alfaaz.org', name: 'Faiz Ahmad Faiz' });
+        const idToken = await createMockFederatedToken({ uid: 'valid_fb_1', email: 'poet@alfaaz.org', name: 'Faiz Ahmad Faiz' });
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -262,7 +314,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       });
 
       it('T1_R4_02: POST /auth/federated-login strictly rejects forged or tampered token with 401', async () => {
-        const validToken = await createMockFirebaseToken({ uid: 'valid_fb_2', email: 'valid@alfaaz.org' });
+        const validToken = await createMockFederatedToken({ uid: 'valid_fb_2', email: 'valid@alfaaz.org' });
         const parts = validToken.split('.');
         const tamperedToken = `${parts[0]}.${parts[1]}.tampered_signature_payload`;
 
@@ -279,7 +331,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
 
       it('T1_R4_03: maps or upserts user in D1 SQLite with nullable password for federated users', async () => {
         const email = 'federated_user_1@alfaaz.local';
-        const idToken = await createMockFirebaseToken({ uid: 'fb_upsert_1', email, name: 'Upserted Member' });
+        const idToken = await createMockFederatedToken({ uid: 'fb_upsert_1', email, name: 'Upserted Member' });
 
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
@@ -306,7 +358,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
           .bind(email, initialHash, 'Original Admin', 'ADMIN')
           .run();
 
-        const idToken = await createMockFirebaseToken({ uid: 'fb_admin_link', email, name: 'Original Admin' });
+        const idToken = await createMockFederatedToken({ uid: 'fb_admin_link', email, name: 'Original Admin' });
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -333,8 +385,8 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
           .bind(victimEmail, await hashPassword('VictimSecretPass!'), 'Victim Admin', 'ADMIN')
           .run();
 
-        // Attacker creates unverified Firebase account with victim's email
-        const attackerToken = await createMockFirebaseToken({
+        // Attacker mints an unverified federated identity over the victim's address
+        const attackerToken = await createMockFederatedToken({
           uid: 'attacker_fake_uid',
           email: victimEmail,
           email_verified: false,
@@ -347,8 +399,10 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
           body: JSON.stringify({ id_token: attackerToken, provider: 'password' })
         }, getTestEnv());
 
+        // The verifier refuses the token before the route ever queries D1, so the rejection is
+        // the generic one. What matters is that no session is issued and nothing is linked.
         await assertContract(res, 401, (data) => {
-          expect(data.error).toMatch(/Email.*not verified/i);
+          expect(data.token).toBeUndefined();
         });
 
         // Ensure victim's account is NOT compromised or linked to attacker
@@ -359,9 +413,10 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       });
 
       it('T1_R4_07: P0 Account Takeover Protection: rejects new user registration with unverified email (email_verified: false) with 401', async () => {
-        const unverifiedToken = await createMockFirebaseToken({
+        const unverifiedEmail = 'unverified_poet@alfaaz.local';
+        const unverifiedToken = await createMockFederatedToken({
           uid: 'unverified_new_uid',
-          email: 'unverified_poet@alfaaz.local',
+          email: unverifiedEmail,
           email_verified: false,
           name: 'Unverified Poet'
         });
@@ -373,8 +428,13 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         }, getTestEnv());
 
         await assertContract(res, 401, (data) => {
-          expect(data.error).toMatch(/Email.*not verified/i);
+          expect(data.token).toBeUndefined();
         });
+
+        const created: any = await mockDb.prepare('SELECT id FROM users WHERE email = ?')
+          .bind(unverifiedEmail)
+          .first();
+        expect(created).toBeNull();
       });
 
       it('T1_R4_08: email_verified=true token matching existing account succeeds with 200', async () => {
@@ -383,7 +443,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
           .bind(legitimateEmail, await hashPassword('LegitPass!123'), 'Legit Poet', 'PARTICIPANT')
           .run();
 
-        const verifiedToken = await createMockFirebaseToken({
+        const verifiedToken = await createMockFederatedToken({
           uid: 'legit_firebase_uid_1',
           email: legitimateEmail,
           email_verified: true,
@@ -402,9 +462,8 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         });
       });
 
-      it('T1_R4_09: phone-only federated user can update profile via PATCH /me', async () => {
-        const phone = '+14155557788';
-        const idToken = await createMockFirebaseToken({ uid: 'phone_patch_uid', phone_number: phone });
+      it('T1_R4_09: federated user can update profile via PATCH /me', async () => {
+        const idToken = await createMockFederatedToken({ uid: 'patch_uid', email: 'patch@alfaaz.org' });
         const loginRes = await app.request('/auth/federated-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -419,7 +478,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${jwt}`
           },
-          body: JSON.stringify({ full_name: 'Updated Phone Poet' })
+          body: JSON.stringify({ full_name: 'Updated Federated Poet' })
         }, getTestEnv());
 
         expect(patchRes.status).toBe(200);
@@ -428,7 +487,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
           headers: { 'Authorization': `Bearer ${jwt}` }
         }, getTestEnv());
         const getData = await getRes.json();
-        expect(getData.full_name).toBe('Updated Phone Poet');
+        expect(getData.full_name).toBe('Updated Federated Poet');
       });
     });
 
@@ -537,18 +596,17 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
     });
 
     describe('R2 Boundaries: Token Formatting Edge Cases', () => {
-      it('T2_R2_03: handles federated login payload missing email claim gracefully', async () => {
-        const idToken = await createMockFirebaseToken({ uid: 'apple_no_email', phone_number: '+14155559999' });
+      it('T2_R2_03: rejects a token carrying no email claim, as the verified-email gate cannot be met', async () => {
+        const idToken = await createMockFederatedToken({ uid: 'no_email_uid' });
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_token: idToken, provider: 'phone' })
+          body: JSON.stringify({ id_token: idToken })
         }, getTestEnv());
 
-        await assertContract(res, 200, (data) => {
-          expect(data.token).toBeDefined();
-          expect(data.user.phone).toBe('+14155559999');
-        });
+        expect(res.status).toBe(401);
+        const data: any = await res.json();
+        expect(data.token).toBeUndefined();
       });
 
       it('T2_R2_04: strictly rejects malformed non-JSON request body with 400', async () => {
@@ -578,9 +636,9 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
     });
 
     describe('R4 Boundaries: Token Expiration & Cryptographic Edge Cases', () => {
-      it('T2_R4_01: strictly rejects expired Firebase ID token (exp < now) with 401', async () => {
+      it('T2_R4_01: strictly rejects expired Google ID token (exp < now) with 401', async () => {
         const expiredTime = Math.floor(Date.now() / 1000) - 300; // 5 mins ago
-        const expiredToken = await createMockFirebaseToken({ uid: 'expired_user', email: 'exp@alfaaz.local', exp: expiredTime });
+        const expiredToken = await createMockFederatedToken({ uid: 'expired_user', email: 'exp@alfaaz.local', exp: expiredTime });
 
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
@@ -594,7 +652,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       });
 
       it('T2_R4_02: strictly rejects token with incorrect audience claim with 401', async () => {
-        const badAudToken = await createMockFirebaseToken({ uid: 'bad_aud_user', aud: 'malicious-attacker-project' });
+        const badAudToken = await createMockFederatedToken({ uid: 'bad_aud_user', aud: 'malicious-attacker-project' });
 
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
@@ -608,7 +666,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       });
 
       it('T2_R4_02b: strictly rejects GIS token with mismatched audience (OAuth audience confusion protection)', async () => {
-        const gisBadAudToken = await createMockFirebaseToken({
+        const gisBadAudToken = await createMockFederatedToken({
           uid: 'gis_attacker_victim',
           email: 'target_victim@alfaaz.local',
           iss: 'https://accounts.google.com',
@@ -628,7 +686,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       });
 
       it('T2_R4_03: strictly rejects algorithm substitution attack (alg: "none") with 401', async () => {
-        const noneToken = await createMockFirebaseToken({ uid: 'none_alg_user', alg: 'none' });
+        const noneToken = await createMockFederatedToken({ uid: 'none_alg_user', alg: 'none' });
 
         const res = await app.request('/auth/federated-login', {
           method: 'POST',
@@ -643,7 +701,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
 
       it('T2_R4_04: concurrent federated logins for identical user handle D1 upsert without conflict', async () => {
         const email = 'concurrent_federated@alfaaz.local';
-        const idToken = await createMockFirebaseToken({ uid: 'concurrent_uid_1', email });
+        const idToken = await createMockFederatedToken({ uid: 'concurrent_uid_1', email });
 
         const reqs = Array.from({ length: 3 }).map(() =>
           app.request('/auth/federated-login', {
@@ -673,7 +731,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
 
     describe('R5 Boundaries: Secret Redaction & Defensive Injection Protection', () => {
       it('T2_R5_03: HTML/XSS injection attempts in full_name are sanitized or stored verbatim without execution', async () => {
-        const xssToken = await createMockFirebaseToken({
+        const xssToken = await createMockFederatedToken({
           uid: 'xss_uid_1',
           email: 'xss@alfaaz.local',
           name: '<script>alert("pwned")</script>'
@@ -728,7 +786,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         .bind(email, initialHash, 'Target Member', 'PARTICIPANT')
         .run();
 
-      const idToken = await createMockFirebaseToken({ uid: 'google_linked_uid', email, name: 'Target Member' });
+      const idToken = await createMockFederatedToken({ uid: 'google_linked_uid', email, name: 'Target Member' });
       const res = await app.request('/auth/federated-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -741,21 +799,21 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       });
     });
 
-    it('T3_C04: Phone user requesting multiple concurrent sessions receives valid sovereign JWTs', async () => {
-      const phone = '+14155553004';
-      const idToken1 = await createMockFirebaseToken({ uid: 'phone_sess_1', phone_number: phone });
-      const idToken2 = await createMockFirebaseToken({ uid: 'phone_sess_1', phone_number: phone });
+    it('T3_C04: Google user requesting multiple concurrent sessions receives valid sovereign JWTs', async () => {
+      const email = 'concurrent.sessions@alfaaz.org';
+      const idToken1 = await createMockFederatedToken({ uid: 'gis_sess_1', email });
+      const idToken2 = await createMockFederatedToken({ uid: 'gis_sess_1', email });
 
       const res1 = await app.request('/auth/federated-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: idToken1, provider: 'phone' })
+        body: JSON.stringify({ id_token: idToken1 })
       }, getTestEnv());
 
       const res2 = await app.request('/auth/federated-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: idToken2, provider: 'phone' })
+        body: JSON.stringify({ id_token: idToken2 })
       }, getTestEnv());
 
       if (res1.status !== 404 && res2.status !== 404) {
@@ -794,7 +852,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
     it('T4_S02: Frictionless User Signup via 1-Tap Google OAuth', async () => {
       // User scenario: New visitor registers via Google 1-tap popup
       const googleEmail = 'new_scholar@gmail.com';
-      const idToken = await createMockFirebaseToken({
+      const idToken = await createMockFederatedToken({
         uid: 'google_scholar_999',
         email: googleEmail,
         name: 'Mirza Asadullah Baig'
@@ -835,7 +893,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
         .run();
 
       // Log in via Google
-      const idToken = await createMockFirebaseToken({
+      const idToken = await createMockFederatedToken({
         uid: 'google_converged_uid',
         email,
         name: 'Converged Poet'
@@ -928,7 +986,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       const fullName = 'GIS Sovereign Poet';
 
       // 1. Generate authentic GIS ID token (iss = https://accounts.google.com, email_verified = true)
-      const idToken = await createMockFirebaseToken({
+      const idToken = await createMockFederatedToken({
         uid,
         email,
         name: fullName,
@@ -968,7 +1026,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
 
     it('T4_S10: Strict Rejection of GIS Tokens with Unverified Email per Rule 3', async () => {
       // Rule 3: Verified token MUST carry email_verified === true. If false or missing, reject 401.
-      const idToken = await createMockFirebaseToken({
+      const idToken = await createMockFederatedToken({
         uid: 'unverified_gis_attacker_uid',
         email: 'unverified_victim@alfaaz.local',
         name: 'Attacker Account',
@@ -1023,7 +1081,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       const fullName = 'Schemeless GIS Poet';
 
       // GIS tokens can legitimately carry iss = accounts.google.com without URI scheme
-      const idToken = await createMockFirebaseToken({
+      const idToken = await createMockFederatedToken({
         uid,
         email,
         name: fullName,
@@ -1070,9 +1128,9 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
       expect(loginJs).toContain('getApiUrl(\'/auth/forgot-password\')');
 
       // 5. Backend CSP img-src includes Google static asset hosts
-      const indexTs = fs.readFileSync(path.resolve(process.cwd(), 'backend/src/index.ts'), 'utf8');
-      expect(indexTs).toMatch(/img-src[^;]*https:\/\/www\.gstatic\.com/);
-      expect(indexTs).toMatch(/img-src[^;]*https:\/\/ssl\.gstatic\.com/);
+      const cspSource = fs.readFileSync(path.resolve(process.cwd(), 'backend/src/security/headers.ts'), 'utf8');
+      expect(cspSource).toMatch(/img-src[^;]*https:\/\/www\.gstatic\.com/);
+      expect(cspSource).toMatch(/img-src[^;]*https:\/\/ssl\.gstatic\.com/);
     });
 
     it('T4_S15: WhatsApp Capture Post-GIS Profile Completion (Zero OTP Flow)', () => {
@@ -1158,7 +1216,7 @@ describe('E2E Federated Authentication Suite (R1 - R5)', () => {
     it('T4_S17: Distinct Log In vs Register Mode Enforcement for Federated Auth', async () => {
       const email = 'new_unregistered_google_user@alfaaz.local';
       const uid = 'google_sub_unregistered_123';
-      const idToken = await createMockFirebaseToken({
+      const idToken = await createMockFederatedToken({
         uid,
         email,
         name: 'Unregistered Poet',

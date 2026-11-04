@@ -9,6 +9,12 @@ JWT_SECRET=dev-insecure-secret-key-must-be-changed-in-production-at-least-32-cha
 CURATOR_SECRET_TOKEN=curator-dev-token-change-in-prod
 PHANTOM_SECRET_TOKEN=curator-dev-token-change-in-prod
 
+# Google Identity Services OAuth Web client ID (not a secret; it is embedded in the frontend).
+# Federated login fails closed without it: the verifier cannot check the token's `aud` claim,
+# so POST /auth/federated-login returns 401 for every token. Leave empty until the OAuth client
+# exists, and keep the "Coming Soon" gate on the Google button in login.html until then.
+GOOGLE_CLIENT_ID=
+
 # 2. Email Notification Options
 # Options: "dev" (safe console preview), "webhook" (Make.com relay), "cloudflare" (Cloudflare Email Sending)
 EMAIL_PROVIDER=dev

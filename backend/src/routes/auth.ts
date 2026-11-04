@@ -28,7 +28,9 @@ authRouter.post('/federated-login', async (c) => {
     return c.json({ error: 'ID token is required.' }, 400);
   }
 
-  const clientId = c.env.GOOGLE_CLIENT_ID || 'alfaaz-collective';
+  // Fail closed when no OAuth client ID is configured: without it the audience claim cannot be
+  // checked, so no token can be proven to have been issued for this deployment.
+  const clientId = c.env.GOOGLE_CLIENT_ID;
   const verified = await verifyFederatedToken(idToken, clientId, c.env.ENV);
   if (!verified) {
     return c.json({ error: 'Invalid or expired authentication token.' }, 401);
@@ -37,11 +39,11 @@ authRouter.post('/federated-login', async (c) => {
   const uid = verified.user_id || verified.sub;
   const email = verified.email ? verified.email.toLowerCase().trim() : null;
   const emailVerified = Boolean(verified.email_verified);
-  const phone = verified.phone_number ? verified.phone_number.trim() : null;
   const fullName = verified.name ? String(verified.name).slice(0, 80).trim() : null;
-  
-  // Security fix: Provider is derived exclusively from cryptographically verified token claims, NOT client body
-  const provider = verified.sign_in_provider || verified.firebase?.sign_in_provider || (phone ? 'phone' : 'google.com');
+
+  // Provider derives exclusively from cryptographically verified token claims, never the client
+  // body. The verifier pins this to google.com once it has confirmed the Google issuer.
+  const provider = verified.sign_in_provider || 'google.com';
 
   // Priority 1: Match existing user by sovereign firebase_uid
   let userRow: any = null;
@@ -52,15 +54,7 @@ authRouter.post('/federated-login', async (c) => {
       .first();
   }
 
-  // Priority 2: Match by verified phone number (phone was verified by SMS gateway)
-  if (!userRow && phone) {
-    userRow = await c.env.DB
-      .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid FROM users WHERE phone = ?')
-      .bind(phone)
-      .first();
-  }
-
-  // Priority 3: Match existing user by email
+  // Priority 2: Match existing user by email
   // CRITICAL P0 INVARIANT: An existing account MUST NEVER be matched or linked to a federated token
   // unless the email address has been explicitly verified (email_verified === true).
   // Without this check, an attacker can create an unverified federated account using a victim's email and hijack it.
@@ -85,19 +79,15 @@ authRouter.post('/federated-login', async (c) => {
       .prepare(`
         UPDATE users 
         SET firebase_uid = COALESCE(firebase_uid, ?),
-            phone = COALESCE(phone, ?),
             auth_provider = COALESCE(auth_provider, ?),
             full_name = COALESCE(full_name, ?),
             email_verified = CASE WHEN ? = 1 THEN 1 ELSE email_verified END,
-            email_verified_at = CASE WHEN ? = 1 THEN COALESCE(email_verified_at, ?) ELSE email_verified_at END,
-            phone_verified = CASE WHEN ? = 1 THEN 1 ELSE phone_verified END,
-            phone_verified_at = CASE WHEN ? = 1 THEN COALESCE(phone_verified_at, ?) ELSE phone_verified_at END
+            email_verified_at = CASE WHEN ? = 1 THEN COALESCE(email_verified_at, ?) ELSE email_verified_at END
         WHERE id = ?
       `)
       .bind(
-        uid, phone, provider, fullName,
+        uid, provider, fullName,
         emailVerified ? 1 : 0, emailVerified ? 1 : 0, nowIso,
-        phone ? 1 : 0, phone ? 1 : 0, nowIso,
         userRow.id
       )
       .run();
@@ -116,8 +106,9 @@ authRouter.post('/federated-login', async (c) => {
       }, 404);
     }
 
-    // New account creation: If user has email but no phone, email must be verified
-    if (email && !phone && !emailVerified) {
+    // Defense in depth behind the verifier's own email gate: this P0 account-takeover guard
+    // must not rely on a single upstream check remaining intact.
+    if (!emailVerified) {
       return c.json({ error: 'Email address is not verified by authentication provider.' }, 401);
     }
 
@@ -126,15 +117,13 @@ authRouter.post('/federated-login', async (c) => {
     try {
       await c.env.DB
         .prepare(`
-          INSERT INTO users (email, password, full_name, status, phone, auth_provider, firebase_uid, email_verified, phone_verified, email_verified_at, phone_verified_at)
-          VALUES (?, NULL, ?, 'PARTICIPANT', ?, ?, ?, ?, ?, CASE WHEN ? = 1 THEN ? ELSE NULL END, CASE WHEN ? = 1 THEN ? ELSE NULL END)
+          INSERT INTO users (email, password, full_name, status, auth_provider, firebase_uid, email_verified, email_verified_at)
+          VALUES (?, NULL, ?, 'PARTICIPANT', ?, ?, ?, CASE WHEN ? = 1 THEN ? ELSE NULL END)
         `)
         .bind(
-          email, fullName, phone, provider, uid,
+          email, fullName, provider, uid,
           emailVerified ? 1 : 0,
-          phone ? 1 : 0,
-          emailVerified ? 1 : 0, nowIso,
-          phone ? 1 : 0, nowIso
+          emailVerified ? 1 : 0, nowIso
         )
         .run();
 
@@ -146,8 +135,8 @@ authRouter.post('/federated-login', async (c) => {
       if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
         // Handle concurrent insert race condition gracefully
         userRow = await c.env.DB
-          .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid, email_verified, phone_verified FROM users WHERE firebase_uid = ? OR (email IS NOT NULL AND email = ?) OR (phone IS NOT NULL AND phone = ?)')
-          .bind(uid, email, phone)
+          .prepare('SELECT id, email, full_name, status, phone, auth_provider, firebase_uid, email_verified, phone_verified FROM users WHERE firebase_uid = ? OR (email IS NOT NULL AND email = ?)')
+          .bind(uid, email)
           .first();
         if (!userRow) {
           return c.json({ error: 'Account conflict occurred during registration.' }, 409);
@@ -383,20 +372,6 @@ authRouter.post('/reset-password', async (c) => {
     const tokenHashBuffer = await crypto.subtle.digest('SHA-256', tokenBuffer);
     const tokenHash = Array.from(new Uint8Array(tokenHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-    // Check if token was already consumed in consumed_tokens table
-    try {
-      const consumed = await c.env.DB
-        .prepare('SELECT token_hash FROM consumed_tokens WHERE token_hash = ?')
-        .bind(tokenHash)
-        .first();
-
-      if (consumed) {
-        return c.json({ detail: 'Invalid or expired reset link.' }, 400);
-      }
-    } catch {
-      // Table may not exist yet in unmigrated environments; fallback to timestamp check
-    }
-
     // Fetch user and check password_reset_at timestamp
     const userRow = await c.env.DB
       .prepare('SELECT email, password_reset_at FROM users WHERE email = ?')
@@ -414,8 +389,22 @@ authRouter.post('/reset-password', async (c) => {
       }
     }
 
-    const hashedPassword = await hashPassword(newPassword);
     const nowIso = new Date().toISOString();
+
+    // Race-free token consumption: INSERT into consumed_tokens FIRST on the PRIMARY KEY
+    // If concurrent requests arrive with the same reset token, SQLite's UNIQUE constraint
+    // failure guarantees that exactly one request consumes the token.
+    try {
+      await c.env.DB
+        .prepare('INSERT INTO consumed_tokens (token_hash, consumed_at, expires_at) VALUES (?, ?, ?)')
+        .bind(tokenHash, nowIso, payload.exp || (Math.floor(Date.now() / 1000) + 900))
+        .run();
+    } catch (err: any) {
+      return c.json({ detail: 'Invalid or expired reset link.' }, 400);
+    }
+
+    // Only the winning request updates the password
+    const hashedPassword = await hashPassword(newPassword);
     const res = await c.env.DB
       .prepare('UPDATE users SET password = ?, password_reset_at = ? WHERE email = ?')
       .bind(hashedPassword, nowIso, payload.sub)
@@ -423,16 +412,6 @@ authRouter.post('/reset-password', async (c) => {
 
     if (res.meta.changes === 0) {
       return c.json({ detail: 'Account not found.' }, 404);
-    }
-
-    // Record token in consumed_tokens table
-    try {
-      await c.env.DB
-        .prepare('INSERT INTO consumed_tokens (token_hash, consumed_at, expires_at) VALUES (?, ?, ?)')
-        .bind(tokenHash, nowIso, payload.exp || (Math.floor(Date.now() / 1000) + 900))
-        .run();
-    } catch {
-      // Table insert is auxiliary; timestamp check already invalidates the token
     }
 
     try {

@@ -116,7 +116,7 @@ describe('Community Events & Collective Circles Subsystem (Real Route Integratio
         body: JSON.stringify({ event_id: 100 })
       }, getTestEnv());
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(409);
       const data: any = await res.json();
       expect(data.detail).toContain('Event full');
     });

@@ -147,6 +147,66 @@ describe('Adversarial Hardening: Concurrency, Schema Integrity & Bounds Verifica
       expect(rows.results).toHaveLength(1);
     });
 
+    it('guarantees that two distinct users racing for the final seat result in exactly one 200 and one 409', async () => {
+      await mockDb.prepare(`
+        INSERT INTO events (id, name, description, event_date, capacity, registration_open)
+        VALUES (999, 'Single Seat Salon', 'Only one seat', 'Dec 15, 2026', 1, 1)
+      `).run();
+
+      const userTokenA = await createToken('racer_a@alfaaz.local', 'PARTICIPANT', jwtSecret);
+      const userTokenB = await createToken('racer_b@alfaaz.local', 'PARTICIPANT', jwtSecret);
+
+      const [resA, resB] = await Promise.all([
+        app.request('/events/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${userTokenA}`
+          },
+          body: JSON.stringify({ event_id: 999 })
+        }, getTestEnv()),
+        app.request('/events/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${userTokenB}`
+          },
+          body: JSON.stringify({ event_id: 999 })
+        }, getTestEnv())
+      ]);
+
+      const statuses = [resA.status, resB.status].sort();
+      expect(statuses).toEqual([200, 409]);
+
+      const count = await mockDb.prepare('SELECT COUNT(*) as cnt FROM event_registrations WHERE event_id = 999').first<{ cnt: number }>();
+      expect(count?.cnt).toBe(1);
+    });
+
+    it('guarantees that parallel reset-password requests with the same token result in exactly one 200 and one 400', async () => {
+      const email = 'reset_racer@alfaaz.local';
+      await mockDb.prepare('INSERT INTO users (email, password, full_name, status) VALUES (?, ?, ?, ?)')
+        .bind(email, 'hash_placeholder', 'Reset Racer', 'PARTICIPANT')
+        .run();
+
+      const resetToken = await createToken(email, 'reset', jwtSecret, 900);
+
+      const [res1, res2] = await Promise.all([
+        app.request('/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: resetToken, new_password: 'NewPasswordA123!' })
+        }, getTestEnv()),
+        app.request('/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: resetToken, new_password: 'NewPasswordB123!' })
+        }, getTestEnv())
+      ]);
+
+      const statuses = [res1.status, res2.status].sort();
+      expect(statuses).toEqual([200, 400]);
+    });
+
     it('enforces database-level UNIQUE(event_id, user_email) constraint directly', async () => {
       const rawDb = mockDb._sqlite;
 

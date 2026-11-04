@@ -6,7 +6,13 @@ interface RateLimitConfig {
   windowMs: number;
 }
 
-const memoryStore = new Map<string, { count: number; expiresAt: number }>();
+interface WindowRecord {
+  prevCount: number;
+  curCount: number;
+  curWindowStart: number;
+}
+
+const memoryStore = new Map<string, WindowRecord>();
 
 export function rateLimiter(config: RateLimitConfig) {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
@@ -15,29 +21,63 @@ export function rateLimiter(config: RateLimitConfig) {
       return next();
     }
 
-    // Trust cf-connecting-ip from the Cloudflare edge; only fall back to the
-    // client-supplied x-forwarded-for in the test environment (AGENTS.md invariant 3).
-    const rawIp = c.req.header('cf-connecting-ip')
-      || (c.env.ENV === 'test' ? (c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1') : '127.0.0.1');
+    // Trust cf-connecting-ip from the Cloudflare edge; fall back to client-supplied
+    // x-forwarded-for in test/development environments (AGENTS.md §3).
+    // In production, prevent unverified edge clients from collapsing into a single
+    // shared 127.0.0.1 bucket by isolating unverified traffic or failing closed when enforced.
+    const cfIp = c.req.header('cf-connecting-ip');
+    let rawIp: string;
+
+    if (cfIp) {
+      rawIp = cfIp.trim();
+    } else if (c.env.ENV === 'test' || c.env.ENV === 'development') {
+      rawIp = c.req.header('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+    } else {
+      if ((c.env as any).FAIL_CLOSED_EDGE_IP) {
+        return c.json({ detail: 'Edge client IP verification required.' }, 403);
+      }
+      // Fallback: isolate into an ephemeral client identifier rather than a shared 127.0.0.1 bucket
+      const fwd = c.req.header('x-forwarded-for')?.split(',')[0].trim();
+      rawIp = `unverified:${fwd || crypto.randomUUID()}`;
+    }
     const now = Date.now();
     // Normalize path to prevent route-alias double-budgeting (/api/xyz vs /xyz)
     const normalizedPath = c.req.path.replace(/^\/api(?=\/|$)/, '') || '/';
     const key = `${normalizedPath}:${rawIp}`;
 
-    const record = memoryStore.get(key);
-    if (!record || now > record.expiresAt) {
-      memoryStore.set(key, { count: 1, expiresAt: now + config.windowMs });
+    let record = memoryStore.get(key);
+    if (!record) {
+      record = { prevCount: 0, curCount: 1, curWindowStart: now };
+      memoryStore.set(key, record);
     } else {
-      if (record.count >= config.limit) {
+      // Advance sliding window if needed
+      if (now >= record.curWindowStart + config.windowMs) {
+        if (now < record.curWindowStart + 2 * config.windowMs) {
+          record.prevCount = record.curCount;
+          record.curCount = 0;
+          record.curWindowStart += config.windowMs;
+        } else {
+          record.prevCount = 0;
+          record.curCount = 0;
+          record.curWindowStart = now;
+        }
+      }
+
+      // Compute weighted rate within sliding window
+      const timeIntoCurWindow = now - record.curWindowStart;
+      const weight = Math.max(0, (config.windowMs - timeIntoCurWindow) / config.windowMs);
+      const effectiveCount = Math.floor(record.prevCount * weight) + record.curCount;
+
+      if (effectiveCount >= config.limit) {
         return c.json({ detail: 'Rate limit exceeded. Please pause momentarily.' }, 429);
       }
-      record.count += 1;
+      record.curCount += 1;
     }
 
-    // Prune stale records if memoryStore grows large
+    // Prune stale records if memoryStore grows large (> 1000 entries)
     if (memoryStore.size > 1000) {
       for (const [k, v] of memoryStore.entries()) {
-        if (now > v.expiresAt) memoryStore.delete(k);
+        if (now > v.curWindowStart + 2 * config.windowMs) memoryStore.delete(k);
       }
     }
 

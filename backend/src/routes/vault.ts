@@ -5,13 +5,36 @@ import { rateLimiter } from '../middleware/rate_limit';
 
 const vaultRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-function isValidUrl(val: string): boolean {
+const TRUSTED_STORAGE_DOMAINS = [
+  'res.cloudinary.com',
+  'alfaazcollective.org',
+  'www.alfaazcollective.org',
+  'tch.alfaazcollective.org'
+];
+
+function isValidUrl(val: string, env?: Env): boolean {
   if (!val) return false;
   const s = val.trim();
   if (s.startsWith('/vault/file/')) return true;
   try {
     const parsed = new URL(s);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    const hostname = parsed.hostname.toLowerCase();
+    if (TRUSTED_STORAGE_DOMAINS.some(d => hostname === d || hostname.endsWith(`.${d}`))) {
+      return true;
+    }
+    // In test and development environments, permit mock domains and loopback
+    if (env?.ENV !== 'production') {
+      if (
+        hostname === 'example.com' ||
+        hostname.endsWith('.example.com') ||
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1'
+      ) {
+        return true;
+      }
+    }
+    return false;
   } catch {
     return false;
   }
@@ -67,7 +90,7 @@ vaultRouter.post('/submit', requireAuth, rateLimiter({ limit: 10, windowMs: 6000
   if (!title || title.length > 200) {
     return c.json({ error: 'title is required (max 200 chars)' }, 400);
   }
-  if (!file_url || !isValidUrl(file_url)) {
+  if (!file_url || !isValidUrl(file_url, c.env)) {
     return c.json({ error: 'Valid file_url or file upload is required' }, 400);
   }
   if (note && note.length > 1500) {

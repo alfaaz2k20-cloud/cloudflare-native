@@ -235,6 +235,48 @@ describe('Contact Cross-Verification & Collective Roster Activity Ledger Suite',
       }, getTestEnv());
       expect(resReplay.status).toBe(400);
     });
+
+    it('V_06: POST /verification/email/confirm rejects when target does not match registered account email with 409 and leaves email_verified unchanged', async () => {
+      const userEmail = 'mismatch_user@alfaaz.local';
+      await mockDb.prepare('INSERT INTO users (email, full_name, status, email_verified, phone_verified) VALUES (?, ?, ?, 0, 0)')
+        .bind(userEmail, 'Mismatch User', 'PARTICIPANT')
+        .run();
+
+      const userRow: any = await mockDb.prepare('SELECT id FROM users WHERE email = ?').bind(userEmail).first();
+      const code = '654321';
+      const buffer = new TextEncoder().encode(code);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      const codeHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      // Insert active code with a target different from registered email
+      await mockDb.prepare(`
+        INSERT INTO verification_codes (user_id, purpose, target, code_hash, expires_at)
+        VALUES (?, 'email', 'attacker@alfaaz.local', ?, datetime('now', '+10 minutes'))
+      `).bind(userRow.id, codeHash).run();
+
+      const token = await createToken({ email: userEmail, status: 'PARTICIPANT' }, jwtSecret);
+
+      const res = await app.request('/verification/email/confirm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ code })
+      }, getTestEnv());
+
+      expect(res.status).toBe(409);
+      const data = await res.json();
+      expect(data.error).toMatch(/target does not match/i);
+
+      // Verify email_verified is UNCHANGED (still 0)
+      const afterUser: any = await mockDb.prepare('SELECT email, email_verified, email_verified_at FROM users WHERE id = ?')
+        .bind(userRow.id)
+        .first();
+      expect(afterUser.email).toBe(userEmail);
+      expect(afterUser.email_verified).toBe(0);
+      expect(afterUser.email_verified_at).toBeNull();
+    });
   });
 
   describe('Part 4: Collective Roster Activity Ledger', () => {

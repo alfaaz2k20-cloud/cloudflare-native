@@ -140,30 +140,37 @@ export function timingSafeEqual(a: string, b: string): boolean {
 }
 
 export async function createToken(
-  firstArg: string | { email: string; status: string },
+  firstArg: string | { email: string; status: string; iat?: number; sub?: string },
   secondArg?: string,
-  thirdArg?: string,
+  thirdArg?: string | number,
   expiresInSeconds: number = 7 * 86400
 ): Promise<string> {
   let email = '';
   let status = 'PARTICIPANT';
   let secret = '';
+  let customIat: number | undefined;
 
   if (typeof firstArg === 'object' && firstArg !== null) {
     email = firstArg.email;
     status = firstArg.status;
     secret = secondArg || '';
+    if (typeof firstArg.iat === 'number') {
+      customIat = firstArg.iat;
+    }
+    if (typeof thirdArg === 'number') {
+      expiresInSeconds = thirdArg;
+    }
   } else {
     email = firstArg;
     status = secondArg || 'PARTICIPANT';
-    secret = thirdArg || '';
+    secret = (typeof thirdArg === 'string' ? thirdArg : '') || '';
   }
 
   if (!secret) {
     throw new Error('JWT secret must be a non-empty string');
   }
 
-  const now = Math.floor(Date.now() / 1000);
+  const now = customIat !== undefined ? customIat : Math.floor(Date.now() / 1000);
   const header = { alg: 'HS256', typ: 'JWT' };
   const payload = {
     sub: email,

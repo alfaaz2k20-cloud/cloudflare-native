@@ -246,7 +246,10 @@ export async function askCuratorAi(
     try {
       const messages = [
         { role: 'system', content: activeSystemPrompt },
-        ...history.slice(-8).map(h => ({ role: h.role, content: h.content.slice(0, 800) })),
+        ...history.slice(-8).map(h => ({
+          role: h.role === 'assistant' ? 'assistant' : 'user',
+          content: h.content.slice(0, 800)
+        })),
         { role: 'user', content: cleanQ.slice(0, 800) }
       ];
 

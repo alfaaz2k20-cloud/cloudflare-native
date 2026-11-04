@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { cors } from 'hono/cors';
 import { Env, Variables } from './types';
+import { STATIC_SECURITY_HEADERS, cspForPath } from './security/headers';
 import { generateCuratorEssay } from './services/curator';
 
 import authRouter from './routes/auth';
@@ -22,29 +23,10 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 // 1. Security Headers Middleware (CSP, Clickjacking & MIME-type protection)
 app.use('*', async (c, next) => {
   await next();
-  c.res.headers.set('X-Content-Type-Options', 'nosniff');
-  c.res.headers.set('X-Frame-Options', 'DENY');
-  c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-
-  const isTailwindRoute = c.req.path.startsWith('/recruit') || c.req.path.startsWith('/research');
-  const scriptSrc = isTailwindRoute
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://challenges.cloudflare.com https://apis.google.com https://www.gstatic.com https://accounts.google.com"
-    : "script-src 'self' 'unsafe-inline' https://unpkg.com https://challenges.cloudflare.com https://apis.google.com https://www.gstatic.com https://accounts.google.com";
-
-  const csp = [
-    "default-src 'self'",
-    scriptSrc,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.googleusercontent.com https://graph.facebook.com https://appleid.cdn-apple.com https://www.gstatic.com https://ssl.gstatic.com",
-    "connect-src 'self' https://challenges.cloudflare.com https://api.cloudinary.com https://res.cloudinary.com https://*.googleapis.com https://accounts.google.com",
-    "frame-src 'self' https://challenges.cloudflare.com https://appleid.apple.com https://accounts.google.com",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'"
-  ].join('; ');
-  c.res.headers.set('Content-Security-Policy', csp);
+  for (const [name, value] of STATIC_SECURITY_HEADERS) {
+    c.res.headers.set(name, value);
+  }
+  c.res.headers.set('Content-Security-Policy', cspForPath(c.req.path));
 });
 
 // 2. Host Canonicalization (301 Permanent Redirect www.alfaazcollective.org -> apex)
@@ -60,47 +42,56 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// 3. Global CORS Middleware (Tightened against arbitrary origin reflection with credentials)
+// 3. Global CORS Middleware (exact-origin allowlist; no suffix wildcards on owned domains)
+const FIRST_PARTY_ORIGINS = new Set([
+  'https://alfaazcollective.org',
+  'https://www.alfaazcollective.org',
+  'https://alfaazcollective.vercel.app',
+  'https://alfaaz.pages.dev'
+]);
+
+// Loopback origins are only honoured outside production, where they are the dev servers
+// declared in frontend/vite.config.js and `wrangler dev`. Any port is not enough: a pinned
+// port still lets a local process speak to the API, so these never ship to production.
+const LOOPBACK_ORIGINS = new Set([
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:8787',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:8787'
+]);
+
 app.use('*', async (c, next) => {
   const corsMiddleware = cors({
     origin: (origin) => {
       if (!origin) return null;
-      const allowedStatic = [
-        c.env?.FRONTEND_URL,
-        'http://localhost:5173',
-        'http://localhost:8787',
-        'http://127.0.0.1:5173',
-        'http://127.0.0.1:8787',
-        'http://localhost:3000',
-        'https://alfaaz.pages.dev',
-        'https://alfaazcollective.vercel.app'
-      ].filter(Boolean);
 
-      if (allowedStatic.includes(origin)) {
+      if (FIRST_PARTY_ORIGINS.has(origin) || (c.env?.FRONTEND_URL && origin === c.env.FRONTEND_URL)) {
         return origin;
       }
 
-      try {
-        const parsed = new URL(origin);
-        const host = parsed.hostname.toLowerCase();
-        if (
-          host === 'alfaaz.pages.dev' ||
-          host.endsWith('.alfaaz.pages.dev') ||
-          host === 'alfaaz.com' ||
-          host.endsWith('.alfaaz.com') ||
-          host === 'alfaazcollective.org' ||
-          host.endsWith('.alfaazcollective.org') ||
-          host === 'alfaazcollective.vercel.app' ||
-          host === 'localhost' ||
-          host === '127.0.0.1'
-        ) {
-          return origin;
-        }
-      } catch {
-        // invalid URL format
+      if (c.env?.ENV !== 'production' && LOOPBACK_ORIGINS.has(origin)) {
+        return origin;
       }
 
-      // Reject arbitrary external origin reflection
+      // Cloudflare Pages assigns each preview build a hashed subdomain, which cannot be
+      // enumerated ahead of time. `alfaaz.pages.dev` is a subdomain we control, so the
+      // suffix match is bounded to our own project rather than to a domain we merely resemble.
+      let parsed: URL;
+      try {
+        parsed = new URL(origin);
+      } catch {
+        return null;
+      }
+      if (
+        parsed.protocol === 'https:' &&
+        !parsed.port &&
+        parsed.hostname.toLowerCase().endsWith('.alfaaz.pages.dev')
+      ) {
+        return origin;
+      }
+
       return null;
     },
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -267,6 +258,16 @@ app.route('/api/verification', verificationRouter);
 
 // 404 Handler for API routes
 app.all('/api/*', (c) => c.json({ error: 'Endpoint not found on Cloudflare-native API' }, 404));
+
+// Static asset fallthrough. Registered last so every router above wins first.
+// `run_worker_first` in wrangler.jsonc sends all requests to the Worker before the asset
+// router, and there is no automatic fallthrough: without this handler every HTML page,
+// image, and bundle would 404. Routing through here is also what lets the security header
+// middleware above cover static responses, which the asset router would otherwise skip.
+app.use('*', async (c) => {
+  if (!c.env?.ASSETS) return c.notFound();
+  return c.env.ASSETS.fetch(new Request(c.req.url, { method: c.req.method, headers: c.req.raw.headers }));
+});
 
 // Global Error Handler (Guarantees JSON error response instead of plain text 500)
 app.onError((err, c) => {

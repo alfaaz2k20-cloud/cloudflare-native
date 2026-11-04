@@ -99,27 +99,35 @@ In `backend/src/index.ts`, custom routing middleware intercepts requests prior t
 
 ### 2.4 Defensive Middleware Pipeline
 Requests pass through a sequential pipeline of defensive middleware:
-1. **Security Headers Middleware (`index.ts:23-43`)**:
+1. **Security Headers Middleware (`security/headers.ts`, applied at `index.ts:24-31`)**:
+   - Header names and values live in `backend/src/security/headers.ts` so the Worker and the static asset path cannot drift apart.
+   - `run_worker_first: true` (`wrangler.jsonc`) routes every request through the Worker, and the static asset fallthrough in `index.ts` forwards misses to `env.ASSETS`. Without this the asset router serves HTML pages directly and none of the headers below reach them. There is no `frontend/public/_headers` file on purpose: Cloudflare joins duplicate header values with a comma rather than letting the more specific rule win, so a static CSP would stack on top of the Worker's.
    - `X-Content-Type-Options: nosniff` (mitigates MIME-confusion attacks).
    - `X-Frame-Options: DENY` (disallows iframe embedding).
    - `Referrer-Policy: strict-origin-when-cross-origin` (protects referrer privacy).
    - `Permissions-Policy: camera=(), microphone=(), geolocation=()` (restricts browser device access).
-   - **Content Security Policy (CSP)**:
+   - `Strict-Transport-Security: max-age=31536000; includeSubDomains` (refuses plaintext HTTP on return visits).
+   - **Content Security Policy (CSP)** — strict variant, served on every route except `/recruit*` and `/research*`:
      ```
      default-src 'self';
-     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://challenges.cloudflare.com https://apis.google.com https://www.gstatic.com https://accounts.google.com;
+     script-src 'self' 'unsafe-inline' https://unpkg.com https://challenges.cloudflare.com https://apis.google.com https://www.gstatic.com https://accounts.google.com;
      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
      font-src 'self' https://fonts.gstatic.com data:;
-     img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.googleusercontent.com https://graph.facebook.com https://appleid.cdn-apple.com https://www.gstatic.com https://ssl.gstatic.com;
+     img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.googleusercontent.com https://www.gstatic.com https://ssl.gstatic.com;
      connect-src 'self' https://challenges.cloudflare.com https://api.cloudinary.com https://res.cloudinary.com https://*.googleapis.com https://accounts.google.com;
-     frame-src 'self' https://challenges.cloudflare.com https://appleid.apple.com https://accounts.google.com;
+     frame-src 'self' https://challenges.cloudflare.com https://accounts.google.com;
      frame-ancestors 'none';
      base-uri 'self';
      form-action 'self';
      ```
-2. **Tightened CORS Middleware (`index.ts:59-108`)**:
-   - Restricts origins to explicit allowlist: `alfaazcollective.org`, `*.alfaaz.pages.dev`, `alfaazcollective.vercel.app`, and local test ports (`3000`, `5173`, `8787`).
-   - Rejects arbitrary origin reflection when `credentials: true` is requested.
+   - Those two routes load the Tailwind JIT CDN, which compiles CSS in the browser, so their `script-src` additionally carries `'unsafe-eval'` and `https://cdn.tailwindcss.com`. No other page is granted that allowance.
+   - `graph.facebook.com`, `appleid.cdn-apple.com`, and `appleid.apple.com` were removed from `img-src` and `frame-src`: Apple and Meta sign-in are decommissioned and no frontend page references them.
+2. **Exact-Origin CORS Middleware (`index.ts:64-121`)**:
+   - Allowlist is exact-match only: `https://alfaazcollective.org`, `https://www.alfaazcollective.org`, `https://alfaazcollective.vercel.app`, `https://alfaaz.pages.dev`, plus any operator-set `FRONTEND_URL`.
+   - `*.alfaaz.pages.dev` is the sole suffix match, bounded to a Cloudflare Pages project we own, because each preview build gets an unguessable hashed subdomain. It requires `https:` and no explicit port.
+   - Loopback origins are honoured only for the three pinned dev ports (`localhost`/`127.0.0.1` on `3000`, `5173`, `8787`) and only when `ENV !== 'production'`.
+   - `alfaaz.com` is no longer accepted. It is an email domain we do not serve the web app from, and the previous `.endsWith('.alfaaz.com')` rule would have reflected any subdomain of a domain owned by someone else.
+   - Unlisted origins receive no `Access-Control-Allow-Origin` header at all, so the browser blocks the response.
    - Enforces permitted methods (`GET, POST, PUT, PATCH, DELETE, OPTIONS`) and permitted headers (`Content-Type, Authorization, X-Requested-With, cf-turnstile-response, Accept, Origin`).
 3. **Authentication Middleware (`middleware/auth.ts`)**:
    - `requireAuth`: Extracts `Authorization: Bearer <token>`, verifies signature via `verifyToken()`, strictly rejects single-purpose reset tokens (`status === 'reset'`), and sets user context (`c.set('user', payload)`).
@@ -142,13 +150,20 @@ Alfaaz Collective operates a sovereign cryptographic suite with zero external np
    - Header Validation: Enforces `alg === 'HS256'` and `typ === 'JWT'`, mitigating algorithm confusion vulnerabilities.
 3. **Federated Google Identity Services (GIS) Token Verifier**:
    - Algorithm: Web Crypto RS256 (`RSASSA-PKCS1-v1_5` with SHA-256).
+   - **Single Accepted Issuer**: `https://accounts.google.com` (or the bare `accounts.google.com` form). Every other issuer is rejected before the signature is even checked. The Firebase `https://securetoken.google.com/<project>` branch and its `service_accounts/v1/jwk/securetoken@system.gserviceaccount.com` JWKS fallback were removed per `AGENTS.md §3`; there is no second validation path.
    - JWKS Caching: Fetches and caches Google's public JSON Web Key Sets from `https://www.googleapis.com/oauth2/v3/certs` in an in-memory cache with HTTP `max-age` TTL management.
-   - **Audience Validation**: Rejects any token where `payload.aud !== c.env.GOOGLE_CLIENT_ID`.
+   - **Audience Validation**: Rejects any token where `payload.aud !== c.env.GOOGLE_CLIENT_ID`. Fails closed when `GOOGLE_CLIENT_ID` is unset rather than falling back to a guessable default, so an unconfigured deployment accepts no federated token at all.
    - **Verified Email Gate**: Requires `email_verified === true`. Accounts are never linked if email verification is false or absent.
-   - **Cryptographic Provider Integrity**: Derives `auth_provider` solely from token claims, ignoring client payload arguments.
-4. **Password Reset Replay & Invalidation Protection**:
-   - SHA-256 hash of every consumed reset token is permanently inserted into D1 table `consumed_tokens`. Replay attempts fail immediately with `400 Bad Request`.
-   - Compares token issuance time against `password_reset_at` timestamp on `users` table: tokens issued prior to the last password change are invalidated.
+   - **Cryptographic Provider Integrity**: `auth_provider` is pinned to `google.com` by the verifier once the Google issuer is confirmed, so no token claim and no client payload argument can steer it. The former `firebase.sign_in_provider` fallback and the phone-priority account lookup (`WHERE phone = ?`) were removed; `users.phone` survives only as a contact field captured at registration.
+4. **Race-Free Password Reset & Invalidation Protection**:
+   - Atomic consumption via insert-first on the PRIMARY KEY: `INSERT INTO consumed_tokens (token_hash, consumed_at, expires_at) VALUES (?, ?, ?)` executes before the password is updated. SQLite's unique constraint failure catches any parallel replay request with `400 Bad Request`.
+   - Token issuance timestamp (`iat`) is validated against `password_reset_at` on the `users` table: tokens minted prior to a password change are rejected with `401 Unauthorized`.
+5. **Live Status Synchronization & Session Revocation (`middleware/auth.ts`)**:
+   - `requireAdmin` performs an indexed D1 read (`SELECT id, email, status, password_reset_at FROM users ...`) rather than trusting the static JWT `status` claim. A demoted admin (`status !== 'ADMIN'`) immediately receives `403 Forbidden`.
+   - `requireAuth` validates token issuance against `password_reset_at` (rejecting pre-reset sessions with `401`) and synchronizes live user role state to route handlers. Purged users (`admin_audit_logs` record with `action = 'PURGE_USER'`) are rejected with `401`.
+6. **Email Verification Target-Matching & Remediation (`routes/verification.ts`)**:
+   - `/verification/email/confirm` enforces strict attestation integrity: rejects with `409 Conflict` if the verified target differs from the account's registered email address, leaving `email_verified` untouched.
+   - Migration `0006_remediate_email_verification.sql` unwound fabricated `email_verified = 1` timestamps introduced by historical migration 0003 for accounts lacking consumed verification code evidence.
 
 ### 2.6 Notification Subsystem
 - **Tri-Modal Email Provider Pattern (`backend/src/notifications/email.ts`)**:
@@ -572,7 +587,7 @@ Automated test suite `tests/security_seed.test.ts` scans all documentation, scri
 ### 8.3 Fail-Closed Defensive Controls
 - **Turnstile Verification**: In production mode (`ENV === 'production'`), any missing `TURNSTILE_SECRET_KEY`, unconfigured secret, or dummy pass key triggers an immediate `403 Forbidden` (`[TURNSTILE] Critical: TURNSTILE_SECRET_KEY not configured... failing closed`).
 - **Audience & Email Verification**: Federated login strictly fails closed if `payload.aud !== GOOGLE_CLIENT_ID` or if `email_verified !== true`.
-- **Database Concurrency Protection**: High-contention operations (interview bookings, event RSVPs, club memberships) enforce database-level `UNIQUE` constraints and conditional SQL, rejecting conflicting writes with `409 Conflict`.
+- **Database Concurrency Protection**: High-contention operations (interview bookings, event RSVPs, club memberships) enforce database-level `UNIQUE` constraints and atomic conditional SQL. Event registration uses single atomic conditional insert `INSERT INTO event_registrations ... SELECT ... WHERE EXISTS (...)` returning `409 Conflict` on capacity exhaustion. Reset-password enforces insert-first on `consumed_tokens(token_hash)` PRIMARY KEY.
 
 ---
 
@@ -613,6 +628,6 @@ Under no circumstances may any automated sweeper or refactoring process alter th
 
 ### 9.4 Build Dependency Safeguards
 - **`frontend/tchandervar/images/`**: Contains 53 image files referenced by relative URLs inside `frontend/tchandervar/index.html`. It is an active build-time dependency for Vite and must **never** be deleted.
-- **`backend/src/notifications/sms.ts`**: Delivers telephone cross-verification OTPs (`POST /verification/phone/send`) and is verified by `tests/verification_roster.test.ts`. It is **not** dead code and must be preserved.
+- **`backend/src/notifications/sms.ts`**: Removed on 2026-11-03 together with the Twilio adapter and the `/verification/phone/*` routes, per `AGENTS.md §3`. Only `backend/src/notifications/email.ts` remains. Phone-ownership verification is retained as a documented future capability, not as present code; do not treat an import of it as a missing dependency.
 - **`scripts/bootstrap-admin.js`**: Dynamically imported by `tests/security_seed.test.ts` and executed by `npm run bootstrap:admin`. Must be preserved.
 - **`scripts/verify_challenger_2.mjs`**: Executed by `npm run test:hardening` to verify 16,384 SJT combinatorial profiles. Must be preserved.

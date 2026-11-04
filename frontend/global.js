@@ -8,9 +8,9 @@ const API_URL =
         ? import.meta.env.VITE_API_BASE_URL
         : (import.meta.env.VITE_API_URL || '');
 const CLOUDINARY_CLOUD_NAME =
-    import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dmqwjpmjk';
+    import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '';
 const CLOUDINARY_UPLOAD_PRESET =
-    import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'alfaaz_vault';
+    import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || '';
 const isLocalhost = typeof window !== 'undefined' && (
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1' ||

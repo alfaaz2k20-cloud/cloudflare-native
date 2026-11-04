@@ -1,5 +1,5 @@
-// Web Crypto implementation of Sovereign Federated & Google Identity Services (GIS) Token Verification
-// Zero Firebase SDK or external dependency runtime (100% Cloudflare Workers Web Crypto native)
+// Web Crypto verification of Google Identity Services (GIS) / direct Google OAuth ID tokens.
+// Zero Firebase SDK or external dependency runtime (100% Cloudflare Workers Web Crypto native).
 
 export interface FederatedTokenPayload {
   iss: string;
@@ -11,18 +11,11 @@ export interface FederatedTokenPayload {
   exp: number;
   email?: string;
   email_verified?: boolean;
-  phone_number?: string;
   name?: string;
   picture?: string;
   sign_in_provider?: string;
-  firebase?: {
-    identities?: Record<string, any>;
-    sign_in_provider?: string;
-  };
   [key: string]: any;
 }
-
-export type FirebaseIdTokenPayload = FederatedTokenPayload;
 
 interface CachedKey {
   key: CryptoKey;
@@ -30,6 +23,8 @@ interface CachedKey {
 }
 
 const jwkCache = new Map<string, CachedKey>();
+
+const GIS_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
 
 function base64UrlToUint8Array(base64Url: string): Uint8Array {
   let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -69,13 +64,8 @@ async function getGooglePublicKey(kid: string): Promise<CryptoKey | null> {
   }
 
   try {
-    const url = 'https://www.googleapis.com/oauth2/v3/certs';
-    let res = await fetch(url);
-    if (!res.ok) {
-      // Fallback endpoint for service accounts / certificates
-      res = await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com');
-      if (!res.ok) return null;
-    }
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/certs');
+    if (!res.ok) return null;
 
     const cacheControl = res.headers.get('cache-control') || '';
     const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
@@ -108,12 +98,15 @@ async function getGooglePublicKey(kid: string): Promise<CryptoKey | null> {
 }
 
 /**
- * Cryptographically verifies a federated token (GIS / OAuth / OIDC) using Web Crypto RS256.
- * Validates issuer, audience, expiration, algorithm, subject, and signature.
+ * Cryptographically verifies a Google Identity Services ID token using Web Crypto RS256.
+ * Validates issuer, audience, expiration, algorithm, subject, email verification, and signature.
+ *
+ * Google is the only accepted issuer. Every other issuer — including the decommissioned Firebase
+ * `securetoken.google.com` — is rejected outright instead of routed to a second validation path.
  */
 export async function verifyFederatedToken(
   idToken: string,
-  expectedProjectId: string = 'alfaaz-collective',
+  expectedClientId: string | undefined,
   envName?: string
 ): Promise<FederatedTokenPayload | null> {
   if (!idToken || typeof idToken !== 'string') return null;
@@ -151,31 +144,29 @@ export async function verifyFederatedToken(
     return null;
   }
 
-  // Issuer check: supports Google Identity Services (GIS) / direct Google OAuth
-  const isGis = payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com';
-  if (isGis) {
-    // CRITICAL SECURITY FIX: Strict Fail-Closed Audience Validation
-    // Validates that Google ID tokens were explicitly issued for our client ID; rejects if clientId is missing or mismatched
-    if (!expectedProjectId || payload.aud !== expectedProjectId) {
-      return null;
-    }
-    if (!payload.email_verified && payload.email_verified !== 'true' as any) {
-      return null;
-    }
-    // Tag provider for consistent downstream mapping
-    if (!payload.sign_in_provider) {
-      payload.sign_in_provider = 'google.com';
-    }
-    payload.email_verified = true;
-  } else {
-    const expectedIssuer = `https://securetoken.google.com/${expectedProjectId}`;
-    if (payload.iss !== expectedIssuer) {
-      return null;
-    }
-    if (payload.aud !== expectedProjectId) {
-      return null;
-    }
+  // Issuer check: Google Identity Services / direct Google OAuth only.
+  if (!GIS_ISSUERS.includes(payload.iss)) {
+    return null;
   }
+
+  // Strict fail-closed audience validation: the token must have been issued for our own OAuth
+  // client ID. A deployment with no client ID configured cannot prove provenance, so it accepts
+  // nothing rather than falling back to a guessable default.
+  if (!expectedClientId || payload.aud !== expectedClientId) {
+    return null;
+  }
+
+  // Verified-email gate (AGENTS.md §3): never link or issue a session for an identity whose
+  // address Google has not confirmed. Without it an attacker mints a federated identity over a
+  // victim's email and hijacks the existing account.
+  if (!payload.email_verified && payload.email_verified !== 'true' as any) {
+    return null;
+  }
+
+  // The issuer is Google, so the provider is Google. Assigned unconditionally rather than
+  // inherited from a claim, so no token-supplied value can steer the stored auth_provider.
+  payload.sign_in_provider = 'google.com';
+  payload.email_verified = true;
 
   // Subject check: must be non-empty string
   if (!payload.sub || typeof payload.sub !== 'string' || payload.sub.trim() === '') {
@@ -191,7 +182,7 @@ export async function verifyFederatedToken(
   }
 
   // 3. Cryptographic Signature Verification
-  const testKey = (globalThis as any).__TEST_FEDERATED_PUBLIC_KEY__ || (globalThis as any).__TEST_FIREBASE_PUBLIC_KEY__;
+  const testKey = (globalThis as any).__TEST_FEDERATED_PUBLIC_KEY__;
   let verifyKey: CryptoKey | null = null;
 
   if (envName === 'test' && testKey) {
@@ -220,5 +211,3 @@ export async function verifyFederatedToken(
 
   return payload;
 }
-
-export const verifyFirebaseToken = verifyFederatedToken;

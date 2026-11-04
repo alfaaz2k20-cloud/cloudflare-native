@@ -746,7 +746,7 @@ function renderConsent(app) {
  <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-[var(--bg-primary)] border border-[var(--accent-gold)]"></div>
  <h2 class="text-lg text-[var(--text-primary)] mb-2">The Experience</h2>
  <p class="text-sm text-black leading-relaxed">
- This is a 20-25 minute exploratory journey. You will encounter situational judgments and creative micro-tasks.
+ This is an 11–14 minute exploratory journey. You will encounter situational judgments and creative micro-tasks.
  There are no right or wrong answers—only different perspectives. You may pause, skip, or withdraw at any time without penalty.
  </p>
  </div>
@@ -759,7 +759,7 @@ function renderConsent(app) {
  As you interact with the tasks, we collect behavioral telemetry.
  <strong>Why do we do this?</strong> To understand your intuitive working style. It helps us match you to the right
  creative roles within the collective.
- Your raw data is pseudonymous and will never be used for automated rejection or sold to third parties.
+ Your assessment data is strictly confidential, linked securely to your application record, and will never be used for automated rejection or sold to third parties.
  </p>
  <p class="text-sm text-black leading-relaxed">
  Contact Us: <a href="mailto:alfaaz2k20@gmail.com" class="text-[var(--accent-gold)] hover:underline">alfaaz2k20@gmail.com</a>

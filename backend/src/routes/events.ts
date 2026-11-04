@@ -60,6 +60,7 @@ eventsRouter.post('/register', requireAuth, rateLimiter({ limit: 10, windowMs: 6
     return c.json({ detail: 'Registration closed.' }, 400);
   }
 
+  // Fast-path duplicate check
   const already = await c.env.DB
     .prepare('SELECT id FROM event_registrations WHERE event_id = ? AND user_email = ?')
     .bind(eventId, user.email)
@@ -69,19 +70,20 @@ eventsRouter.post('/register', requireAuth, rateLimiter({ limit: 10, windowMs: 6
     return c.json({ detail: 'Already registered.' }, 400);
   }
 
-  const countRow = await c.env.DB
-    .prepare('SELECT COUNT(*) as cnt FROM event_registrations WHERE event_id = ?')
-    .bind(eventId)
-    .first<{ cnt: number }>();
-
-  const currentCount = countRow?.cnt || 0;
-  if (event.capacity > 0 && currentCount >= event.capacity) {
-    return c.json({ detail: 'Event full.' }, 400);
-  }
-
+  // Atomic conditional registration to prevent over-allocation under concurrent load
+  let insertRes: any = null;
   try {
-    await c.env.DB
-      .prepare('INSERT INTO event_registrations (event_id, user_email, whatsapp_number) VALUES (?, ?, ?)')
+    insertRes = await c.env.DB
+      .prepare(`
+        INSERT INTO event_registrations (event_id, user_email, whatsapp_number)
+        SELECT ?1, ?2, ?3
+        WHERE EXISTS (
+          SELECT 1 FROM events
+          WHERE id = ?1
+            AND registration_open = 1
+            AND (capacity IS NULL OR capacity <= 0 OR (SELECT COUNT(*) FROM event_registrations WHERE event_id = ?1) < capacity)
+        )
+      `)
       .bind(eventId, user.email, whatsappNumber)
       .run();
   } catch (err: any) {
@@ -89,6 +91,39 @@ eventsRouter.post('/register', requireAuth, rateLimiter({ limit: 10, windowMs: 6
       return c.json({ detail: 'Already registered.' }, 400);
     }
     throw err;
+  }
+
+  if (!insertRes || insertRes.meta.changes === 0) {
+    // Re-query to return the precise status
+    const currentEvent = await c.env.DB
+      .prepare('SELECT registration_open, capacity FROM events WHERE id = ?')
+      .bind(eventId)
+      .first<{ registration_open: number; capacity: number }>();
+
+    if (!currentEvent || currentEvent.registration_open !== 1) {
+      return c.json({ detail: 'Registration closed.' }, 400);
+    }
+
+    const isAlready = await c.env.DB
+      .prepare('SELECT id FROM event_registrations WHERE event_id = ? AND user_email = ?')
+      .bind(eventId, user.email)
+      .first();
+
+    if (isAlready) {
+      return c.json({ detail: 'Already registered.' }, 400);
+    }
+
+    const currentCountRow = await c.env.DB
+      .prepare('SELECT COUNT(*) as cnt FROM event_registrations WHERE event_id = ?')
+      .bind(eventId)
+      .first<{ cnt: number }>();
+
+    const cnt = currentCountRow?.cnt || 0;
+    if (currentEvent.capacity > 0 && cnt >= currentEvent.capacity) {
+      return c.json({ detail: 'Event full.' }, 409);
+    }
+
+    return c.json({ detail: 'Registration could not be completed.' }, 400);
   }
 
   try {

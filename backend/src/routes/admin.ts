@@ -533,23 +533,107 @@ adminRouter.get('/users', async (c) => {
     ORDER BY created_at DESC
   `).all();
 
-  // 6. Aggregate by user email (and phone fallback) into full activity ledger & chronological step timeline
+  // 6. Pre-index child records into Maps by email and phone for linear O(M) aggregation
+  const clubsByEmail = new Map<string, any[]>();
+  for (const cl of (clubs.results || [])) {
+    const e = ((cl as any).user_email || '').toLowerCase().trim();
+    if (e) {
+      let list = clubsByEmail.get(e);
+      if (!list) { list = []; clubsByEmail.set(e, list); }
+      list.push(cl);
+    }
+  }
+
+  const eventsByEmail = new Map<string, any[]>();
+  const eventsByPhone = new Map<string, any[]>();
+  for (const ev of (events.results || [])) {
+    const e = ((ev as any).user_email || '').toLowerCase().trim();
+    const p = ((ev as any).whatsapp_number || '').trim();
+    if (e) {
+      let list = eventsByEmail.get(e);
+      if (!list) { list = []; eventsByEmail.set(e, list); }
+      list.push(ev);
+    }
+    if (p) {
+      let list = eventsByPhone.get(p);
+      if (!list) { list = []; eventsByPhone.set(p, list); }
+      list.push(ev);
+    }
+  }
+
+  const exhibitionsByEmail = new Map<string, any[]>();
+  const exhibitionsByPhone = new Map<string, any[]>();
+  for (const ex of (exhibitions.results || [])) {
+    const e = ((ex as any).user_email || '').toLowerCase().trim();
+    const p = ((ex as any).whatsapp || '').trim();
+    if (e) {
+      let list = exhibitionsByEmail.get(e);
+      if (!list) { list = []; exhibitionsByEmail.set(e, list); }
+      list.push(ex);
+    }
+    if (p) {
+      let list = exhibitionsByPhone.get(p);
+      if (!list) { list = []; exhibitionsByPhone.set(p, list); }
+      list.push(ex);
+    }
+  }
+
+  const submissionsByEmail = new Map<string, any[]>();
+  for (const s of (submissions.results || [])) {
+    const e = ((s as any).author_email || '').toLowerCase().trim();
+    if (e) {
+      let list = submissionsByEmail.get(e);
+      if (!list) { list = []; submissionsByEmail.set(e, list); }
+      list.push(s);
+    }
+  }
+
+  // 7. Aggregate by user email (and phone fallback) into full activity ledger & chronological step timeline
   const roster = (users.results || []).map((u: any) => {
     const uEmail = (u.email || '').toLowerCase().trim();
     const uPhone = (u.phone || '').trim();
 
-    const matchesUser = (itemEmail: string | null | undefined, itemPhone?: string | null | undefined) => {
-      const e = (itemEmail || '').toLowerCase().trim();
-      const p = (itemPhone || '').trim();
-      if (uEmail && e === uEmail) return true;
-      if (uPhone && (e === uPhone || p === uPhone)) return true;
-      return false;
-    };
+    const userClubs = uEmail ? (clubsByEmail.get(uEmail) || []) : [];
 
-    const userClubs = (clubs.results || []).filter((c: any) => matchesUser(c.user_email));
-    const userEvents = (events.results || []).filter((e: any) => matchesUser(e.user_email, e.whatsapp_number));
-    const userExhibitions = (exhibitions.results || []).filter((x: any) => matchesUser(x.user_email, x.whatsapp));
-    const userSubmissions = (submissions.results || []).filter((s: any) => matchesUser(s.author_email));
+    const userEvents: any[] = [];
+    const seenEventIds = new Set<number>();
+    if (uEmail) {
+      for (const ev of (eventsByEmail.get(uEmail) || [])) {
+        if (!seenEventIds.has(ev.id)) {
+          seenEventIds.add(ev.id);
+          userEvents.push(ev);
+        }
+      }
+    }
+    if (uPhone) {
+      for (const ev of (eventsByPhone.get(uPhone) || [])) {
+        if (!seenEventIds.has(ev.id)) {
+          seenEventIds.add(ev.id);
+          userEvents.push(ev);
+        }
+      }
+    }
+
+    const userExhibitions: any[] = [];
+    const seenExhIds = new Set<number>();
+    if (uEmail) {
+      for (const ex of (exhibitionsByEmail.get(uEmail) || [])) {
+        if (!seenExhIds.has(ex.id)) {
+          seenExhIds.add(ex.id);
+          userExhibitions.push(ex);
+        }
+      }
+    }
+    if (uPhone) {
+      for (const ex of (exhibitionsByPhone.get(uPhone) || [])) {
+        if (!seenExhIds.has(ex.id)) {
+          seenExhIds.add(ex.id);
+          userExhibitions.push(ex);
+        }
+      }
+    }
+
+    const userSubmissions = uEmail ? (submissionsByEmail.get(uEmail) || []) : [];
 
     const userFees = userExhibitions
       .filter((x: any) => x.registration_status && x.registration_status !== 'NONE')
@@ -786,6 +870,40 @@ adminRouter.delete('/users/:email', async (c) => {
   if (!user) return c.json({ error: 'User not found.' }, 404);
   if (user.status === 'ADMIN') {
     return c.json({ error: 'Cannot delete an admin account.' }, 403);
+  }
+
+  // 1. Collect all uploaded files associated with the user across submissions and exhibition applications
+  const userSubmissions = await c.env.DB
+    .prepare('SELECT file_url FROM submissions WHERE LOWER(author_email) = LOWER(?)')
+    .bind(targetEmail)
+    .all<{ file_url: string }>();
+
+  const userExhibitions = await c.env.DB
+    .prepare('SELECT payment_proof_url, portfolio_url FROM exhibition_applications WHERE LOWER(user_email) = LOWER(?)')
+    .bind(targetEmail)
+    .all<{ payment_proof_url?: string; portfolio_url?: string }>();
+
+  // 2. Purge R2 stored assets
+  if (c.env.VAULT_BUCKET) {
+    const urlsToDelete: string[] = [];
+    for (const s of (userSubmissions.results || [])) {
+      if (s.file_url) urlsToDelete.push(s.file_url);
+    }
+    for (const x of (userExhibitions.results || [])) {
+      if (x.payment_proof_url) urlsToDelete.push(x.payment_proof_url);
+      if (x.portfolio_url) urlsToDelete.push(x.portfolio_url);
+    }
+
+    for (const url of urlsToDelete) {
+      if (url.startsWith('/vault/file/')) {
+        const key = decodeURIComponent(url.replace('/vault/file/', ''));
+        try {
+          await c.env.VAULT_BUCKET.delete(key);
+        } catch (r2Err) {
+          console.warn('[R2 PURGE WARNING] Could not delete object:', key, r2Err);
+        }
+      }
+    }
   }
 
   await c.env.DB.batch([

@@ -16,11 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!form) return;
 
-  const cloudinaryConfig = window.ALFAAZ_CLOUDINARY || {
-    cloudName: 'dmqwjpmjk',
-    uploadPreset: 'alfaaz_vault'
-  };
-  const { cloudName: CLOUD_NAME, uploadPreset: UPLOAD_PRESET } = cloudinaryConfig;
 
   const ALLOWED_EXTENSIONS = ['.pdf', '.png', '.jpg', '.jpeg', '.webp'];
   const ALLOWED_MIME_PREFIXES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];
@@ -113,36 +108,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      // 1. Upload to Cloudinary Storage Vault
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', UPLOAD_PRESET);
-
-      const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-      const cloudData = await cloudRes.json().catch(() => ({}));
-
-      if (!cloudData.secure_url) {
-        const errorDetail = cloudData.error?.message ? `: ${cloudData.error.message}` : '';
-        throw new Error(`Upload storage failed${errorDetail}`);
+      if (btn) btn.innerText = 'Depositing in Vault...';
+      if (statusMsg) {
+        statusMsg.style.color = 'var(--text-secondary)';
+        statusMsg.textContent = 'Transmitting creative work directly to encrypted vault...';
       }
 
-      if (btn) btn.innerText = 'Registering with Curator...';
-      if (statusMsg) statusMsg.textContent = 'Logging metadata with curatorial ledger...';
-
-      // 2. Submit record to backend /vault/submit
-      const vaultPayload = {
-        submission_type: submissionType,
-        title: title,
-        file_url: cloudData.secure_url,
-        note: note || null
-      };
+      // Direct authenticated multipart upload to Cloudflare R2 via /vault/submit
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('submission_type', submissionType);
+      formData.append('title', title);
+      if (note) formData.append('note', note);
 
       const res = await window.globalApiFetch('/vault/submit', {
         method: 'POST',
-        body: JSON.stringify(vaultPayload)
+        body: formData
       });
 
       if (res && res.ok) {

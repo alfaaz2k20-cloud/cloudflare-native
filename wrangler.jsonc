@@ -10,7 +10,11 @@
 		"directory": "./frontend/dist",
 		"binding": "ASSETS",
 		"html_handling": "auto-trailing-slash",
-		"not_found_handling": "404-page"
+		"not_found_handling": "404-page",
+		// Static assets have no automatic fallthrough to the Worker, so the catch-all in
+		// backend/src/index.ts forwards them back to env.ASSETS. This is what lets the CSP
+		// and the rest of the security headers cover HTML pages, not just API responses.
+		"run_worker_first": true
 	},
 	"workers_dev": true,
 	"routes": [

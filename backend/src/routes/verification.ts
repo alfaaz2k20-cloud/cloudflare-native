@@ -71,6 +71,7 @@ verificationRouter.post('/email/send', requireAuth, async (c) => {
     if (existing) {
       return c.json({ error: 'Email address is already in use by another account.' }, 409);
     }
+    return c.json({ error: 'Verification is only permitted for the registered account email address.' }, 400);
   }
 
   // Cooldown check: max 1 per 60 seconds
@@ -166,6 +167,11 @@ verificationRouter.post('/email/confirm', requireAuth, async (c) => {
     return c.json({ error: 'Invalid verification code.' }, 400);
   }
 
+  // Ensure verification target matches the registered account email
+  if (userRow.email && active.target.toLowerCase() !== userRow.email.toLowerCase()) {
+    return c.json({ error: 'Verification target does not match registered account email.' }, 409);
+  }
+
   // Mark code as consumed and update user's email verification status
   const nowIso = new Date().toISOString();
   await c.env.DB
@@ -176,12 +182,12 @@ verificationRouter.post('/email/confirm', requireAuth, async (c) => {
   await c.env.DB
     .prepare(`
       UPDATE users 
-      SET email = COALESCE(email, ?),
+      SET email = ?,
           email_verified = 1,
           email_verified_at = ?
-      WHERE id = ?
+      WHERE id = ? AND (email = ? OR email IS NULL)
     `)
-    .bind(active.target, nowIso, userRow.id)
+    .bind(active.target, nowIso, userRow.id, active.target)
     .run();
 
   return c.json({
