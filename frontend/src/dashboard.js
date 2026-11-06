@@ -871,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userKey = user?.id || user?.email || 'guest';
     localStorage.setItem('alfaaz_welcome_seen_' + userKey, 'true');
     sessionStorage.removeItem('alfaaz_just_joined');
-    showToast('✨ Welcome home to Alfaaz Collective.', 'success', 4000);
+    showToast('✨ Welcome aboard Alfaaz.', 'success', 4000);
   };
 
   window.dismissOnboardingBanner = function() {
@@ -881,6 +881,52 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('alfaaz_onboarding_dismissed_' + userKey, 'true');
     showToast('Quick-start guide hidden. Access any section anytime.', 'info', 3000);
   };
+
+  // MOBILE SEGMENT BAR SCROLL-SPY & ACTIVE SYNC
+  function initMobileScrollSpy() {
+    const segmentLinks = Array.from(document.querySelectorAll('.mobile-segment-bar .segment-btn'));
+    if (!segmentLinks.length) return;
+
+    const targetIds = ['cardProfile', 'cardEvents', 'cardTickets', 'cardClubs', 'cardExhib', 'cardAssistant'];
+    const sections = targetIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+
+    if (!('IntersectionObserver' in window)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            segmentLinks.forEach((link) => {
+              const href = link.getAttribute('href');
+              if (href === '#' + id) {
+                link.classList.add('active');
+                link.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+              } else {
+                link.classList.remove('active');
+              }
+            });
+          }
+        });
+      },
+      {
+        rootMargin: '-20% 0px -65% 0px',
+        threshold: 0
+      }
+    );
+
+    sections.forEach((sec) => observer.observe(sec));
+
+    // Handle manual tap for immediate visual feedback
+    segmentLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        segmentLinks.forEach((l) => l.classList.remove('active'));
+        link.classList.add('active');
+      });
+    });
+  }
 
   // GUIDE TUTORIAL MODAL
   window.openGuideModal = function() {
@@ -920,4 +966,5 @@ document.addEventListener('DOMContentLoaded', () => {
   loadMyTickets();
   loadClubStatus();
   loadExhibitionStatus();
+  initMobileScrollSpy();
 });

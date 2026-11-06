@@ -638,21 +638,39 @@
         gap: 1rem;
       }
     }
+    @media (min-width: 769px) {
+      .folio-plate {
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+        box-shadow: none;
+      }
+      .plate-subcard {
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+      }
+      .plate-tag {
+        display: none;
+      }
+    }
     @media (max-width: 768px) {
-      .dash-container { margin: 5.5rem auto 3rem; padding: 0 1.25rem; }
+      .dash-container { margin: 5.2rem auto 3rem; padding: 0 1.15rem; }
       
       /* Mobile App Sticky Segment Navigation Bar */
       .mobile-segment-bar {
         display: flex;
         position: sticky;
-        top: 56px;
+        top: 52px;
         z-index: 90;
-        background: rgba(244, 241, 234, 0.95);
+        background: rgba(244, 241, 234, 0.96);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--grid-border);
-        padding: 0.65rem 1rem;
-        gap: 0.5rem;
+        padding: 0.5rem 0.85rem;
+        gap: 0.4rem;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
@@ -662,17 +680,17 @@
       }
       .segment-btn {
         flex-shrink: 0;
-        padding: 0.45rem 0.95rem;
+        padding: 0.5rem 0.85rem;
         font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.75px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
         text-transform: uppercase;
         text-decoration: none;
         color: var(--text-secondary);
-        background: rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.65);
         border: 1px solid var(--grid-border);
-        border-radius: 999px;
-        min-height: 38px;
+        border-radius: 2px;
+        min-height: 40px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -683,24 +701,63 @@
         background: var(--text-primary);
         color: #ffffff;
         border-color: var(--text-primary);
+        font-weight: 600;
       }
-      .folio-section, #cardEvents, #cardTickets, #cardClubs, #cardExhib {
-        scroll-margin-top: 115px;
+      .folio-section, #cardEvents, #cardTickets, #cardClubs, #cardExhib, #cardAssistant {
+        scroll-margin-top: 112px;
+      }
+
+      /* Unified & Distinct Architectural Folio Plates on Mobile */
+      .folio-section {
+        padding: 1.25rem 0;
+        border-bottom: none;
+      }
+      .folio-plate {
+        background: var(--bg-secondary);
+        border: 1px solid var(--grid-border);
+        border-top: 3px solid var(--accent-gold);
+        border-radius: 2px;
+        padding: 1.6rem 1.2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(45, 49, 46, 0.03);
+      }
+      .plate-subcard {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid var(--grid-border);
+        border-top: 2px solid var(--accent-gold);
+        border-radius: 2px;
+        padding: 1.4rem 1.15rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 4px rgba(45, 49, 46, 0.02);
+      }
+      .plate-tag {
+        display: block;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--accent-gold-text);
+        margin-bottom: 0.35rem;
       }
 
       .folio-duo-grid, .folio-equal-grid {
         grid-template-columns: 1fr;
-        gap: 3rem;
+        gap: 1.25rem;
       }
-      .folio-section { padding: 2.5rem 0; }
       .folio-ledger {
         grid-template-columns: 1fr;
-        gap: 2rem;
+        gap: 1.25rem;
       }
       .ledger-cell {
-        border-right: none;
-        padding-right: 0;
+        border-right: none !important;
+        border-bottom: 1px solid var(--grid-border);
+        padding-right: 0 !important;
+        padding-bottom: 1.25rem;
         min-height: auto;
+      }
+      .ledger-cell:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
       }
       .modal-overlay > div { padding: 2rem 1.25rem !important; }
       select, textarea, input { font-size: 16px !important; }
@@ -820,9 +877,9 @@
 
   <!-- MOBILE APP QUICK-NAVIGATION BAR -->
   <nav class="mobile-segment-bar" aria-label="Folio Quick Navigation">
-    <a href="#cardProfile" class="segment-btn">Profile</a>
+    <a href="#cardProfile" class="segment-btn active">Profile</a>
     <a href="#cardEvents" class="segment-btn">Gatherings</a>
-    <a href="#cardTickets" class="segment-btn">My Passes</a>
+    <a href="#cardTickets" class="segment-btn">Passes</a>
     <a href="#cardClubs" class="segment-btn">Clubs</a>
     <a href="#cardExhib" class="segment-btn">Exhibition</a>
     <a href="#cardAssistant" class="segment-btn">Curator AI</a>
@@ -848,7 +905,7 @@
       <div class="masthead-main">
         <h1 class="folio-title" id="welcomeHeading">Welcome back</h1>
         <p class="folio-subtitle">
-          Your personal member space at Alfaaz Collective — reserve passes for gatherings under the Chinars, collaborate with creative clubs, and share your artwork with our community.
+          Alfaaz is a space for people, ideas, and initiatives that seek to make a difference. Reserve gathering passes under the Chinars, collaborate with creative clubs, and share your artwork.
         </p>
       </div>
       <!-- Hidden compatibility node for legacy callers -->
@@ -908,8 +965,8 @@
         <div style="display: flex; align-items: center; gap: 0.65rem;">
           <span class="reward-icon" style="font-size: 1.35rem;">✨</span>
           <div>
-            <div class="data-label" style="color: var(--accent-gold-text); letter-spacing: 1.5px; margin-bottom: 2px;">GETTING STARTED IN THE COLLECTIVE</div>
-            <div style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); line-height: 1.2;">Your First Steps Under the Chinars</div>
+            <div class="data-label" style="color: var(--accent-gold-text); letter-spacing: 1.5px; margin-bottom: 2px;">WELCOME TO ALFAAZ</div>
+            <div style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); line-height: 1.2;">Every meaningful beginning starts somewhere.</div>
           </div>
         </div>
         <button type="button" onclick="dismissOnboardingBanner()" class="action-btn" style="background: transparent; border-color: var(--grid-border); color: var(--text-secondary); font-size: 9px; padding: 0.35rem 0.75rem;">
@@ -917,7 +974,7 @@
         </button>
       </div>
       <p style="font-size: 12.5px; color: var(--text-secondary); margin: 0.75rem 0 0; line-height: 1.6;">
-        Welcome to your creative home! Complete these three quick milestones to make the most of your membership:
+        We're glad you're here. Complete these three quick milestones to make the most of your membership:
       </p>
       <div class="onboarding-cards-grid">
         <div class="onboarding-step-card" onclick="document.getElementById('cardProfile').scrollIntoView({ behavior: 'smooth' }); window.startEditPhone?.();">
@@ -942,7 +999,8 @@
     </div>
 
     <!-- SECTION 01: IDENTITY & CREATIVE VAULT -->
-    <section class="folio-section anim-fade-up anim-delay-2" id="cardProfile">
+    <section class="folio-section folio-plate anim-fade-up anim-delay-2" id="cardProfile">
+      <div class="plate-tag">IDENTITY &amp; ATELIER · شناخت</div>
       <div class="section-header-row">
         <div>
           <div class="section-supertitle">SECTION 01 // شناخت</div>
@@ -1027,7 +1085,8 @@
       <div class="folio-duo-grid">
         
         <!-- Left: Gatherings -->
-        <div id="cardEvents">
+        <div id="cardEvents" class="plate-subcard">
+          <div class="plate-tag">GATHERINGS DIRECTORY · محفل</div>
           <div class="section-supertitle">SECTION 02-A // محفل</div>
           <h2 class="section-heading">Upcoming Gatherings</h2>
           <p class="section-description">
@@ -1039,7 +1098,8 @@
         </div>
 
         <!-- Right: Passes -->
-        <div id="cardTickets">
+        <div id="cardTickets" class="plate-subcard">
+          <div class="plate-tag" style="color: var(--accent-gold-text);">CONFIRMED ACCESS · داخلہ کارڈ</div>
           <div class="section-supertitle">SECTION 02-B // داخلہ کارڈ</div>
           <h2 class="section-heading">My Event Passes</h2>
           <p class="section-description">
@@ -1058,7 +1118,8 @@
       <div class="folio-equal-grid">
         
         <!-- Left: Creative Clubs -->
-        <div id="cardClubs">
+        <div id="cardClubs" class="plate-subcard">
+          <div class="plate-tag">WORKING CIRCLES · انجمن</div>
           <div class="section-supertitle">SECTION 03-A // انجمن</div>
           <h2 class="section-heading">Creative Clubs</h2>
           <p class="section-description">
@@ -1090,7 +1151,8 @@
         </div>
 
         <!-- Right: Exhibition Submissions -->
-        <div id="cardExhib" style="display: block;">
+        <div id="cardExhib" class="plate-subcard" style="display: block;">
+          <div class="plate-tag">GALLERY SHOWCASE · نمائش</div>
           <div class="section-supertitle">SECTION 03-B // نمائش</div>
           <h2 class="section-heading">Art Exhibition Submissions</h2>
           <p class="section-description">
@@ -1169,7 +1231,8 @@
     </section>
 
     <!-- SECTION 04: ASK CURATOR AI -->
-    <section class="folio-section anim-fade-up anim-delay-5" id="cardAssistant" style="margin-bottom: 3.5rem;">
+    <section class="folio-section folio-plate anim-fade-up anim-delay-5" id="cardAssistant" style="margin-bottom: 3.5rem;">
+      <div class="plate-tag">CURATORIAL DESK · حکیم</div>
       <div class="section-supertitle">SECTION 04 // حکیم</div>
       <h2 class="section-heading">Ask Curator AI</h2>
       <p class="section-description">
@@ -1249,58 +1312,59 @@
   </div>
 
   <!-- CURATORIAL WELCOME NOTE & CELEBRATION CEREMONY MODAL -->
-  <div class="modal-overlay" id="welcomeModal" style="display: none; position: fixed; inset: 0; background: rgba(45, 49, 46, 0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-    <div class="welcome-card anim-welcome-scale" style="max-width: 620px; width: 92%; max-height: 88vh; overflow-y: auto; background: var(--bg-secondary); border: 1px solid var(--grid-border); border-top: 4px solid var(--accent-gold); box-shadow: var(--shadow-float); position: relative; padding: 2.75rem 2.5rem 2.25rem;">
+  <div class="modal-overlay" id="welcomeModal" style="display: none; position: fixed; inset: 0; background: rgba(45, 49, 46, 0.55); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 1rem;">
+    <div class="welcome-card anim-welcome-scale" style="max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; background: var(--bg-secondary); border: 1px solid var(--grid-border); border-top: 4px solid var(--accent-gold); box-shadow: var(--shadow-float); position: relative; padding: 2.75rem 2.25rem 2.25rem;">
       
       <!-- Close button -->
-      <button onclick="dismissWelcomeModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.5rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; position: absolute; top: 1.25rem; right: 1.25rem; -webkit-tap-highlight-color: transparent;" aria-label="Close welcome letter">&times;</button>
+      <button onclick="dismissWelcomeModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.5rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; position: absolute; top: 1rem; right: 1rem; -webkit-tap-highlight-color: transparent;" aria-label="Close welcome note">&times;</button>
 
       <!-- Welcome Ornament & Badges -->
       <div style="text-align: center; margin-bottom: 1.25rem;">
         <div style="font-size: 2.2rem; color: var(--accent-gold); line-height: 1; margin-bottom: 0.5rem;">❦</div>
-        <div class="badge badge-gold" style="font-size: 9.5px; letter-spacing: 2.5px; padding: 0.4rem 1rem;">خوش آمدید · WELCOME TO ALFAAZ</div>
+        <div class="badge badge-gold" style="font-size: 9px; letter-spacing: 2px; padding: 0.35rem 0.9rem;">خوش آمدید · WELCOME TO ALFAAZ</div>
       </div>
 
       <!-- Welcome Title -->
-      <h2 style="font-family: var(--font-heading); font-size: clamp(2rem, 3.5vw, 2.6rem); color: var(--text-primary); text-align: center; font-weight: 400; line-height: 1.15; margin: 0 0 0.5rem;">
-        Welcome to the Circle, <span id="welcomeModalName" style="color: var(--accent-gold-text);">Friend</span>
+      <h2 style="font-family: var(--font-heading); font-size: clamp(2.2rem, 4.2vw, 2.85rem); color: var(--text-primary); text-align: center; font-weight: 400; line-height: 1.15; margin: 0 0 0.5rem;">
+        Welcome to Alfaaz.
       </h2>
-      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); text-align: center; margin-bottom: 1.5rem;">
-        A personal welcome note from the Curators &amp; Artists of Alfaaz
+      <div style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--accent-gold-text); text-align: center; font-style: italic; margin-bottom: 1.5rem;">
+        We're glad you're here.
       </div>
+      <span id="welcomeModalName" style="display:none;"></span>
 
       <!-- Curatorial Letter Prose -->
-      <div style="border-left: 2px solid var(--accent-gold); padding: 1rem 1.25rem; margin-bottom: 1.75rem; font-size: 13.5px; color: var(--text-primary); line-height: 1.75; background: rgba(189, 111, 93, 0.03);">
-        <p>
-          We are truly delighted to welcome you under the shade of the ancient Chinars. In Kashmir, gathering together is an age-old tradition of warmth, contemplation, and shared creative memory.
+      <div class="welcome-letter-body" style="border-left: 3px solid var(--accent-gold); padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; font-size: 14.5px; color: var(--text-primary); line-height: 1.8; background: rgba(189, 111, 93, 0.04);">
+        <p style="margin: 0 0 1.1rem;">
+          Alfaaz is a space for people, ideas, and initiatives that seek to make a difference. Whether you're here to participate, contribute, volunteer, or simply explore, we're happy to have you with us.
         </p>
-        <p style="margin-top: 0.75rem;">
-          Alfaaz Collective is your sanctuary — where poets, craftspeople, filmmakers, visual artists, and thinkers come together to celebrate vernacular culture, share work-in-progress, and create lasting art.
+        <p style="margin: 0 0 1.25rem;">
+          Every meaningful beginning starts somewhere. We're glad yours starts here.
         </p>
-        <p style="margin-top: 0.75rem; font-style: italic; color: var(--accent-gold-text);">
-          "Every story told and every canvas painted enriches the collective soul of the valley."
+        <p style="margin: 0; font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); font-weight: 600; letter-spacing: 0.5px;">
+          Welcome aboard.
         </p>
       </div>
 
       <!-- Quick Highlights: Next 3 Steps -->
-      <div style="margin-bottom: 2rem;">
+      <div style="margin-bottom: 1.75rem;">
         <div class="data-label" style="color: var(--accent-gold-text); margin-bottom: 0.75rem; letter-spacing: 1.5px;">YOUR FIRST THREE STEPS IN THE COLLECTIVE</div>
-        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
-          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.5);">
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.6); border-radius: 2px;">
             <span style="font-size: 1.2rem; flex-shrink: 0;">📱</span>
             <div>
               <strong style="font-size: 12.5px; color: var(--text-primary); display: block;">1. Add your WhatsApp Number</strong>
               <span style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">Direct gathering invitations, pass confirmations, and venue directions are texted to your phone.</span>
             </div>
           </div>
-          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.5);">
+          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.6); border-radius: 2px;">
             <span style="font-size: 1.2rem; flex-shrink: 0;">🎫</span>
             <div>
               <strong style="font-size: 12.5px; color: var(--text-primary); display: block;">2. Reserve a Free Gathering Pass</strong>
               <span style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">Explore upcoming poetry readings, craft workshops, and salon circles under the Chinars.</span>
             </div>
           </div>
-          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.5);">
+          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.6); border-radius: 2px;">
             <span style="font-size: 1.2rem; flex-shrink: 0;">🏛️</span>
             <div>
               <strong style="font-size: 12.5px; color: var(--text-primary); display: block;">3. Join a Creative Club</strong>
