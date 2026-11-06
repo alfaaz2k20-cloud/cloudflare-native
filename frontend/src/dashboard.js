@@ -837,18 +837,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // WELCOME CEREMONY & CELEBRATION PARTICLES
   function triggerWelcomeCelebration() {
-    const emojis = ['🍂', '✦', '🍁', '✧', '✨', '🍃'];
-    const total = window.innerWidth < 600 ? 16 : 28;
+    const motifs = ['✦', '✧', '·', '∗', '❦'];
+    const total = window.innerWidth < 600 ? 12 : 22;
     for (let i = 0; i < total; i++) {
       const p = document.createElement('span');
       p.className = 'floating-particle';
-      p.textContent = emojis[i % emojis.length];
+      p.textContent = motifs[i % motifs.length];
       p.style.left = `${Math.random() * 92 + 4}%`;
-      p.style.animationDelay = `${Math.random() * 1.6}s`;
-      p.style.animationDuration = `${3.2 + Math.random() * 2.2}s`;
-      p.style.fontSize = `${14 + Math.random() * 14}px`;
+      p.style.animationDelay = `${Math.random() * 1.5}s`;
+      p.style.animationDuration = `${3.0 + Math.random() * 2.0}s`;
+      p.style.fontSize = `${12 + Math.random() * 10}px`;
       document.body.appendChild(p);
-      setTimeout(() => p.remove(), 6000);
+      setTimeout(() => p.remove(), 5500);
     }
   }
 
@@ -871,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userKey = user?.id || user?.email || 'guest';
     localStorage.setItem('alfaaz_welcome_seen_' + userKey, 'true');
     sessionStorage.removeItem('alfaaz_just_joined');
-    showToast('✨ Welcome aboard Alfaaz.', 'success', 4000);
+    showToast('Welcome to Alfaaz Collective.', 'success', 3500);
   };
 
   window.dismissOnboardingBanner = function() {

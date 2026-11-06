@@ -104,13 +104,19 @@ verificationRouter.post('/email/send', requireAuth, async (c) => {
     .bind(userRow.id, targetEmail, codeHash, expiresAt)
     .run();
 
-  await sendSystemEmail(
+  const emailSent = await sendSystemEmail(
     c.env,
     targetEmail,
     'Alfaaz Collective — Verification Code',
     `Greetings,\n\nYour Alfaaz email verification code is: ${code}\n\nThis code will expire in 10 minutes.\n\n— Alfaaz Collective Curators`,
     false
   );
+
+  if (!emailSent && c.env.ENV === 'production') {
+    return c.json({
+      error: 'Unable to deliver verification email at this time. Please try again later or contact curators.'
+    }, 502);
+  }
 
   return c.json({
     success: true,

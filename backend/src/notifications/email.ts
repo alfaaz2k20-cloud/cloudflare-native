@@ -29,7 +29,18 @@ export interface EmailProvider {
 export const devEmailPreviews: Array<{ to: string; subject: string; text: string; timestamp: string }> = [];
 
 export class DevEmailProvider implements EmailProvider {
+  constructor(private isProduction: boolean = false) {}
+
   async send(message: EmailMessage): Promise<EmailResult> {
+    if (this.isProduction) {
+      console.warn(`[EMAIL DEV FALLBACK BLOCKED IN PRODUCTION] To: ${maskEmail(message.to)}`);
+      return {
+        success: false,
+        provider: 'dev',
+        error: 'Email delivery service unconfigured in production environment.'
+      };
+    }
+
     const previewItem = {
       to: message.to,
       subject: message.subject,
@@ -162,7 +173,7 @@ export function getEmailProvider(env: Env): EmailProvider {
   if (mode === 'cloudflare' && env.CLOUDFLARE_EMAIL_TOKEN) {
     return new CloudflareEmailSendingProvider(env.CLOUDFLARE_EMAIL_TOKEN, env.CLOUDFLARE_EMAIL_SENDER);
   }
-  return new DevEmailProvider();
+  return new DevEmailProvider(env.ENV === 'production');
 }
 
 export async function sendSystemEmail(

@@ -14,18 +14,31 @@
   <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
   <title>Dashboard — ALFAAZ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Montserrat:wght@300..600&family=Noto+Nastaliq+Urdu:wght@400..700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
   
   <script type="module" src="src/dashboard.js"></script>
   <style>
-    .dash-container { max-width: 1240px; margin: 7rem auto 5rem; padding: 0 2.5rem; }
+    :root {
+      --font-urdu: 'Noto Nastaliq Urdu', serif;
+      --font-heading: 'Cormorant Garamond', Georgia, serif;
+      --font-caption: 'Montserrat', sans-serif;
+    }
+
+    .dash-container {
+      max-width: 1240px;
+      margin: 6.5rem auto 5rem;
+      padding: 0 2.5rem;
+    }
     
-    /* Butter-Smooth Animations */
+    /* Editorial Animations */
     @keyframes folioFadeUp {
       0% {
         opacity: 0;
-        transform: translateY(14px);
+        transform: translateY(12px);
       }
       100% {
         opacity: 1;
@@ -33,13 +46,13 @@
       }
     }
     .anim-fade-up {
-      animation: folioFadeUp 0.65s var(--transition-smooth) both;
+      animation: folioFadeUp 0.6s var(--transition-smooth) both;
     }
-    .anim-delay-1 { animation-delay: 0.06s; }
-    .anim-delay-2 { animation-delay: 0.12s; }
-    .anim-delay-3 { animation-delay: 0.18s; }
-    .anim-delay-4 { animation-delay: 0.24s; }
-    .anim-delay-5 { animation-delay: 0.30s; }
+    .anim-delay-1 { animation-delay: 0.05s; }
+    .anim-delay-2 { animation-delay: 0.10s; }
+    .anim-delay-3 { animation-delay: 0.15s; }
+    .anim-delay-4 { animation-delay: 0.20s; }
+    .anim-delay-5 { animation-delay: 0.25s; }
 
     @media (prefers-reduced-motion: reduce) {
       .anim-fade-up, .anim-welcome-scale, .floating-particle {
@@ -49,11 +62,11 @@
       }
     }
 
-    /* Welcome Note Modal & Ceremony Animations */
+    /* Welcome Modal Ceremony Animations */
     @keyframes welcomeScaleIn {
       0% {
         opacity: 0;
-        transform: scale(0.92) translateY(16px);
+        transform: scale(0.95) translateY(10px);
       }
       100% {
         opacity: 1;
@@ -61,45 +74,208 @@
       }
     }
     .anim-welcome-scale {
-      animation: welcomeScaleIn 0.45s var(--transition-smooth) both;
+      animation: welcomeScaleIn 0.4s var(--transition-smooth) both;
     }
 
-    /* Floating Celebration Leaf & Sparkle Particles */
+    /* Celestial Dust Micro-Particles */
     .floating-particle {
       position: fixed;
-      top: -30px;
+      top: -24px;
       pointer-events: none;
       z-index: 10002;
       animation: particleDrift linear forwards;
       user-select: none;
+      color: var(--accent-gold);
     }
     @keyframes particleDrift {
       0% {
         transform: translateY(0) rotate(0deg) scale(0.7);
         opacity: 0;
       }
-      15% {
-        opacity: 0.95;
+      20% {
+        opacity: 0.85;
       }
-      85% {
-        opacity: 0.95;
+      80% {
+        opacity: 0.85;
       }
       100% {
-        transform: translateY(96vh) rotate(360deg) scale(1.15);
+        transform: translateY(96vh) rotate(180deg) scale(1.1);
         opacity: 0;
       }
     }
 
-    /* Onboarding Quick-Start Guide Strip */
+    /* Authentic Urdu Typography Class */
+    .urdu-title {
+      font-family: var(--font-urdu);
+      line-height: 2.1;
+      direction: rtl;
+      display: inline-block;
+      font-weight: 400;
+    }
+
+    /* Editorial Masthead with Asymmetric Archival Medallion */
+    .editorial-masthead {
+      margin-bottom: 2.5rem;
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid var(--grid-border);
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 3.5rem;
+      align-items: center;
+    }
+    .masthead-lead-column {
+      display: flex;
+      flex-direction: column;
+    }
+    .masthead-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .masthead-tag {
+      font-family: var(--font-caption);
+      font-size: 10px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent-gold-text);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .folio-title {
+      font-family: var(--font-heading);
+      font-size: clamp(2.4rem, 4.4vw, 3.8rem);
+      color: var(--text-primary);
+      margin: 0;
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: 0.25px;
+    }
+    .folio-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin: 1rem 0 1.5rem;
+      max-width: 650px;
+      line-height: 1.7;
+    }
+    .masthead-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Asymmetric Archival Artifact Frame */
+    .masthead-archive-card {
+      position: relative;
+      background: var(--bg-secondary);
+      border: 1px solid var(--grid-border);
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 20px -4px rgba(45, 49, 46, 0.05);
+      border-top: 3px solid var(--accent-gold);
+    }
+    .archive-img-wrap {
+      width: 100%;
+      height: 190px;
+      overflow: hidden;
+      background: #252826;
+      position: relative;
+    }
+    .archive-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.92;
+      transition: transform 0.6s ease, opacity 0.6s ease;
+      display: block;
+    }
+    .masthead-archive-card:hover .archive-img {
+      transform: scale(1.03);
+      opacity: 1;
+    }
+    .archive-caption {
+      padding: 0.75rem 0.25rem 0.15rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .archive-caption-title {
+      font-family: var(--font-caption);
+      font-size: 9.5px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .archive-caption-meta {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    /* Curatorial Overview Strip (Refined, Non-Gamified) */
+    .curatorial-overview-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin: 0 0 2.5rem;
+      padding: 1.25rem 1.5rem;
+      background: rgba(255, 255, 255, 0.65);
+      border: 1px solid var(--grid-border);
+    }
+    .overview-item {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--grid-border);
+      padding-right: 1.25rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.25s ease;
+    }
+    .overview-item:last-child {
+      border-right: none;
+      padding-right: 0;
+    }
+    .overview-item:hover .overview-val {
+      color: var(--accent-gold-text);
+    }
+    .overview-label {
+      font-family: var(--font-caption);
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .overview-val {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      color: var(--text-primary);
+      line-height: 1.2;
+      transition: color 0.25s ease;
+    }
+    .overview-hint {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* New Member Welcome Strip */
     .onboarding-guide-strip {
-      background: rgba(255, 255, 255, 0.75);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: var(--bg-secondary);
       border: 1px solid var(--grid-border);
       border-left: 4px solid var(--accent-gold);
-      padding: 1.5rem 1.75rem;
+      padding: 1.75rem;
       margin: 0 0 3rem;
-      box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 4px 16px -2px rgba(45, 49, 46, 0.03);
     }
     .onboarding-header {
       display: flex;
@@ -111,12 +287,12 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1.25rem;
-      margin-top: 1rem;
+      margin-top: 1.25rem;
     }
     .onboarding-step-card {
-      background: var(--bg-secondary);
+      background: #faf8f5;
       border: 1px solid var(--grid-border);
-      padding: 1.25rem;
+      padding: 1.35rem;
       cursor: pointer;
       transition: all 0.25s var(--transition-smooth);
       display: flex;
@@ -126,13 +302,15 @@
     }
     .onboarding-step-card:hover {
       border-color: var(--accent-gold);
+      background: #ffffff;
       transform: translateY(-2px);
-      box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 6px 18px -4px rgba(45, 49, 46, 0.05);
     }
     .onboarding-step-card:active {
-      transform: scale(0.98);
+      transform: scale(0.99);
     }
     .onboarding-step-num {
+      font-family: var(--font-caption);
       font-size: 8.5px;
       font-weight: 600;
       letter-spacing: 2px;
@@ -142,142 +320,28 @@
     }
     .onboarding-step-title {
       font-family: var(--font-heading);
-      font-size: 1.25rem;
+      font-size: 1.35rem;
       color: var(--text-primary);
       margin-bottom: 6px;
       line-height: 1.2;
     }
     .onboarding-step-desc {
-      font-size: 11.5px;
+      font-size: 12px;
       color: var(--text-secondary);
-      line-height: 1.5;
-      margin-bottom: 12px;
+      line-height: 1.55;
+      margin-bottom: 14px;
       flex: 1;
     }
     .onboarding-step-action {
-      font-size: 10px;
+      font-family: var(--font-caption);
+      font-size: 9.5px;
       font-weight: 600;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--accent-gold-text);
     }
-    @media (max-width: 768px) {
-      .onboarding-cards-grid {
-        grid-template-columns: 1fr;
-        gap: 0.85rem;
-      }
-      .onboarding-guide-strip {
-        padding: 1.25rem;
-        margin-bottom: 2rem;
-      }
-    }
 
-    /* Mobile Segment Quick-Nav (App Bar) */
-    .mobile-segment-bar {
-      display: none;
-    }
-
-    /* Folio Masthead */
-    .folio-masthead {
-      margin-bottom: 2rem;
-      padding-bottom: 2rem;
-      border-bottom: 1px solid var(--grid-border);
-    }
-    .masthead-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.85rem;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-    .folio-title {
-      font-family: var(--font-heading);
-      font-size: clamp(2.3rem, 4.2vw, 3.4rem);
-      color: var(--text-primary);
-      margin: 0;
-      font-weight: 400;
-      line-height: 1.1;
-      letter-spacing: 0.25px;
-    }
-    .folio-subtitle {
-      font-size: 13.5px;
-      color: var(--text-secondary);
-      margin: 0.75rem 0 0;
-      max-width: 740px;
-      line-height: 1.6;
-    }
-
-    /* Member Highlights & Rewards Strip */
-    .member-rewards-strip {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1.25rem;
-      margin: 2rem 0 2.75rem;
-    }
-    .reward-pill {
-      background: rgba(255, 255, 255, 0.65);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid var(--grid-border);
-      padding: 1.15rem 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.85rem;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.25s var(--transition-smooth);
-      box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.03);
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .reward-pill:hover {
-      border-color: var(--accent-gold);
-      background: #ffffff;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.06);
-    }
-    .reward-pill:active {
-      transform: scale(0.98);
-    }
-    .reward-pill-left {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-    }
-    .reward-icon {
-      font-size: 1.4rem;
-      line-height: 1;
-      flex-shrink: 0;
-    }
-    .reward-label {
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      margin-bottom: 3px;
-    }
-    .reward-value {
-      font-family: var(--font-heading);
-      font-size: 1.2rem;
-      font-weight: 500;
-      color: var(--text-primary);
-      line-height: 1.15;
-    }
-    .reward-arrow {
-      font-size: 13px;
-      color: var(--accent-gold-text);
-      transition: transform 0.2s ease;
-      opacity: 0.7;
-    }
-    .reward-pill:hover .reward-arrow {
-      transform: translateX(3px);
-      opacity: 1;
-    }
-
-    /* Curatorial Folio Sections (Card-Free) */
+    /* Curatorial Folio Sections */
     .folio-section {
       padding: 3.5rem 0;
       border-top: 1px solid var(--grid-border);
@@ -295,17 +359,20 @@
       margin-bottom: 1.75rem;
     }
     .section-supertitle {
+      font-family: var(--font-caption);
       font-size: 9px;
-      font-family: var(--font-body);
       letter-spacing: 2.5px;
       text-transform: uppercase;
       color: var(--accent-gold-text);
       font-weight: 600;
       margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     .section-heading {
       font-family: var(--font-heading);
-      font-size: clamp(1.75rem, 2.5vw, 2.2rem);
+      font-size: clamp(1.85rem, 2.6vw, 2.4rem);
       font-weight: 400;
       letter-spacing: 0.5px;
       color: var(--text-primary);
@@ -320,10 +387,10 @@
       max-width: 680px;
     }
 
-    /* Architectural Folio Ledger (Section 01) */
+    /* Section 01: Architectural Folio Ledger */
     .folio-ledger {
       display: grid;
-      grid-template-columns: 1.05fr 1.05fr 1.25fr 1.15fr;
+      grid-template-columns: 1.1fr 1.1fr 1.25fr 1.15fr;
       gap: 2rem;
       padding: 2.25rem 0;
       border-top: 1px solid var(--grid-border);
@@ -336,7 +403,7 @@
       justify-content: space-between;
       padding-right: 1.5rem;
       border-right: 1px solid var(--grid-border);
-      min-height: 100px;
+      min-height: 105px;
     }
     .ledger-cell:last-child {
       border-right: none;
@@ -365,9 +432,9 @@
       align-items: start;
     }
 
-    /* Event & Ticket Items (Architectural Lines, Physical Collectible Feel) */
+    /* Event & Ticket Items */
     .list-item {
-      padding: 1.4rem 0;
+      padding: 1.5rem 0;
       border-bottom: 1px solid var(--grid-border);
       background: transparent;
       display: flex;
@@ -386,7 +453,7 @@
     
     .ticket-item {
       position: relative;
-      background: #ffffff;
+      background: var(--bg-secondary);
       border: 1px solid var(--grid-border);
       border-left: 4px solid var(--accent-gold);
       padding: 1.5rem 1.75rem;
@@ -396,17 +463,17 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 1.25rem;
-      box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 2px 10px -2px rgba(45, 49, 46, 0.03);
       transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
     }
     .ticket-item:hover {
       border-color: var(--accent-gold);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 8px 24px -4px rgba(45, 49, 46, 0.07);
     }
     .ticket-serial {
+      font-family: var(--font-caption);
       font-size: 9px;
-      font-family: var(--font-body);
       letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--accent-gold-text);
@@ -414,7 +481,47 @@
       margin-bottom: 6px;
     }
 
-    /* Typographic Stepper (No Card Box) */
+    /* Exhibition Curatorial Showcase Card */
+    .exhib-curatorial-banner {
+      display: flex;
+      gap: 1.25rem;
+      align-items: center;
+      background: #faf8f5;
+      border: 1px solid var(--grid-border);
+      padding: 1rem;
+      margin-bottom: 1.75rem;
+    }
+    .exhib-thumb-wrap {
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid var(--grid-border);
+      background: #252826;
+    }
+    .exhib-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .exhib-banner-text {
+      flex: 1;
+    }
+    .exhib-banner-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+      line-height: 1.2;
+    }
+    .exhib-banner-desc {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Minimalist Typographic Stepper */
     .stepper-bar {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -427,6 +534,7 @@
     }
     .step-node {
       text-align: left;
+      font-family: var(--font-caption);
       font-size: 9px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -454,12 +562,12 @@
       margin-top: 1rem;
     }
     #curatorOutput {
-      background: rgba(255, 255, 255, 0.55);
+      background: rgba(255, 255, 255, 0.75);
       border: 1px solid var(--grid-border);
       padding: 1.5rem;
       height: 240px;
       overflow-y: auto;
-      font-size: 13px;
+      font-size: 13.5px;
       line-height: 1.7;
       margin-bottom: 1.25rem;
     }
@@ -470,11 +578,11 @@
       margin-bottom: 1.25rem;
     }
     .inquiry-chip {
-      background: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.7);
       border: 1px solid var(--grid-border);
       color: var(--text-secondary);
-      font-family: var(--font-body);
-      font-size: 10px;
+      font-family: var(--font-caption);
+      font-size: 9.5px;
       letter-spacing: 1px;
       padding: 0.45rem 0.95rem;
       cursor: pointer;
@@ -489,19 +597,19 @@
       background: #ffffff;
     }
     .inquiry-chip:active {
-      transform: scale(0.97);
+      transform: scale(0.98);
     }
     .curator-input-wrapper {
       display: flex;
       border: 1px solid var(--grid-border);
-      background: rgba(255, 255, 255, 0.75);
+      background: #ffffff;
     }
     #curatorInput {
       flex: 1;
       padding: 0.9rem 1.2rem;
       border: none;
       outline: none;
-      font-size: 13px;
+      font-size: 13.5px;
       margin-bottom: 0;
       background: transparent;
       color: var(--text-primary);
@@ -510,7 +618,7 @@
       background: var(--text-primary);
       color: var(--bg-secondary);
       padding: 0 2rem;
-      font-family: var(--font-body);
+      font-family: var(--font-caption);
       font-size: 10px;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -520,14 +628,14 @@
       -webkit-tap-highlight-color: transparent;
     }
     .curator-btn:hover { background: var(--accent-gold); }
-    .curator-btn:active { transform: scale(0.97); }
+    .curator-btn:active { transform: scale(0.98); }
 
     /* Micro-Action Buttons & Badges */
     .edit-name-btn {
       background: rgba(189, 111, 93, 0.08);
       border: 1px solid var(--accent-gold);
       color: var(--accent-gold-text);
-      font-family: var(--font-body);
+      font-family: var(--font-caption);
       font-size: 9px;
       cursor: pointer;
       text-transform: uppercase;
@@ -543,7 +651,7 @@
     }
     .edit-name-btn:hover {
       background: var(--accent-gold);
-      color: var(--bg-primary);
+      color: #ffffff;
       text-decoration: none;
     }
     .edit-name-btn:active {
@@ -554,6 +662,7 @@
       display: inline-flex;
       align-items: center;
       padding: 0.35rem 0.85rem;
+      font-family: var(--font-caption);
       font-size: 9px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -586,7 +695,7 @@
       border-bottom: 1px solid var(--grid-border);
       color: var(--text-primary);
       font-family: var(--font-body);
-      font-size: 13px;
+      font-size: 13.5px;
       padding: 0.75rem 0;
       margin-bottom: 1.5rem;
       transition: border-color 0.3s ease;
@@ -602,7 +711,7 @@
       border: 1px solid var(--grid-border);
       padding: 0.5rem 1.2rem;
       margin-right: 1rem;
-      font-family: var(--font-body);
+      font-family: var(--font-caption);
       font-size: 9px;
       text-transform: uppercase;
       letter-spacing: 1.5px;
@@ -615,13 +724,20 @@
       color: #fff;
     }
 
-    /* Touch Target Feedback */
-    button:active, .action-btn:active {
-      transform: scale(0.97);
+    /* Mobile Segment Navigation Bar */
+    .mobile-segment-bar {
+      display: none;
     }
 
     /* Responsive Queries */
     @media (max-width: 1024px) {
+      .editorial-masthead {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      .masthead-archive-card {
+        max-width: 480px;
+      }
       .folio-ledger {
         grid-template-columns: 1fr 1fr;
         gap: 2.5rem 2rem;
@@ -633,11 +749,16 @@
       .folio-duo-grid, .folio-equal-grid {
         gap: 2.5rem;
       }
-      .member-rewards-strip {
+      .curatorial-overview-strip {
         grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+        gap: 1.25rem;
+      }
+      .overview-item:nth-child(2) {
+        border-right: none;
+        padding-right: 0;
       }
     }
+
     @media (min-width: 769px) {
       .folio-plate {
         background: transparent;
@@ -656,6 +777,7 @@
         display: none;
       }
     }
+
     @media (max-width: 768px) {
       .dash-container { margin: 5.2rem auto 3rem; padding: 0 1.15rem; }
       
@@ -681,9 +803,10 @@
       .segment-btn {
         flex-shrink: 0;
         padding: 0.5rem 0.85rem;
-        font-size: 11px;
+        font-family: var(--font-caption);
+        font-size: 10px;
         font-weight: 500;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.75px;
         text-transform: uppercase;
         text-decoration: none;
         color: var(--text-secondary);
@@ -722,7 +845,7 @@
         box-shadow: 0 2px 10px rgba(45, 49, 46, 0.03);
       }
       .plate-subcard {
-        background: rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.85);
         border: 1px solid var(--grid-border);
         border-top: 2px solid var(--accent-gold);
         border-radius: 2px;
@@ -732,6 +855,7 @@
       }
       .plate-tag {
         display: block;
+        font-family: var(--font-caption);
         font-size: 9px;
         font-weight: 600;
         letter-spacing: 1.5px;
@@ -759,46 +883,46 @@
         border-bottom: none;
         padding-bottom: 0;
       }
+      .curatorial-overview-strip {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 1.25rem;
+      }
+      .overview-item {
+        border-right: none !important;
+        border-bottom: 1px solid var(--grid-border);
+        padding-right: 0 !important;
+        padding-bottom: 0.75rem;
+      }
+      .overview-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+      .onboarding-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+      }
+      .onboarding-guide-strip {
+        padding: 1.25rem;
+        margin-bottom: 2rem;
+      }
       .modal-overlay > div { padding: 2rem 1.25rem !important; }
       select, textarea, input { font-size: 16px !important; }
     }
+
     @media (max-width: 480px) {
       nav { padding: 0.85rem 1rem !important; }
       .dash-container { margin: 4.8rem auto 2.5rem; padding: 0 1rem; }
-      .folio-title { font-size: 2rem; }
-      .section-heading { font-size: 1.5rem; }
+      .folio-title { font-size: 2.1rem; }
+      .section-heading { font-size: 1.55rem; }
       .nav-actions { gap: 0.75rem !important; }
       .nav-actions a, .nav-actions button {
+        font-family: var(--font-caption);
         font-size: 10px !important;
         letter-spacing: 1px !important;
         min-height: 44px;
         display: inline-flex;
         align-items: center;
-      }
-      .member-rewards-strip {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.65rem;
-        margin: 1.5rem 0 2rem;
-      }
-      .reward-pill {
-        padding: 0.9rem 0.85rem;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-      .reward-pill-left {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.4rem;
-      }
-      .reward-arrow {
-        display: none;
-      }
-      .reward-icon {
-        font-size: 1.25rem;
-      }
-      .reward-value {
-        font-size: 1.05rem;
       }
       #nameEditRow input, #phoneEditRow input {
         width: 100% !important;
@@ -849,7 +973,7 @@
       #rsvpModal div[style*="justify-content: flex-end"] { flex-direction: column-reverse; gap: 0.5rem; width: 100%; }
       #rsvpModal .action-btn, #guideModal .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 44px; }
     }
-    
+
     /* Legacy / Compatibility Fallbacks */
     .dropdown-card, .card-body, .profile-grid, .grid-layout { display: block; }
     .dropdown-card.collapsed .card-body { display: block; }
@@ -866,17 +990,17 @@
     </a>
     
     <div class="nav-actions" style="display:flex; align-items:center; gap: 2rem;">
-      <a href="dashboard.html" class="ur-hover" data-ur="دیوان" style="font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; font-weight: 500;">
+      <a href="dashboard.html" class="ur-hover" data-ur="دیوان" style="font-family: var(--font-caption); font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
         <span class="en-text">Dashboard</span>
       </a>
-      <button id="logoutBtn" style="background: transparent; border: none; color: var(--text-secondary); font-family: var(--font-body); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: color 0.3s ease;">
+      <button id="logoutBtn" style="background: transparent; border: none; color: var(--text-secondary); font-family: var(--font-caption); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: color 0.3s ease;">
         Log Out
       </button>
     </div>
   </nav>
 
   <!-- MOBILE APP QUICK-NAVIGATION BAR -->
-  <nav class="mobile-segment-bar" aria-label="Folio Quick Navigation">
+  <nav class="mobile-segment-bar" aria-label="Dashboard Quick Navigation">
     <a href="#cardProfile" class="segment-btn active">Profile</a>
     <a href="#cardEvents" class="segment-btn">Gatherings</a>
     <a href="#cardTickets" class="segment-btn">Passes</a>
@@ -887,86 +1011,82 @@
 
   <div class="dash-container">
     
-    <!-- FOLIO MASTHEAD -->
-    <header class="folio-masthead anim-fade-up">
-      <div class="masthead-meta">
-        <span class="data-label" style="color: var(--accent-gold-text); letter-spacing: 2px;">دیوانِ خاص · MEMBER FOLIO</span>
-        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-          <span class="badge badge-gold" style="font-size: 8.5px; letter-spacing: 1.5px;">خوش آمدید · WELCOME</span>
+    <!-- EDITORIAL MASTHEAD WITH ASYMMETRIC ARCHIVAL ARTIFACT -->
+    <header class="editorial-masthead anim-fade-up">
+      <div class="masthead-lead-column">
+        <div class="masthead-meta-row">
+          <span class="masthead-tag">
+            <span class="urdu-title" style="font-size: 14px; margin-left: 2px;">دیوان</span>
+            <span>· DASHBOARD</span>
+          </span>
           <span class="badge badge-gold" id="dashStatus">Loading...</span>
-          <button type="button" onclick="openWelcomeModal();" class="action-btn gold" style="padding: 0.4rem 0.9rem; font-size: 9px; letter-spacing: 1.5px;">
-            ✦ Welcome Note
+        </div>
+        <h1 class="folio-title" id="welcomeHeading">Welcome back</h1>
+        <p class="folio-subtitle">
+          Alfaaz is a space for people, ideas, and initiatives that seek to make a difference. Reserve gathering passes under the Chinars, collaborate within creative circles, and participate in curated cultural programming.
+        </p>
+        <div class="masthead-actions">
+          <button type="button" onclick="openWelcomeModal();" class="action-btn gold" style="padding: 0.45rem 1rem; font-size: 9.5px; letter-spacing: 1.5px;">
+            Curator's Welcome Note
           </button>
-          <button type="button" onclick="openGuideModal();" class="action-btn" style="padding: 0.4rem 0.9rem; font-size: 9px; letter-spacing: 1.5px; border-color: var(--grid-border); color: var(--text-secondary); background: transparent;">
+          <button type="button" onclick="openGuideModal();" class="action-btn" style="padding: 0.45rem 1rem; font-size: 9.5px; letter-spacing: 1.5px; border-color: var(--grid-border); color: var(--text-secondary); background: transparent;">
             How It Works
           </button>
         </div>
       </div>
-      <div class="masthead-main">
-        <h1 class="folio-title" id="welcomeHeading">Welcome back</h1>
-        <p class="folio-subtitle">
-          Alfaaz is a space for people, ideas, and initiatives that seek to make a difference. Reserve gathering passes under the Chinars, collaborate with creative clubs, and share your artwork.
-        </p>
+
+      <!-- Asymmetrical Vernacular Pinjrakari Archival Medallion -->
+      <div class="masthead-archive-card">
+        <div class="archive-img-wrap">
+          <img src="/tchandervar/images/frame1.jpg" alt="Vernacular Pinjrakari &amp; Woodwork Archive" class="archive-img" loading="eager">
+        </div>
+        <div class="archive-caption">
+          <span class="archive-caption-title">Tchandervar Archive // سری نگر</span>
+          <span class="archive-caption-meta">Vernacular Woodwork &amp; Pinjrakari</span>
+        </div>
       </div>
+
       <!-- Hidden compatibility node for legacy callers -->
       <button id="toggleAllBtn" style="display:none;"></button>
     </header>
 
-    <!-- MEMBER HIGHLIGHTS & REWARDS STRIP -->
-    <div class="member-rewards-strip anim-fade-up anim-delay-1">
-      <div class="reward-pill" onclick="document.getElementById('cardTickets').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0" title="Jump to My Event Passes">
-        <div class="reward-pill-left">
-          <span class="reward-icon">🎫</span>
-          <div>
-            <div class="reward-label">Event Passes</div>
-            <div class="reward-value" id="statPasses">0 Active</div>
-          </div>
-        </div>
-        <span class="reward-arrow">&rarr;</span>
+    <!-- CURATORIAL OVERVIEW LEDGER STRIP -->
+    <div class="curatorial-overview-strip anim-fade-up anim-delay-1">
+      <div class="overview-item" onclick="document.getElementById('cardTickets').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0">
+        <div class="overview-label">Event Passes</div>
+        <div class="overview-val" id="statPasses">0 Active</div>
+        <div class="overview-hint">Passes for upcoming gatherings &rarr;</div>
       </div>
 
-      <div class="reward-pill" onclick="document.getElementById('cardClubs').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0" title="Jump to Creative Clubs">
-        <div class="reward-pill-left">
-          <span class="reward-icon">🏛️</span>
-          <div>
-            <div class="reward-label">Creative Club</div>
-            <div class="reward-value" id="statClub">Open to Join</div>
-          </div>
-        </div>
-        <span class="reward-arrow">&rarr;</span>
+      <div class="overview-item" onclick="document.getElementById('cardClubs').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0">
+        <div class="overview-label">Working Circle</div>
+        <div class="overview-val" id="statClub">Open to Join</div>
+        <div class="overview-hint">Literature, Cinema, Arts &rarr;</div>
       </div>
 
-      <div class="reward-pill" onclick="document.getElementById('cardExhib').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0" title="Jump to Exhibition Submissions">
-        <div class="reward-pill-left">
-          <span class="reward-icon">🎨</span>
-          <div>
-            <div class="reward-label">Art Exhibition</div>
-            <div class="reward-value" id="statExhib">Open Call</div>
-          </div>
-        </div>
-        <span class="reward-arrow">&rarr;</span>
+      <div class="overview-item" onclick="document.getElementById('cardExhib').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0">
+        <div class="overview-label">Gallery Showcase</div>
+        <div class="overview-val" id="statExhib">Open Call</div>
+        <div class="overview-hint">Exhibition accession review &rarr;</div>
       </div>
 
-      <div class="reward-pill" onclick="document.getElementById('cardProfile').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0" title="View Membership Status">
-        <div class="reward-pill-left">
-          <span class="reward-icon">✨</span>
-          <div>
-            <div class="reward-label">Membership</div>
-            <div class="reward-value" id="statStatus">Active Member</div>
-          </div>
-        </div>
-        <span class="reward-arrow">&rarr;</span>
+      <div class="overview-item" onclick="document.getElementById('cardProfile').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0">
+        <div class="overview-label">Membership Standing</div>
+        <div class="overview-val" id="statStatus">Active Member</div>
+        <div class="overview-hint">Identity &amp; creative vault &rarr;</div>
       </div>
     </div>
 
     <!-- NEW MEMBER ONBOARDING GUIDE STRIP -->
     <div id="newMemberOnboarding" class="onboarding-guide-strip anim-fade-up anim-delay-2" style="display: none;">
       <div class="onboarding-header">
-        <div style="display: flex; align-items: center; gap: 0.65rem;">
-          <span class="reward-icon" style="font-size: 1.35rem;">✨</span>
-          <div>
-            <div class="data-label" style="color: var(--accent-gold-text); letter-spacing: 1.5px; margin-bottom: 2px;">WELCOME TO ALFAAZ</div>
-            <div style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); line-height: 1.2;">Every meaningful beginning starts somewhere.</div>
+        <div>
+          <div class="section-supertitle" style="margin-bottom: 2px;">
+            <span class="urdu-title" style="font-size: 13px;">خوش آمدید</span>
+            <span>· WELCOME TO ALFAAZ</span>
+          </div>
+          <div style="font-family: var(--font-heading); font-size: 1.45rem; color: var(--text-primary); line-height: 1.2;">
+            Every meaningful beginning starts somewhere.
           </div>
         </div>
         <button type="button" onclick="dismissOnboardingBanner()" class="action-btn" style="background: transparent; border-color: var(--grid-border); color: var(--text-secondary); font-size: 9px; padding: 0.35rem 0.75rem;">
@@ -974,26 +1094,26 @@
         </button>
       </div>
       <p style="font-size: 12.5px; color: var(--text-secondary); margin: 0.75rem 0 0; line-height: 1.6;">
-        We're glad you're here. Complete these three quick milestones to make the most of your membership:
+        We're glad you're here. Complete these three quiet milestones to make the most of your membership:
       </p>
       <div class="onboarding-cards-grid">
         <div class="onboarding-step-card" onclick="document.getElementById('cardProfile').scrollIntoView({ behavior: 'smooth' }); window.startEditPhone?.();">
           <div class="onboarding-step-num">STEP 01</div>
-          <div class="onboarding-step-title">📱 Add WhatsApp Number</div>
+          <div class="onboarding-step-title">Add WhatsApp Number</div>
           <div class="onboarding-step-desc">Receive gathering confirmations, venue coordinates, and sudden poetry alerts directly on your phone.</div>
           <div class="onboarding-step-action" id="onboardStep1Status">Set Up Number &rarr;</div>
         </div>
         <div class="onboarding-step-card" onclick="document.getElementById('cardEvents').scrollIntoView({ behavior: 'smooth' });">
           <div class="onboarding-step-num">STEP 02</div>
-          <div class="onboarding-step-title">🎫 Reserve First Gathering</div>
-          <div class="onboarding-step-desc">Explore upcoming poetry recitations and salon circles. Reserve your admission pass with zero friction.</div>
+          <div class="onboarding-step-title">Reserve First Gathering</div>
+          <div class="onboarding-step-desc">Explore upcoming poetry recitations and salon circles under the Chinars. Reserve your pass with zero friction.</div>
           <div class="onboarding-step-action" id="onboardStep2Status">Browse Gatherings &rarr;</div>
         </div>
         <div class="onboarding-step-card" onclick="document.getElementById('cardClubs').scrollIntoView({ behavior: 'smooth' });">
           <div class="onboarding-step-num">STEP 03</div>
-          <div class="onboarding-step-title">🏛️ Join a Creative Club</div>
+          <div class="onboarding-step-title">Join a Creative Circle</div>
           <div class="onboarding-step-desc">Collaborate with fellow artists across Literature, Visual Arts, Film, Photography, or Philosophy circles.</div>
-          <div class="onboarding-step-action" id="onboardStep3Status">Choose Your Club &rarr;</div>
+          <div class="onboarding-step-action" id="onboardStep3Status">Choose Your Circle &rarr;</div>
         </div>
       </div>
     </div>
@@ -1003,8 +1123,11 @@
       <div class="plate-tag">IDENTITY &amp; ATELIER · شناخت</div>
       <div class="section-header-row">
         <div>
-          <div class="section-supertitle">SECTION 01 // شناخت</div>
-          <h2 class="section-heading">Your Profile &amp; Account</h2>
+          <div class="section-supertitle">
+            <span>SECTION 01 //</span>
+            <span class="urdu-title" style="font-size: 13px;">شناخت</span>
+          </div>
+          <h2 class="section-heading">Member Ledger &amp; Creative Vault</h2>
         </div>
       </div>
 
@@ -1025,7 +1148,7 @@
               </div>
             </div>
           </div>
-          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">Shown on your event passes and certificates.</div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">Printed on your gathering admission passes and certificates.</div>
         </div>
 
         <!-- 2. WhatsApp Number -->
@@ -1045,7 +1168,7 @@
               </div>
             </div>
           </div>
-          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">Where we text you gathering passes &amp; venue directions.</div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">Direct SMS/WhatsApp dispatch for entry passes &amp; secret venues.</div>
         </div>
 
         <!-- 3. Account Email -->
@@ -1059,8 +1182,8 @@
             </div>
           </div>
           <div style="display: flex; gap: 0.75rem; margin-top: 8px; flex-wrap: wrap;">
-            <a href="reset.html" style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-gold-text); text-decoration: none;">Change Password &rarr;</a>
-            <a id="adminLink" href="admin.html" style="display: none; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-red-text); text-decoration: none;">Admin Panel &rarr;</a>
+            <a href="reset.html" style="font-family: var(--font-caption); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-gold-text); text-decoration: none;">Change Password &rarr;</a>
+            <a id="adminLink" href="admin.html" style="display: none; font-family: var(--font-caption); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-red-text); text-decoration: none;">Admin Panel &rarr;</a>
           </div>
         </div>
 
@@ -1068,12 +1191,12 @@
         <div class="ledger-cell">
           <div>
             <div class="data-label" style="color: var(--accent-gold-text);">Creative Vault</div>
-            <div style="font-family: var(--font-heading); font-size: 1.25rem; color: var(--text-primary); margin-top: 4px; line-height: 1.2;">Share Your Work</div>
+            <div style="font-family: var(--font-heading); font-size: 1.25rem; color: var(--text-primary); margin-top: 4px; line-height: 1.2;">Deposit Your Work</div>
             <p style="font-size: 11px; color: var(--text-secondary); margin: 6px 0 0; line-height: 1.5;">Submit poems, essays, paintings, or cultural proposals directly to our curators.</p>
           </div>
           <div style="margin-top: 10px;">
             <a href="submit.html" class="action-btn gold" style="padding: 0.45rem 1rem; font-size: 9px; letter-spacing: 1.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
-              Deposit Work &rarr;
+              Submit Work &rarr;
             </a>
           </div>
         </div>
@@ -1087,10 +1210,13 @@
         <!-- Left: Gatherings -->
         <div id="cardEvents" class="plate-subcard">
           <div class="plate-tag">GATHERINGS DIRECTORY · محفل</div>
-          <div class="section-supertitle">SECTION 02-A // محفل</div>
-          <h2 class="section-heading">Upcoming Gatherings</h2>
+          <div class="section-supertitle">
+            <span>SECTION 02-A //</span>
+            <span class="urdu-title" style="font-size: 13px;">محفل</span>
+          </div>
+          <h2 class="section-heading">Gatherings Under the Chinars</h2>
           <p class="section-description">
-            Poetry readings, craft workshops, and open salons under the Chinars. Reserve your spot below.
+            Poetry readings, vernacular craft workshops, and open salons under the Chinars. Reserve your spot below.
           </p>
           <div id="activeEventsContainer">
             <p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Looking for upcoming gatherings...</p>
@@ -1100,10 +1226,13 @@
         <!-- Right: Passes -->
         <div id="cardTickets" class="plate-subcard">
           <div class="plate-tag" style="color: var(--accent-gold-text);">CONFIRMED ACCESS · داخلہ کارڈ</div>
-          <div class="section-supertitle">SECTION 02-B // داخلہ کارڈ</div>
-          <h2 class="section-heading">My Event Passes</h2>
+          <div class="section-supertitle">
+            <span>SECTION 02-B //</span>
+            <span class="urdu-title" style="font-size: 13px;">داخلہ کارڈ</span>
+          </div>
+          <h2 class="section-heading">Confirmed Admission Passes</h2>
           <p class="section-description">
-            Your confirmed passes for upcoming gatherings. Show this pass on your phone when you arrive.
+            Your confirmed digital admission passes. Present this pass on your phone when arriving at the venue.
           </p>
           <div id="myTicketsContainer">
             <p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Retrieving your passes...</p>
@@ -1117,35 +1246,38 @@
     <section class="folio-section anim-fade-up anim-delay-4">
       <div class="folio-equal-grid">
         
-        <!-- Left: Creative Clubs -->
+        <!-- Left: Creative Circles -->
         <div id="cardClubs" class="plate-subcard">
           <div class="plate-tag">WORKING CIRCLES · انجمن</div>
-          <div class="section-supertitle">SECTION 03-A // انجمن</div>
-          <h2 class="section-heading">Creative Clubs</h2>
+          <div class="section-supertitle">
+            <span>SECTION 03-A //</span>
+            <span class="urdu-title" style="font-size: 13px;">انجمن</span>
+          </div>
+          <h2 class="section-heading">Creative Circles</h2>
           <p class="section-description">
-            Join a creative club to collaborate with fellow artists in Literature, Pinjrakari &amp; Visual Arts, Cinema, Photography, or Philosophy.
+            Collaborate closely with fellow artists across Literature, Pinjrakari &amp; Visual Arts, Cinema, Photography, or Philosophy circles.
           </p>
 
           <div id="clubStatusView" style="display: none; padding: 1.5rem 0; border-top: 1px dashed var(--grid-border); text-align: left;">
-            <div class="data-label" style="margin-bottom: 6px;">Your Active Club</div>
+            <div class="data-label" style="margin-bottom: 6px;">Your Active Circle</div>
             <div style="font-family: var(--font-heading); font-size: 2.2rem; color: var(--text-primary); line-height: 1.1;" id="myClubName"></div>
             <div id="myClubBadge" style="margin-top: 10px;"></div>
             <p id="myClubNote" style="font-size: 12px; color: var(--text-secondary); margin-top: 15px; font-style: italic; border-left: 2px solid var(--accent-gold); padding-left: 1rem; line-height: 1.6;"></p>
           </div>
           
           <div id="clubApplyView" style="display: none;">
-            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.6;">Choose a club to join and collaborate with members:</p>
-            <div class="data-label">Select Club</div>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.6;">Select a circle to participate and collaborate with members:</p>
+            <div class="data-label">Select Circle</div>
             <select id="clubSelect">
+              <option value="Literature">Literature (Prose &amp; Poetry)</option>
               <option value="Art & Craft">Art &amp; Craft (Visual Arts &amp; Pinjrakari)</option>
               <option value="Film Club">Film Club (Cinema &amp; Video)</option>
               <option value="Photography">Photography (Lens &amp; Documentary)</option>
               <option value="Philosophy">Philosophy (Discourse &amp; Discussion)</option>
-              <option value="Literature">Literature (Prose &amp; Poetry)</option>
             </select>
             <div class="data-label">Tell Us About Your Work (Optional)</div>
             <textarea id="clubNote" rows="3" placeholder="Share a few lines about your interests, creative projects, or what you'd like to explore..."></textarea>
-            <button id="clubSubmitBtn" class="action-btn gold" style="width: 100%;" onclick="submitClubApplication()">Join This Club</button>
+            <button id="clubSubmitBtn" class="action-btn gold" style="width: 100%;" onclick="submitClubApplication()">Join This Circle</button>
             <div id="clubMsg" style="font-size: 10px; margin-top: 12px; letter-spacing: 2px; text-transform: uppercase; text-align: center;"></div>
           </div>
         </div>
@@ -1153,17 +1285,31 @@
         <!-- Right: Exhibition Submissions -->
         <div id="cardExhib" class="plate-subcard" style="display: block;">
           <div class="plate-tag">GALLERY SHOWCASE · نمائش</div>
-          <div class="section-supertitle">SECTION 03-B // نمائش</div>
-          <h2 class="section-heading">Art Exhibition Submissions</h2>
+          <div class="section-supertitle">
+            <span>SECTION 03-B //</span>
+            <span class="urdu-title" style="font-size: 13px;">نمائش</span>
+          </div>
+          <h2 class="section-heading">Art Exhibition Accession</h2>
           <p class="section-description">
-            Submit artwork for our gallery showcase and follow your submission through curatorial review.
+            Submit artwork for our seasonal gallery showcases and follow your portfolio through curatorial evaluation.
           </p>
+
+          <!-- Authentic Curatorial Showcase Card -->
+          <div class="exhib-curatorial-banner">
+            <div class="exhib-thumb-wrap">
+              <img src="/tchandervar/images/artwork-s001.jpg" alt="Curatorial Showcase Artwork" class="exhib-thumb" loading="lazy">
+            </div>
+            <div class="exhib-banner-text">
+              <div class="exhib-banner-title">Seasonal Curatorial Focus</div>
+              <div class="exhib-banner-desc">Selected portfolios will be accessioned into the seasonal Srinagar gallery showcase.</div>
+            </div>
+          </div>
 
           <!-- Minimalist Typographic Stepper -->
           <div class="stepper-bar" id="exhibStepper">
             <div class="step-node" id="step1">1. Submit Artwork</div>
             <div class="step-node" id="step2">2. Curatorial Review</div>
-            <div class="step-node" id="step3">3. Fee &amp; Agreement</div>
+            <div class="step-node" id="step3">3. Agreement &amp; Fee</div>
             <div class="step-node" id="step4">4. Confirmed</div>
           </div>
 
@@ -1175,10 +1321,10 @@
             </div>
             
             <!-- State 2: Pending Review -->
-            <div id="exhibPendingView" style="display: none; padding: 2rem; background: rgba(255, 255, 255, 0.45); border: 1px dashed var(--grid-border); text-align: center;">
+            <div id="exhibPendingView" style="display: none; padding: 2rem; background: rgba(255, 255, 255, 0.55); border: 1px dashed var(--grid-border); text-align: center;">
               <div class="data-label" style="margin-bottom: 8px;">Review in Progress</div>
-              <span class="badge badge-gold">Under Review</span>
-              <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px; font-style: italic; line-height: 1.6;">Your artwork submission is currently being evaluated by our curatorial team. We'll update you here soon.</p>
+              <span class="badge badge-gold">Under Curatorial Review</span>
+              <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px; font-style: italic; line-height: 1.6;">Your artwork submission is currently being evaluated by our curatorial guild. We'll update your status here soon.</p>
             </div>
             
             <!-- State 3: Not Selected -->
@@ -1195,7 +1341,7 @@
                 <p id="exhibApprovedNote" style="font-size:12px; color:var(--text-secondary); font-style:italic; border-left: 2px solid var(--accent-gold); padding-left: 1rem; margin-bottom: 1.25rem; line-height: 1.6;"></p>
                 
                 <div style="border-top: 1px dashed var(--accent-green); padding-top: 1.25rem;">
-                  <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-green-text); margin-bottom: 1rem; font-weight: 600;">Final Step: Confirm Your Registration</p>
+                  <p style="font-family: var(--font-caption); font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-green-text); margin-bottom: 1rem; font-weight: 600;">Final Step: Confirm Your Registration</p>
                   
                   <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
                     <a id="btnTcLink" href="#" target="_blank" class="action-btn" style="text-align: center; text-decoration: none; padding: 0.75rem;">1. Read Terms &amp; Conditions</a>
@@ -1209,7 +1355,7 @@
                     
                     <label style="display: flex; align-items: flex-start; gap: 0.8rem; cursor: pointer; margin-bottom: 1.25rem;">
                       <input type="checkbox" id="tcCheckbox" required style="width: auto; margin-top: 4px;">
-                      <span style="font-size: 11px; color: var(--text-secondary); line-height: 1.5;">I have read and agree to the Terms &amp; Conditions of the exhibition.</span>
+                      <span style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;">I have read and agree to the Terms &amp; Conditions of the exhibition.</span>
                     </label>
 
                     <button type="submit" id="finalizeExhibBtn" class="submit-btn" style="width: 100%;">Submit Payment Receipt</button>
@@ -1220,9 +1366,9 @@
             </div>
             
             <!-- State 5: Finalized -->
-            <div id="exhibFinalizedView" style="display: none; padding: 2rem; background: rgba(255, 255, 255, 0.45); border: 1px solid var(--grid-border); text-align: center;">
+            <div id="exhibFinalizedView" style="display: none; padding: 2rem; background: rgba(255, 255, 255, 0.65); border: 1px solid var(--grid-border); text-align: center;">
               <span class="badge badge-green" style="margin-bottom: 10px;">Registration Confirmed</span>
-              <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.6;">Registration Confirmed! Your payment receipt has been received. We look forward to seeing your artwork in the gallery!</p>
+              <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.6;">Registration Confirmed! Your payment receipt has been received. We look forward to seeing your artwork in the gallery showcase!</p>
             </div>
           </div>
         </div>
@@ -1233,10 +1379,17 @@
     <!-- SECTION 04: ASK CURATOR AI -->
     <section class="folio-section folio-plate anim-fade-up anim-delay-5" id="cardAssistant" style="margin-bottom: 3.5rem;">
       <div class="plate-tag">CURATORIAL DESK · حکیم</div>
-      <div class="section-supertitle">SECTION 04 // حکیم</div>
-      <h2 class="section-heading">Ask Curator AI</h2>
+      <div class="section-header-row">
+        <div>
+          <div class="section-supertitle">
+            <span>SECTION 04 //</span>
+            <span class="urdu-title" style="font-size: 13px;">حکیم</span>
+          </div>
+          <h2 class="section-heading">Ask Curator AI</h2>
+        </div>
+      </div>
       <p class="section-description">
-        Have a question about Kashmiri literature, upcoming gathering dates, or submission rules? Ask our resident AI curator.
+        Have a question about Kashmiri literature, upcoming gathering dates, or submission rules? Inquire with our resident AI curator.
       </p>
 
       <div id="curatorTerminal" class="curator-terminal">
@@ -1244,16 +1397,16 @@
           <button type="button" class="inquiry-chip" onclick="setInquiry('What is the latest curatorial essay in the journal?')">Latest Journal Essay</button>
           <button type="button" class="inquiry-chip" onclick="setInquiry('Tell me about upcoming poetry readings and gatherings')">Upcoming Gatherings</button>
           <button type="button" class="inquiry-chip" onclick="setInquiry('What are the rules and guidelines for submitting artwork?')">Exhibition Rules</button>
-          <button type="button" class="inquiry-chip" onclick="setInquiry('How do creative clubs work at Alfaaz?')">How Clubs Work</button>
+          <button type="button" class="inquiry-chip" onclick="setInquiry('How do creative circles work at Alfaaz?')">How Circles Work</button>
         </div>
 
         <div id="curatorOutput" class="curator-output">
-          <div style="color: var(--text-secondary); margin-bottom: 1rem; font-style: italic;">Welcome to Alfaaz Collective! Ask Curator AI anything about gatherings, exhibition submissions, or creative working clubs.</div>
+          <div style="color: var(--text-secondary); margin-bottom: 1rem; font-style: italic;">Welcome to Alfaaz Collective. Inquire with Curator AI about gatherings, exhibition accession, or creative working circles.</div>
         </div>
         
         <div class="curator-input-wrapper">
-          <input type="text" id="curatorInput" placeholder="Ask anything about Alfaaz, events, or art...">
-          <button onclick="askCurator()" class="curator-btn">Ask</button>
+          <input type="text" id="curatorInput" placeholder="Inquire about Alfaaz gatherings, literature, or art submissions...">
+          <button onclick="askCurator()" class="curator-btn">Inquire</button>
         </div>
       </div>
     </section>
@@ -1267,7 +1420,7 @@
          <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin: 0; font-weight: 400;">Reserve Your Spot</h3>
          <button onclick="closeRsvpModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.6rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;" aria-label="Close RSVP modal">&times;</button>
        </div>
-       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">Enter your WhatsApp number so we can text you your entry pass and venue coordinates.</p>
+       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">Enter your WhatsApp number so we can text you your admission pass and venue coordinates.</p>
        <label class="data-label" for="rsvpWhatsapp">WhatsApp Number</label>
        <input type="tel" id="rsvpWhatsapp" placeholder="+91 94190 00000" required>
        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
@@ -1281,28 +1434,28 @@
   <div class="modal-overlay" id="guideModal" style="display: none; position: fixed; inset: 0; background: rgba(244, 241, 234, 0.94); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="max-width: 580px; width: 92%; max-height: 85vh; overflow-y: auto; padding: 3rem 2.5rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); position: relative;">
        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-         <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); font-weight: 400; margin: 0;">Welcome to Your Member Space</h3>
+         <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); font-weight: 400; margin: 0;">How the Collective Works</h3>
          <button onclick="closeGuideModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.6rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;" aria-label="Close guide">&times;</button>
        </div>
        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
-         Here is a quick overview of what you can do in your Alfaaz Collective account:
+         A brief overview of your spaces and opportunities within Alfaaz Collective:
        </p>
        <div style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 2rem;">
          <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
-           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 01: Your Profile &amp; Creative Vault</strong>
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 01: Member Ledger &amp; Creative Vault</strong>
            <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Update your member name, add your WhatsApp number for pass dispatch, and submit literary pieces, essays, or artwork directly to our creative vault.</span>
          </div>
          <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
-           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 02: Gatherings &amp; Event Passes</strong>
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 02: Gatherings &amp; Admission Passes</strong>
            <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Discover poetry readings, salons, and workshops. Reserve your spot; your digital entry passes appear here with one-click Google Calendar integration.</span>
          </div>
          <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
-           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 03: Creative Clubs &amp; Exhibition Submissions</strong>
-           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Join a creative club (Literature, Cinema, Visual Arts, Photography, Philosophy) and submit artwork to our open call gallery showcases.</span>
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 03: Creative Circles &amp; Gallery Showcase</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Join a creative circle (Literature, Cinema, Visual Arts, Photography, Philosophy) and submit artwork to our open call gallery showcases.</span>
          </div>
          <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
            <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 04: Ask Curator AI</strong>
-           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Ask our AI curator questions about Kashmiri literature, upcoming gatherings, or submission requirements anytime.</span>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Inquire with our AI curator regarding Kashmiri literature, upcoming gatherings, or submission requirements anytime.</span>
          </div>
        </div>
        <div style="text-align: right;">
@@ -1312,72 +1465,47 @@
   </div>
 
   <!-- CURATORIAL WELCOME NOTE & CELEBRATION CEREMONY MODAL -->
-  <div class="modal-overlay" id="welcomeModal" style="display: none; position: fixed; inset: 0; background: rgba(45, 49, 46, 0.55); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 1rem;">
-    <div class="welcome-card anim-welcome-scale" style="max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; background: var(--bg-secondary); border: 1px solid var(--grid-border); border-top: 4px solid var(--accent-gold); box-shadow: var(--shadow-float); position: relative; padding: 2.75rem 2.25rem 2.25rem;">
+  <div class="modal-overlay" id="welcomeModal" style="display: none; position: fixed; inset: 0; background: rgba(45, 49, 46, 0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 1rem;">
+    <div class="welcome-card anim-welcome-scale" style="max-width: 580px; width: 100%; max-height: 90vh; overflow-y: auto; background: var(--bg-secondary); border: 1px solid var(--grid-border); border-top: 4px solid var(--accent-gold); box-shadow: var(--shadow-float); position: relative; padding: 2.75rem 2.25rem 2.25rem;">
       
       <!-- Close button -->
       <button onclick="dismissWelcomeModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.5rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; position: absolute; top: 1rem; right: 1rem; -webkit-tap-highlight-color: transparent;" aria-label="Close welcome note">&times;</button>
 
       <!-- Welcome Ornament & Badges -->
       <div style="text-align: center; margin-bottom: 1.25rem;">
-        <div style="font-size: 2.2rem; color: var(--accent-gold); line-height: 1; margin-bottom: 0.5rem;">❦</div>
-        <div class="badge badge-gold" style="font-size: 9px; letter-spacing: 2px; padding: 0.35rem 0.9rem;">خوش آمدید · WELCOME TO ALFAAZ</div>
+        <div style="font-size: 2rem; color: var(--accent-gold); line-height: 1; margin-bottom: 0.5rem;">❦</div>
+        <div class="badge badge-gold" style="font-size: 9px; letter-spacing: 2px; padding: 0.35rem 0.9rem;">
+          <span class="urdu-title" style="font-size: 13px; margin-left: 4px;">خوش آمدید</span>
+          <span>· ALFAAZ</span>
+        </div>
       </div>
 
       <!-- Welcome Title -->
-      <h2 style="font-family: var(--font-heading); font-size: clamp(2.2rem, 4.2vw, 2.85rem); color: var(--text-primary); text-align: center; font-weight: 400; line-height: 1.15; margin: 0 0 0.5rem;">
+      <h2 style="font-family: var(--font-heading); font-size: clamp(2.3rem, 4.4vw, 3rem); color: var(--text-primary); text-align: center; font-weight: 400; line-height: 1.15; margin: 0 0 0.5rem;">
         Welcome to Alfaaz.
       </h2>
       <div style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--accent-gold-text); text-align: center; font-style: italic; margin-bottom: 1.5rem;">
-        We're glad you're here.
+        A space for art, literature, and the conversations between them.
       </div>
       <span id="welcomeModalName" style="display:none;"></span>
 
-      <!-- Curatorial Letter Prose -->
-      <div class="welcome-letter-body" style="border-left: 3px solid var(--accent-gold); padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; font-size: 14.5px; color: var(--text-primary); line-height: 1.8; background: rgba(189, 111, 93, 0.04);">
-        <p style="margin: 0 0 1.1rem;">
-          Alfaaz is a space for people, ideas, and initiatives that seek to make a difference. Whether you're here to participate, contribute, volunteer, or simply explore, we're happy to have you with us.
+      <!-- Curatorial Letter Prose (Verbatim Canonical User Text) -->
+      <div class="welcome-letter-body" style="border-left: 3px solid var(--accent-gold); padding: 1.4rem 1.6rem; margin-bottom: 1.75rem; font-size: 14.5px; color: var(--text-primary); line-height: 1.8; background: rgba(189, 111, 93, 0.04);">
+        <p style="margin: 0 0 1.15rem;">
+          Explore upcoming gatherings, find a creative circle, or share something of your own. Take part in your own way, at your own pace.
         </p>
         <p style="margin: 0 0 1.25rem;">
-          Every meaningful beginning starts somewhere. We're glad yours starts here.
+          There's no single way to belong here. Begin wherever your curiosity leads.
         </p>
-        <p style="margin: 0; font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); font-weight: 600; letter-spacing: 0.5px;">
-          Welcome aboard.
+        <p style="margin: 0; font-family: var(--font-heading); font-size: 1.4rem; color: var(--text-primary); font-weight: 600; letter-spacing: 0.5px;">
+          Step inside.
         </p>
-      </div>
-
-      <!-- Quick Highlights: Next 3 Steps -->
-      <div style="margin-bottom: 1.75rem;">
-        <div class="data-label" style="color: var(--accent-gold-text); margin-bottom: 0.75rem; letter-spacing: 1.5px;">YOUR FIRST THREE STEPS IN THE COLLECTIVE</div>
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.6); border-radius: 2px;">
-            <span style="font-size: 1.2rem; flex-shrink: 0;">📱</span>
-            <div>
-              <strong style="font-size: 12.5px; color: var(--text-primary); display: block;">1. Add your WhatsApp Number</strong>
-              <span style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">Direct gathering invitations, pass confirmations, and venue directions are texted to your phone.</span>
-            </div>
-          </div>
-          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.6); border-radius: 2px;">
-            <span style="font-size: 1.2rem; flex-shrink: 0;">🎫</span>
-            <div>
-              <strong style="font-size: 12.5px; color: var(--text-primary); display: block;">2. Reserve a Free Gathering Pass</strong>
-              <span style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">Explore upcoming poetry readings, craft workshops, and salon circles under the Chinars.</span>
-            </div>
-          </div>
-          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.6); border-radius: 2px;">
-            <span style="font-size: 1.2rem; flex-shrink: 0;">🏛️</span>
-            <div>
-              <strong style="font-size: 12.5px; color: var(--text-primary); display: block;">3. Join a Creative Club</strong>
-              <span style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">Collaborate in Literature, Visual Arts, Film, Photography, or Philosophy circles.</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Action Button -->
       <div>
-        <button id="btnEnterCollective" type="button" onclick="dismissWelcomeModal()" class="action-btn gold" style="width: 100%; padding: 0.9rem 1.5rem; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; justify-content: center; min-height: 46px;">
-          Step Inside Your Folio &rarr;
+        <button id="btnEnterCollective" type="button" onclick="dismissWelcomeModal()" class="action-btn gold" style="width: 100%; padding: 0.9rem 1.5rem; font-family: var(--font-caption); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; justify-content: center; min-height: 46px;">
+          Step Inside Your Space &rarr;
         </button>
       </div>
 

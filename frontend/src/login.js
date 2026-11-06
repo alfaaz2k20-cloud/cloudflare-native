@@ -1,6 +1,8 @@
 // login.js — Centralized Sovereign Auth Suite
 // Primary Cloudflare-native authentication with 50/50 dual toggle and GIS One-Tap
 
+let currentMode = 'login'; // Module-scoped: 'login' | 'register'
+
 function normalizeE164Phone(raw, prefixInput = "+91") {
   if (!raw) return null;
   let trimmed = String(raw).trim();
@@ -48,33 +50,43 @@ async function federatedLogin(idToken, provider, mode) {
   return data;
 }
 
-function finalizeAuth(data, redirectTarget) {
-  localStorage.setItem('alfaaz_user', JSON.stringify(data.user));
-  localStorage.setItem('alfaaz_token', data.token);
+function finalizeAuth(data, redirectTarget, mode = currentMode) {
+  try {
+    if (data?.user) {
+      localStorage.setItem('alfaaz_user', JSON.stringify(data.user));
+    }
+    if (data?.token) {
+      localStorage.setItem('alfaaz_token', data.token);
+    }
 
-  if (currentMode === 'register' || data.is_new_user) {
-    sessionStorage.setItem('alfaaz_just_joined', 'true');
-  }
+    if (mode === 'register' || data?.is_new_user) {
+      sessionStorage.setItem('alfaaz_just_joined', 'true');
+    }
 
-  const defaultDest = (data.user?.status === 'ADMIN' || data.user?.role === 'ADMIN') ? 'admin.html' : 'dashboard.html';
-  const finalDest = redirectTarget || defaultDest;
+    const defaultDest = (data?.user?.status === 'ADMIN' || data?.user?.role === 'ADMIN') ? 'admin.html' : 'dashboard.html';
+    const finalDest = redirectTarget || defaultDest;
 
-  const isAdmin = data.user?.status === 'ADMIN' || data.user?.role === 'ADMIN';
-  const isMissingPhone = !isAdmin && data.user && !data.user.phone;
-  const isMissingEmail = !isAdmin && data.user && !data.user.email_verified && !data.user.auth_provider?.includes('google');
+    const isAdmin = data?.user?.status === 'ADMIN' || data?.user?.role === 'ADMIN';
+    const isMissingPhone = !isAdmin && data?.user && !data.user.phone;
+    const isMissingEmail = !isAdmin && data?.user && !data.user.email_verified && !data.user.auth_provider?.includes('google');
 
-  if (isMissingPhone && document.getElementById('verificationStep')) {
-    setTimeout(() => {
-      showVerificationStep(data.user, data.token, finalDest, 'whatsapp');
-    }, 400);
-  } else if (isMissingEmail && document.getElementById('verificationStep')) {
-    setTimeout(() => {
-      showVerificationStep(data.user, data.token, finalDest, 'email');
-    }, 400);
-  } else {
-    setTimeout(() => {
-      window.location.href = finalDest;
-    }, 700);
+    if (isMissingPhone && document.getElementById('verificationStep')) {
+      setTimeout(() => {
+        showVerificationStep(data.user, data.token, finalDest, 'whatsapp');
+      }, 400);
+    } else if (isMissingEmail && document.getElementById('verificationStep')) {
+      setTimeout(() => {
+        showVerificationStep(data.user, data.token, finalDest, 'email');
+      }, 400);
+    } else {
+      setTimeout(() => {
+        window.location.href = finalDest;
+      }, 500);
+    }
+  } catch (err) {
+    console.error('[FINALIZE AUTH RECOVERY]', err);
+    const defaultDest = (data?.user?.status === 'ADMIN' || data?.user?.role === 'ADMIN') ? 'admin.html' : 'dashboard.html';
+    window.location.href = redirectTarget || defaultDest;
   }
 }
 
@@ -104,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const footerActionLink = document.getElementById('footerActionLink');
   const returnBtn = document.getElementById('returnBtn');
 
-  let currentMode = 'login'; // 'login' | 'register'
+  currentMode = 'login'; // 'login' | 'register'
   let turnstileToken = '';
   let gisInitialized = false;
   let gisLoadFailed = false;
@@ -410,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.style.color = '#fff';
         submitBtn.style.borderColor = 'var(--accent-gold)';
         markAuthSuccess('email');
-        finalizeAuth(data, redirectTarget);
+        finalizeAuth(data, redirectTarget, currentMode);
       } else {
         submitBtn.textContent = currentMode === 'register' ? 'Create Account' : 'Log In';
         submitBtn.disabled = false;
@@ -537,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
               showSocialHint('Authenticating with Google...', true);
               const data = await federatedLogin(response.credential, 'google', currentMode);
               markAuthSuccess();
-              finalizeAuth(data, redirectTarget);
+              finalizeAuth(data, redirectTarget, currentMode);
             } catch (err) {
               console.error('[GIS AUTH HANDLER ERROR]', err);
               isFederatedAuthInProgress = false;
