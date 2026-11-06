@@ -19,282 +19,537 @@
   
   <script type="module" src="src/dashboard.js"></script>
   <style>
-    .dash-container { max-width: 1200px; margin: 7rem auto 4rem; padding: 0 2rem; }
+    .dash-container { max-width: 1240px; margin: 7rem auto 5rem; padding: 0 2.5rem; }
     
-    /* Navigation Hint Banner */
-    .dash-hint-banner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1.25rem;
-      padding: 1rem 1.5rem;
-      background: var(--bg-secondary);
-      border: 1px dashed var(--grid-border);
-      margin-bottom: 1.25rem;
-      box-shadow: var(--shadow-base);
+    /* Butter-Smooth Animations */
+    @keyframes folioFadeUp {
+      0% {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    .hint-chevron-pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      border: 1px solid var(--grid-border);
-      color: var(--accent-gold-text);
-      font-size: 10px;
-      background: var(--bg-primary);
-      flex-shrink: 0;
+    .anim-fade-up {
+      animation: folioFadeUp 0.65s var(--transition-smooth) both;
+    }
+    .anim-delay-1 { animation-delay: 0.06s; }
+    .anim-delay-2 { animation-delay: 0.12s; }
+    .anim-delay-3 { animation-delay: 0.18s; }
+    .anim-delay-4 { animation-delay: 0.24s; }
+    .anim-delay-5 { animation-delay: 0.30s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .anim-fade-up, .anim-welcome-scale, .floating-particle {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
     }
 
-    /* Refined Profile Grid */
-    .profile-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.25rem;
-      margin-bottom: 1.5rem;
+    /* Welcome Note Modal & Ceremony Animations */
+    @keyframes welcomeScaleIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.92) translateY(16px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
     }
-    .profile-field-block {
-      padding: 1.25rem 1.5rem;
-      background: var(--bg-primary);
+    .anim-welcome-scale {
+      animation: welcomeScaleIn 0.45s var(--transition-smooth) both;
+    }
+
+    /* Floating Celebration Leaf & Sparkle Particles */
+    .floating-particle {
+      position: fixed;
+      top: -30px;
+      pointer-events: none;
+      z-index: 10002;
+      animation: particleDrift linear forwards;
+      user-select: none;
+    }
+    @keyframes particleDrift {
+      0% {
+        transform: translateY(0) rotate(0deg) scale(0.7);
+        opacity: 0;
+      }
+      15% {
+        opacity: 0.95;
+      }
+      85% {
+        opacity: 0.95;
+      }
+      100% {
+        transform: translateY(96vh) rotate(360deg) scale(1.15);
+        opacity: 0;
+      }
+    }
+
+    /* Onboarding Quick-Start Guide Strip */
+    .onboarding-guide-strip {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border: 1px solid var(--grid-border);
+      border-left: 4px solid var(--accent-gold);
+      padding: 1.5rem 1.75rem;
+      margin: 0 0 3rem;
+      box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.03);
+    }
+    .onboarding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .onboarding-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    .onboarding-step-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--grid-border);
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.25s var(--transition-smooth);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 105px;
+      -webkit-tap-highlight-color: transparent;
     }
-    .profile-val {
+    .onboarding-step-card:hover {
+      border-color: var(--accent-gold);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.06);
+    }
+    .onboarding-step-card:active {
+      transform: scale(0.98);
+    }
+    .onboarding-step-num {
+      font-size: 8.5px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: var(--accent-gold-text);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .onboarding-step-title {
       font-family: var(--font-heading);
       font-size: 1.25rem;
       color: var(--text-primary);
-      font-weight: 500;
-      letter-spacing: 0.25px;
-      line-height: 1.3;
+      margin-bottom: 6px;
+      line-height: 1.2;
     }
-
-    /* 2-Column Symmetric Grid */
-    .grid-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
-      margin-bottom: 1.25rem;
-      align-items: start;
+    .onboarding-step-desc {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 12px;
+      flex: 1;
     }
-    @media (max-width: 900px) {
-      .grid-layout { grid-template-columns: 1fr; }
+    .onboarding-step-action {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent-gold-text);
     }
     @media (max-width: 768px) {
-      .dash-container { margin: 5.5rem auto 3rem; padding: 0 1rem; }
-      .dropdown-card { padding: 1.5rem 1.25rem; }
-      .dropdown-card.collapsed { padding: 1.1rem 1.25rem; }
-      .profile-grid { grid-template-columns: 1fr; gap: 1rem; }
-      .panel-title { font-size: 1.4rem; }
-      .vault-feature-banner { flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .vault-feature-banner > div:last-child { width: 100%; }
-      .vault-feature-banner .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 40px; }
-      .stepper-bar { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
-      .modal-overlay > div { padding: 2rem 1.25rem !important; }
-
-      /* Prevent iOS Safari auto-zoom on input focus */
-      select, textarea, input {
-        font-size: 16px !important;
+      .onboarding-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
       }
-
-      /* Inner card status views */
-      #clubStatusView,
-      #exhibPendingView,
-      #exhibRejectedView,
-      #exhibApprovedView > div,
-      #exhibFinalizedView {
-        padding: 1.5rem 1.15rem !important;
+      .onboarding-guide-strip {
+        padding: 1.25rem;
+        margin-bottom: 2rem;
       }
     }
-    @media (max-width: 480px) {
-      nav { padding: 0.85rem 1rem !important; }
-      .dash-container { margin: 4.8rem auto 2.5rem; padding: 0 0.85rem; }
-      .dropdown-card { padding: 1.25rem 1rem; }
-      .dropdown-card.collapsed { padding: 0.95rem 1rem; }
-      .panel-title { font-size: 1.25rem; }
-      .card-header-clickable { min-height: 44px; padding-bottom: 1rem; }
-      .card-title-group { gap: 0.5rem; }
-      .nav-actions { gap: 0.75rem !important; }
-      .nav-actions a, .nav-actions button {
-        font-size: 10px !important;
-        letter-spacing: 1px !important;
-        min-height: 44px;
-        display: inline-flex;
-        align-items: center;
-      }
-      .dash-hint-banner { padding: 0.85rem 1rem; gap: 0.75rem; }
-      .dash-hint-banner .hint-banner-actions { width: 100%; display: flex; gap: 0.5rem; }
-      .dash-hint-banner .hint-banner-actions .action-btn { flex: 1; text-align: center; justify-content: center; min-height: 38px; }
-      .profile-grid { grid-template-columns: 1fr; gap: 1rem; }
-      .profile-field-block { padding: 1rem 1.15rem; min-height: auto; }
-      .profile-val { word-break: break-word; overflow-wrap: break-word; }
-      .edit-name-btn { min-height: 44px; min-width: 44px; }
-      .profile-field-block .action-btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 0.9rem; }
-      #myClubName { font-size: 1.7rem !important; }
-      #nameEditRow input, #phoneEditRow input {
-        width: 100% !important;
-        margin-bottom: 0.5rem !important;
-      }
-      #nameEditRow button, #phoneEditRow button {
-        flex: 1 1 calc(50% - 0.5rem);
-        min-height: 42px;
-        text-align: center;
-        justify-content: center;
-      }
-      .list-item { flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .list-item > div:last-child { width: 100%; align-items: stretch !important; }
-      .list-item .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 42px; }
-      .ticket-item { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
 
-      /* Curator AI Mobile Ergonomics */
-      .curator-chips, .phantom-chips { flex-direction: column; width: 100%; gap: 0.4rem; }
-      .inquiry-chip {
-        width: 100%;
-        text-align: left;
-        padding: 0.6rem 0.85rem;
-        font-size: 11px;
-        min-height: 38px;
-        display: flex;
-        align-items: center;
-      }
-      .curator-input-wrapper, .phantom-input-wrapper { flex-direction: column; border: 1px solid var(--grid-border); }
-      #curatorInput, #phantomInput {
-        width: 100%;
-        padding: 0.85rem 1rem;
-        border-bottom: 1px solid var(--grid-border);
-      }
-      .curator-btn, .phantom-btn {
-        width: 100%;
-        padding: 0.85rem 1rem;
-        font-size: 11px;
-        min-height: 42px;
-        text-align: center;
-        justify-content: center;
-      }
-      #curatorOutput, #phantomOutput { height: 210px; padding: 1rem; font-size: 12.5px; }
+    /* Mobile Segment Quick-Nav (App Bar) */
+    .mobile-segment-bar {
+      display: none;
+    }
 
-      /* Stepper Bar on small screens */
-      .stepper-bar { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; padding: 0.5rem; }
-      .step-node { font-size: 8px; letter-spacing: 0.5px; padding: 0.4rem 0.15rem; }
-
-      /* Full width toasts on mobile */
-      #toastContainer {
-        bottom: 1rem;
-        right: 1rem;
-        left: 1rem;
-        align-items: center;
-      }
-      .toast {
-        width: 100%;
-        max-width: 100%;
-        text-align: center;
-        transform: translateY(20px);
-      }
-      .toast.show {
-        transform: translateY(0);
-      }
-
-      /* Modal buttons on mobile */
-      #rsvpModal div[style*="justify-content: flex-end"] {
-        flex-direction: column-reverse;
-        gap: 0.5rem;
-        width: 100%;
-      }
-      #rsvpModal .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 42px; }
-      #guideModal .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 42px; }
+    /* Folio Masthead */
+    .folio-masthead {
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--grid-border);
     }
-    
-    /* Dropdown Tab Card Architecture */
-    .dropdown-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--grid-border);
-      box-shadow: var(--shadow-base);
-      padding: 2rem 2.25rem;
-      transition: box-shadow 0.3s ease, border-color 0.3s ease, padding 0.3s ease;
-    }
-    .dropdown-card.collapsed {
-      padding: 1.25rem 2rem;
-    }
-    .dropdown-card:hover {
-      box-shadow: var(--shadow-float);
-    }
-    .card-header-clickable {
+    .masthead-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      cursor: pointer;
-      user-select: none;
-      padding-bottom: 1.25rem;
-      border-bottom: 1px solid var(--grid-border);
-      transition: padding 0.3s ease, border-color 0.3s ease;
-      -webkit-tap-highlight-color: transparent;
+      margin-bottom: 0.85rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
     }
-    .card-header-clickable > div:first-child,
-    .card-title-group {
+    .folio-title {
+      font-family: var(--font-heading);
+      font-size: clamp(2.3rem, 4.2vw, 3.4rem);
+      color: var(--text-primary);
+      margin: 0;
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: 0.25px;
+    }
+    .folio-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin: 0.75rem 0 0;
+      max-width: 740px;
+      line-height: 1.6;
+    }
+
+    /* Member Highlights & Rewards Strip */
+    .member-rewards-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin: 2rem 0 2.75rem;
+    }
+    .reward-pill {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--grid-border);
+      padding: 1.15rem 1.25rem;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      flex: 1;
-      min-width: 0;
+      justify-content: space-between;
+      gap: 0.85rem;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s var(--transition-smooth);
+      box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.03);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
-    .dropdown-card.collapsed .card-header-clickable {
-      border-bottom: 1px solid transparent;
-      padding-bottom: 0;
+    .reward-pill:hover {
+      border-color: var(--accent-gold);
+      background: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.06);
     }
-    .panel-title {
+    .reward-pill:active {
+      transform: scale(0.98);
+    }
+    .reward-pill-left {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .reward-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .reward-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 3px;
+    }
+    .reward-value {
       font-family: var(--font-heading);
-      font-size: 1.7rem;
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1.15;
+    }
+    .reward-arrow {
+      font-size: 13px;
+      color: var(--accent-gold-text);
+      transition: transform 0.2s ease;
+      opacity: 0.7;
+    }
+    .reward-pill:hover .reward-arrow {
+      transform: translateX(3px);
+      opacity: 1;
+    }
+
+    /* Curatorial Folio Sections (Card-Free) */
+    .folio-section {
+      padding: 3.5rem 0;
+      border-top: 1px solid var(--grid-border);
+    }
+    .folio-section:first-of-type {
+      border-top: none;
+      padding-top: 0;
+    }
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-supertitle {
+      font-size: 9px;
+      font-family: var(--font-body);
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent-gold-text);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    .section-heading {
+      font-family: var(--font-heading);
+      font-size: clamp(1.75rem, 2.5vw, 2.2rem);
       font-weight: 400;
       letter-spacing: 0.5px;
       color: var(--text-primary);
       margin: 0;
+      line-height: 1.15;
     }
-    .chevron-indicator {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      color: var(--text-secondary);
-      border: 1px solid var(--grid-border);
-      width: 28px;
-      height: 28px;
-      transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
-    }
-    .dropdown-card:hover .chevron-indicator {
-      border-color: var(--accent-gold);
-      color: var(--accent-gold-text);
-    }
-    .dropdown-card.collapsed .chevron-indicator {
-      transform: rotate(-90deg);
-    }
-    .card-body {
-      margin-top: 1.5rem;
-      transition: opacity 0.3s ease;
-    }
-    .dropdown-card.collapsed .card-body {
-      display: none;
-    }
-    
-    /* Lay Language Purpose Banner */
-    .card-purpose-banner {
-      background: var(--bg-primary);
-      border-left: 3px solid var(--accent-gold);
-      padding: 0.85rem 1.2rem;
-      font-size: 12px;
+    .section-description {
+      font-size: 13px;
       color: var(--text-secondary);
       line-height: 1.6;
+      margin: 0.5rem 0 1.75rem;
+      max-width: 680px;
+    }
+
+    /* Architectural Folio Ledger (Section 01) */
+    .folio-ledger {
+      display: grid;
+      grid-template-columns: 1.05fr 1.05fr 1.25fr 1.15fr;
+      gap: 2rem;
+      padding: 2.25rem 0;
+      border-top: 1px solid var(--grid-border);
+      border-bottom: 1px solid var(--grid-border);
       margin-bottom: 1.5rem;
     }
-    .card-purpose-banner strong {
+    .ledger-cell {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding-right: 1.5rem;
+      border-right: 1px solid var(--grid-border);
+      min-height: 100px;
+    }
+    .ledger-cell:last-child {
+      border-right: none;
+      padding-right: 0;
+    }
+    .profile-val {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
       color: var(--text-primary);
-      font-weight: 600;
+      font-weight: 500;
+      letter-spacing: 0.25px;
+      line-height: 1.25;
+    }
+
+    /* 2-Column Split Architectural Grids */
+    .folio-duo-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+    .folio-equal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    /* Event & Ticket Items (Architectural Lines, Physical Collectible Feel) */
+    .list-item {
+      padding: 1.4rem 0;
+      border-bottom: 1px solid var(--grid-border);
+      background: transparent;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      transition: border-color 0.3s ease;
+    }
+    .list-item:first-child {
+      border-top: 1px solid var(--grid-border);
+    }
+    .list-item:hover {
+      border-color: var(--accent-gold);
     }
     
-    /* Editorial Badges & Stamps */
+    .ticket-item {
+      position: relative;
+      background: #ffffff;
+      border: 1px solid var(--grid-border);
+      border-left: 4px solid var(--accent-gold);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.03);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
+    }
+    .ticket-item:hover {
+      border-color: var(--accent-gold);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
+    }
+    .ticket-serial {
+      font-size: 9px;
+      font-family: var(--font-body);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent-gold-text);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    /* Typographic Stepper (No Card Box) */
+    .stepper-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      background: transparent;
+      padding: 0 0 1rem;
+      border: none;
+      border-bottom: 1px solid var(--grid-border);
+    }
+    .step-node {
+      text-align: left;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      padding: 0.25rem 0;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+    .step-node.active {
+      color: var(--accent-gold-text);
+      border-bottom-color: var(--accent-gold);
+      font-weight: 600;
+    }
+    .step-node.done {
+      color: var(--accent-green-text);
+      border-bottom-color: var(--accent-green);
+    }
+
+    /* Curator AI Desk (Quiet Editorial Terminal) */
+    .curator-terminal {
+      background: transparent;
+      border: 1px solid var(--grid-border);
+      padding: 1.75rem;
+      margin-top: 1rem;
+    }
+    #curatorOutput {
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid var(--grid-border);
+      padding: 1.5rem;
+      height: 240px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+    .curator-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .inquiry-chip {
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid var(--grid-border);
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 0.45rem 0.95rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.25s ease;
+      border-radius: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .inquiry-chip:hover {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold-text);
+      background: #ffffff;
+    }
+    .inquiry-chip:active {
+      transform: scale(0.97);
+    }
+    .curator-input-wrapper {
+      display: flex;
+      border: 1px solid var(--grid-border);
+      background: rgba(255, 255, 255, 0.75);
+    }
+    #curatorInput {
+      flex: 1;
+      padding: 0.9rem 1.2rem;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      margin-bottom: 0;
+      background: transparent;
+      color: var(--text-primary);
+    }
+    .curator-btn {
+      background: var(--text-primary);
+      color: var(--bg-secondary);
+      padding: 0 2rem;
+      font-family: var(--font-body);
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .curator-btn:hover { background: var(--accent-gold); }
+    .curator-btn:active { transform: scale(0.97); }
+
+    /* Micro-Action Buttons & Badges */
+    .edit-name-btn {
+      background: rgba(189, 111, 93, 0.08);
+      border: 1px solid var(--accent-gold);
+      color: var(--accent-gold-text);
+      font-family: var(--font-body);
+      font-size: 9px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 0.3rem 0.75rem;
+      font-weight: 600;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.25s ease;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .edit-name-btn:hover {
+      background: var(--accent-gold);
+      color: var(--bg-primary);
+      text-decoration: none;
+    }
+    .edit-name-btn:active {
+      transform: scale(0.97);
+    }
+
     .badge {
       display: inline-flex;
       align-items: center;
@@ -322,9 +577,9 @@
       color: var(--accent-red-text);
       border-color: var(--accent-red);
     }
-    
+
     /* Clean Inputs */
-    select, textarea, input[type="text"], input[type="file"] {
+    select, textarea, input[type="text"], input[type="tel"], input[type="file"] {
       width: 100%;
       background: transparent;
       border: none;
@@ -337,11 +592,10 @@
       transition: border-color 0.3s ease;
       border-radius: 0;
     }
-    select:focus, textarea:focus, input[type="text"]:focus {
+    select:focus, textarea:focus, input[type="text"]:focus, input[type="tel"]:focus {
       outline: none;
       border-bottom-color: var(--accent-gold);
     }
-    
     input[type="file"]::file-selector-button {
       background: var(--bg-primary);
       color: var(--text-primary);
@@ -361,175 +615,187 @@
       color: #fff;
     }
 
-    /* Event & Ticket List Items */
-    .list-item {
-      padding: 1.5rem;
-      border: 1px solid var(--grid-border);
-      background: var(--bg-primary);
-      margin-bottom: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1.25rem;
-      transition: border-color 0.3s ease, background 0.3s ease;
+    /* Touch Target Feedback */
+    button:active, .action-btn:active {
+      transform: scale(0.97);
     }
-    .list-item:hover {
-      border-color: var(--accent-gold);
-      background: #faf8f5;
+
+    /* Responsive Queries */
+    @media (max-width: 1024px) {
+      .folio-ledger {
+        grid-template-columns: 1fr 1fr;
+        gap: 2.5rem 2rem;
+      }
+      .ledger-cell:nth-child(2) {
+        border-right: none;
+        padding-right: 0;
+      }
+      .folio-duo-grid, .folio-equal-grid {
+        gap: 2.5rem;
+      }
+      .member-rewards-strip {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+    }
+    @media (max-width: 768px) {
+      .dash-container { margin: 5.5rem auto 3rem; padding: 0 1.25rem; }
+      
+      /* Mobile App Sticky Segment Navigation Bar */
+      .mobile-segment-bar {
+        display: flex;
+        position: sticky;
+        top: 56px;
+        z-index: 90;
+        background: rgba(244, 241, 234, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--grid-border);
+        padding: 0.65rem 1rem;
+        gap: 0.5rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .mobile-segment-bar::-webkit-scrollbar {
+        display: none;
+      }
+      .segment-btn {
+        flex-shrink: 0;
+        padding: 0.45rem 0.95rem;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.75px;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid var(--grid-border);
+        border-radius: 999px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .segment-btn:active, .segment-btn.active {
+        background: var(--text-primary);
+        color: #ffffff;
+        border-color: var(--text-primary);
+      }
+      .folio-section, #cardEvents, #cardTickets, #cardClubs, #cardExhib {
+        scroll-margin-top: 115px;
+      }
+
+      .folio-duo-grid, .folio-equal-grid {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+      .folio-section { padding: 2.5rem 0; }
+      .folio-ledger {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      .ledger-cell {
+        border-right: none;
+        padding-right: 0;
+        min-height: auto;
+      }
+      .modal-overlay > div { padding: 2rem 1.25rem !important; }
+      select, textarea, input { font-size: 16px !important; }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.85rem 1rem !important; }
+      .dash-container { margin: 4.8rem auto 2.5rem; padding: 0 1rem; }
+      .folio-title { font-size: 2rem; }
+      .section-heading { font-size: 1.5rem; }
+      .nav-actions { gap: 0.75rem !important; }
+      .nav-actions a, .nav-actions button {
+        font-size: 10px !important;
+        letter-spacing: 1px !important;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+      }
+      .member-rewards-strip {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65rem;
+        margin: 1.5rem 0 2rem;
+      }
+      .reward-pill {
+        padding: 0.9rem 0.85rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .reward-pill-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+      }
+      .reward-arrow {
+        display: none;
+      }
+      .reward-icon {
+        font-size: 1.25rem;
+      }
+      .reward-value {
+        font-size: 1.05rem;
+      }
+      #nameEditRow input, #phoneEditRow input {
+        width: 100% !important;
+        margin-bottom: 0.5rem !important;
+      }
+      #nameEditRow button, #phoneEditRow button {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-height: 44px;
+        text-align: center;
+        justify-content: center;
+      }
+      .list-item { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .list-item > div:last-child { width: 100%; align-items: stretch !important; }
+      .list-item .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 44px; }
+      .ticket-item { flex-direction: column; align-items: flex-start; gap: 0.85rem; }
+      .ticket-actions { width: 100%; align-items: stretch !important; }
+      .ticket-actions a { width: 100%; text-align: center; justify-content: center; min-height: 42px; display: inline-flex; align-items: center; }
+      .curator-chips { flex-direction: column; width: 100%; gap: 0.4rem; }
+      .inquiry-chip {
+        width: 100%;
+        text-align: left;
+        padding: 0.65rem 0.85rem;
+        font-size: 11px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+      }
+      .curator-input-wrapper { flex-direction: column; border: 1px solid var(--grid-border); }
+      #curatorInput {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid var(--grid-border);
+      }
+      .curator-btn {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        font-size: 11px;
+        min-height: 44px;
+        text-align: center;
+        justify-content: center;
+      }
+      #curatorOutput { height: 210px; padding: 1rem; font-size: 12.5px; }
+      .stepper-bar { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; padding: 0.5rem 0; }
+      .step-node { font-size: 8px; letter-spacing: 0.5px; padding: 0.4rem 0.15rem; }
+      #toastContainer { bottom: 1rem; right: 1rem; left: 1rem; align-items: center; }
+      .toast { width: 100%; max-width: 100%; text-align: center; transform: translateY(20px); }
+      .toast.show { transform: translateY(0); }
+      #rsvpModal div[style*="justify-content: flex-end"] { flex-direction: column-reverse; gap: 0.5rem; width: 100%; }
+      #rsvpModal .action-btn, #guideModal .action-btn { width: 100%; text-align: center; justify-content: center; min-height: 44px; }
     }
     
-    .ticket-item {
-      border-left: 3px solid var(--accent-green);
-      background: var(--bg-primary);
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    
-    /* Exhibition Stepper */
-    .stepper-bar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-      background: var(--bg-primary);
-      padding: 0.85rem;
-      border: 1px solid var(--grid-border);
-    }
-    .step-node {
-      text-align: center;
-      font-size: 9px;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      padding: 0.5rem 0.25rem;
-      border-bottom: 2px solid var(--grid-border);
-      transition: all 0.3s ease;
-    }
-    .step-node.active {
-      color: var(--accent-gold-text);
-      border-bottom-color: var(--accent-gold);
-      font-weight: 600;
-    }
-    .step-node.done {
-      color: var(--accent-green-text);
-      border-bottom-color: var(--accent-green);
-      font-weight: 500;
-    }
-    
-    /* Curator AI Desk */
-    #curatorTerminal, #phantomTerminal {
-      margin-top: 0;
-      margin-bottom: 3rem;
-    }
-    #curatorOutput, #phantomOutput {
-      background: var(--bg-primary);
-      border: 1px solid var(--grid-border);
-      padding: 1.5rem;
-      height: 260px;
-      overflow-y: auto;
-      font-size: 13px;
-      line-height: 1.7;
-      margin-bottom: 1.25rem;
-    }
-    .curator-chips, .phantom-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 1.25rem;
-    }
-    .inquiry-chip {
-      background: var(--bg-primary);
-      border: 1px solid var(--grid-border);
-      color: var(--text-secondary);
-      font-family: var(--font-body);
-      font-size: 10px;
-      letter-spacing: 1px;
-      padding: 0.4rem 0.8rem;
-      cursor: pointer;
-      text-transform: uppercase;
-      transition: all 0.25s ease;
-    }
-    .inquiry-chip:hover {
-      border-color: var(--accent-gold);
-      color: var(--accent-gold-text);
-    }
-    .curator-input-wrapper, .phantom-input-wrapper {
-      display: flex;
-      border: 1px solid var(--grid-border);
-    }
-    #curatorInput, #phantomInput {
-      flex: 1;
-      padding: 0.9rem 1.2rem;
-      border: none;
-      outline: none;
-      font-size: 13px;
-      margin-bottom: 0;
-      background: transparent;
-      color: var(--text-primary);
-    }
-    .curator-btn, .phantom-btn {
-      background: var(--text-primary);
-      color: var(--bg-secondary);
-      padding: 0 2rem;
-      font-family: var(--font-body);
-      font-size: 10px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      border: none;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    .curator-btn:hover, .phantom-btn:hover { background: var(--accent-gold); }
-    
-    .edit-name-btn {
-      background: none;
-      border: none;
-      font-size: 10px;
-      color: var(--accent-gold-text);
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 0.4rem 0.5rem;
-      font-weight: 500;
-      min-height: 36px;
-      display: inline-flex;
-      align-items: center;
-    }
-    .edit-name-btn:hover { text-decoration: underline; }
-    
-    /* Toasts */
-    #toastContainer {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      z-index: 20000;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      pointer-events: none;
-    }
-    .toast {
-      padding: 0.9rem 1.4rem;
-      font-size: 10px;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      border-left: 3px solid;
-      background: rgba(255, 255, 255, 0.98);
-      backdrop-filter: blur(12px);
-      opacity: 0;
-      transform: translateX(20px);
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      box-shadow: var(--shadow-float);
-    }
-    .toast.show { opacity: 1; transform: translateX(0); }
-    .toast.success { border-color: var(--accent-green); color: var(--accent-green-text); }
-    .toast.error   { border-color: var(--accent-red);   color: var(--accent-red-text);   }
+    /* Legacy / Compatibility Fallbacks */
+    .dropdown-card, .card-body, .profile-grid, .grid-layout { display: block; }
+    .dropdown-card.collapsed .card-body { display: block; }
   </style>
 </head>
 <body>
@@ -552,333 +818,382 @@
     </div>
   </nav>
 
+  <!-- MOBILE APP QUICK-NAVIGATION BAR -->
+  <nav class="mobile-segment-bar" aria-label="Folio Quick Navigation">
+    <a href="#cardProfile" class="segment-btn">Profile</a>
+    <a href="#cardEvents" class="segment-btn">Gatherings</a>
+    <a href="#cardTickets" class="segment-btn">My Passes</a>
+    <a href="#cardClubs" class="segment-btn">Clubs</a>
+    <a href="#cardExhib" class="segment-btn">Exhibition</a>
+    <a href="#cardAssistant" class="segment-btn">Curator AI</a>
+  </nav>
+
   <div class="dash-container">
     
-    <!-- DASHBOARD NAVIGATION HINT BANNER -->
-    <div class="dash-hint-banner">
-      <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; flex: 1; min-width: 260px;">
-        <span class="hint-chevron-pill">▼</span>
-        <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
-          <strong style="color: var(--text-primary);">Curator's Note:</strong> All dashboard panels are collapsible. Click any section title or the <strong style="color: var(--accent-gold-text);">▼</strong> arrow to reveal details, applications, passes, and actions.
+    <!-- FOLIO MASTHEAD -->
+    <header class="folio-masthead anim-fade-up">
+      <div class="masthead-meta">
+        <span class="data-label" style="color: var(--accent-gold-text); letter-spacing: 2px;">دیوانِ خاص · MEMBER FOLIO</span>
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+          <span class="badge badge-gold" style="font-size: 8.5px; letter-spacing: 1.5px;">خوش آمدید · WELCOME</span>
+          <span class="badge badge-gold" id="dashStatus">Loading...</span>
+          <button type="button" onclick="openWelcomeModal();" class="action-btn gold" style="padding: 0.4rem 0.9rem; font-size: 9px; letter-spacing: 1.5px;">
+            ✦ Welcome Note
+          </button>
+          <button type="button" onclick="openGuideModal();" class="action-btn" style="padding: 0.4rem 0.9rem; font-size: 9px; letter-spacing: 1.5px; border-color: var(--grid-border); color: var(--text-secondary); background: transparent;">
+            How It Works
+          </button>
         </div>
       </div>
-      <div class="hint-banner-actions" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-        <button type="button" onclick="openGuideModal();" class="action-btn gold" style="padding: 0.45rem 0.9rem; font-size: 9px; white-space: nowrap; cursor: pointer;">
-          How It Works (Guide)
-        </button>
-        <button type="button" id="toggleAllBtn" onclick="toggleAllCards()" class="action-btn" style="padding: 0.45rem 0.9rem; font-size: 9px; white-space: nowrap; border-color: var(--grid-border); color: var(--text-primary); background: transparent;">
-          Expand All Panels
-        </button>
+      <div class="masthead-main">
+        <h1 class="folio-title" id="welcomeHeading">Welcome back</h1>
+        <p class="folio-subtitle">
+          Your personal member space at Alfaaz Collective — reserve passes for gatherings under the Chinars, collaborate with creative clubs, and share your artwork with our community.
+        </p>
+      </div>
+      <!-- Hidden compatibility node for legacy callers -->
+      <button id="toggleAllBtn" style="display:none;"></button>
+    </header>
+
+    <!-- MEMBER HIGHLIGHTS & REWARDS STRIP -->
+    <div class="member-rewards-strip anim-fade-up anim-delay-1">
+      <div class="reward-pill" onclick="document.getElementById('cardTickets').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0" title="Jump to My Event Passes">
+        <div class="reward-pill-left">
+          <span class="reward-icon">🎫</span>
+          <div>
+            <div class="reward-label">Event Passes</div>
+            <div class="reward-value" id="statPasses">0 Active</div>
+          </div>
+        </div>
+        <span class="reward-arrow">&rarr;</span>
+      </div>
+
+      <div class="reward-pill" onclick="document.getElementById('cardClubs').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0" title="Jump to Creative Clubs">
+        <div class="reward-pill-left">
+          <span class="reward-icon">🏛️</span>
+          <div>
+            <div class="reward-label">Creative Club</div>
+            <div class="reward-value" id="statClub">Open to Join</div>
+          </div>
+        </div>
+        <span class="reward-arrow">&rarr;</span>
+      </div>
+
+      <div class="reward-pill" onclick="document.getElementById('cardExhib').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0" title="Jump to Exhibition Submissions">
+        <div class="reward-pill-left">
+          <span class="reward-icon">🎨</span>
+          <div>
+            <div class="reward-label">Art Exhibition</div>
+            <div class="reward-value" id="statExhib">Open Call</div>
+          </div>
+        </div>
+        <span class="reward-arrow">&rarr;</span>
+      </div>
+
+      <div class="reward-pill" onclick="document.getElementById('cardProfile').scrollIntoView({ behavior: 'smooth' });" role="button" tabindex="0" title="View Membership Status">
+        <div class="reward-pill-left">
+          <span class="reward-icon">✨</span>
+          <div>
+            <div class="reward-label">Membership</div>
+            <div class="reward-value" id="statStatus">Active Member</div>
+          </div>
+        </div>
+        <span class="reward-arrow">&rarr;</span>
       </div>
     </div>
 
-    <!-- CARD 0: MEMBER PROFILE (FULL-WIDTH DROPDOWN) -->
-    <div class="dropdown-card collapsed" id="cardProfile" style="margin-bottom: 1.25rem;">
-      <div class="card-header-clickable" onclick="toggleCard('cardProfile')" role="button" tabindex="0" aria-expanded="false">
-        <div class="card-title-group">
-          <h2 class="panel-title">Member Profile</h2>
-          <span class="badge badge-gold" id="dashStatus">Loading...</span>
+    <!-- NEW MEMBER ONBOARDING GUIDE STRIP -->
+    <div id="newMemberOnboarding" class="onboarding-guide-strip anim-fade-up anim-delay-2" style="display: none;">
+      <div class="onboarding-header">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <span class="reward-icon" style="font-size: 1.35rem;">✨</span>
+          <div>
+            <div class="data-label" style="color: var(--accent-gold-text); letter-spacing: 1.5px; margin-bottom: 2px;">GETTING STARTED IN THE COLLECTIVE</div>
+            <div style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); line-height: 1.2;">Your First Steps Under the Chinars</div>
+          </div>
         </div>
-        <span class="chevron-indicator">▼</span>
+        <button type="button" onclick="dismissOnboardingBanner()" class="action-btn" style="background: transparent; border-color: var(--grid-border); color: var(--text-secondary); font-size: 9px; padding: 0.35rem 0.75rem;">
+          Dismiss &times;
+        </button>
+      </div>
+      <p style="font-size: 12.5px; color: var(--text-secondary); margin: 0.75rem 0 0; line-height: 1.6;">
+        Welcome to your creative home! Complete these three quick milestones to make the most of your membership:
+      </p>
+      <div class="onboarding-cards-grid">
+        <div class="onboarding-step-card" onclick="document.getElementById('cardProfile').scrollIntoView({ behavior: 'smooth' }); window.startEditPhone?.();">
+          <div class="onboarding-step-num">STEP 01</div>
+          <div class="onboarding-step-title">📱 Add WhatsApp Number</div>
+          <div class="onboarding-step-desc">Receive gathering confirmations, venue coordinates, and sudden poetry alerts directly on your phone.</div>
+          <div class="onboarding-step-action" id="onboardStep1Status">Set Up Number &rarr;</div>
+        </div>
+        <div class="onboarding-step-card" onclick="document.getElementById('cardEvents').scrollIntoView({ behavior: 'smooth' });">
+          <div class="onboarding-step-num">STEP 02</div>
+          <div class="onboarding-step-title">🎫 Reserve First Gathering</div>
+          <div class="onboarding-step-desc">Explore upcoming poetry recitations and salon circles. Reserve your admission pass with zero friction.</div>
+          <div class="onboarding-step-action" id="onboardStep2Status">Browse Gatherings &rarr;</div>
+        </div>
+        <div class="onboarding-step-card" onclick="document.getElementById('cardClubs').scrollIntoView({ behavior: 'smooth' });">
+          <div class="onboarding-step-num">STEP 03</div>
+          <div class="onboarding-step-title">🏛️ Join a Creative Club</div>
+          <div class="onboarding-step-desc">Collaborate with fellow artists across Literature, Visual Arts, Film, Photography, or Philosophy circles.</div>
+          <div class="onboarding-step-action" id="onboardStep3Status">Choose Your Club &rarr;</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 01: IDENTITY & CREATIVE VAULT -->
+    <section class="folio-section anim-fade-up anim-delay-2" id="cardProfile">
+      <div class="section-header-row">
+        <div>
+          <div class="section-supertitle">SECTION 01 // شناخت</div>
+          <h2 class="section-heading">Your Profile &amp; Account</h2>
+        </div>
       </div>
 
-      <div class="card-body">
-        <div class="card-purpose-banner" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div class="folio-ledger">
+        <!-- 1. Your Name -->
+        <div class="ledger-cell">
           <div>
-            <strong>What this is for:</strong> Manage your collective membership details, update your display credentials, and submit manuscripts or portfolios to the Curator's Vault.
-          </div>
-          <button type="button" onclick="openGuideModal();" class="action-btn gold" style="padding: 0.35rem 0.8rem; font-size: 9px; cursor: pointer; white-space: nowrap;">
-            Read Full Guide &rarr;
-          </button>
-        </div>
-
-        <!-- REFINED MODULAR PROFILE FIELDS -->
-        <div class="profile-grid">
-          <!-- 1. Display Name -->
-          <div class="profile-field-block">
-            <div class="data-label">Display Name</div>
-            <div id="nameDisplayRow" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+            <div class="data-label">Your Name</div>
+            <div id="nameDisplayRow" style="display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-top: 4px;">
               <span id="dashName" class="profile-val">—</span>
-              <button class="edit-name-btn" onclick="startEditName()">[Edit Name]</button>
+              <button class="edit-name-btn" onclick="startEditName()">Edit</button>
             </div>
-            <div id="nameEditRow" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.75rem;">
+            <div id="nameEditRow" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.5rem;">
               <input type="text" id="nameEditInput" placeholder="Your full name" style="margin-bottom: 0.5rem;">
               <div style="display: flex; gap: 0.5rem; width: 100%;">
-                <button class="action-btn gold" style="padding: 0.45rem 1rem; font-size: 9px; flex: 1;" onclick="saveEditName()">Save</button>
-                <button class="action-btn" style="padding: 0.45rem 1rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: var(--grid-border); flex: 1;" onclick="cancelEditName()">Cancel</button>
+                <button class="action-btn gold" style="padding: 0.4rem 0.8rem; font-size: 9px; flex: 1;" onclick="saveEditName()">Save</button>
+                <button class="action-btn" style="padding: 0.4rem 0.8rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: var(--grid-border); flex: 1;" onclick="cancelEditName()">Cancel</button>
               </div>
             </div>
           </div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">Shown on your event passes and certificates.</div>
+        </div>
 
-          <!-- 2. WhatsApp Number -->
-          <div class="profile-field-block">
+        <!-- 2. WhatsApp Number -->
+        <div class="ledger-cell">
+          <div>
             <div class="data-label">WhatsApp Number</div>
-            <div id="phoneDisplayRow" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+            <div id="phoneDisplayRow" style="display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-top: 4px;">
               <span id="dashPhone" class="profile-val" style="color: var(--text-secondary);">Not provided</span>
-              <button class="edit-name-btn" id="btnEditPhone" onclick="startEditPhone()">[Edit Phone]</button>
+              <button class="edit-name-btn" id="btnEditPhone" onclick="startEditPhone()">Edit</button>
             </div>
-            <div id="phoneEditRow" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.75rem;">
+            <div id="phoneEditRow" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.5rem;">
               <input type="tel" id="phoneEditInput" placeholder="+919876543210" style="margin-bottom: 0.25rem;">
-              <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 0.25rem;">Include country code, e.g. +919876543210</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 0.25rem;">Include country code (e.g. +91...)</div>
               <div style="display: flex; gap: 0.5rem; width: 100%;">
-                <button class="action-btn gold" style="padding: 0.45rem 1rem; font-size: 9px; flex: 1;" onclick="saveEditPhone()">Save</button>
-                <button class="action-btn" style="padding: 0.45rem 1rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: var(--grid-border); flex: 1;" onclick="cancelEditPhone()">Cancel</button>
+                <button class="action-btn gold" style="padding: 0.4rem 0.8rem; font-size: 9px; flex: 1;" onclick="saveEditPhone()">Save</button>
+                <button class="action-btn" style="padding: 0.4rem 0.8rem; font-size: 9px; background: transparent; color: var(--text-secondary); border-color: var(--grid-border); flex: 1;" onclick="cancelEditPhone()">Cancel</button>
               </div>
             </div>
           </div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">Where we text you gathering passes &amp; venue directions.</div>
+        </div>
 
-          <!-- 3. Account & Security -->
-          <div class="profile-field-block">
-            <div class="data-label">Registered Account</div>
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
-              <div style="min-width: 0;">
-                <div id="dashEmail" style="font-size: 13px; color: var(--text-secondary); word-break: break-all;">Loading...</div>
-                <div style="display: flex; gap: 0.4rem; margin-top: 4px; flex-wrap: wrap;">
-                  <span id="dashVerifiedBadge" class="badge badge-green" style="font-size: 8.5px; display: none;">Verified</span>
-                  <span id="dashProviderBadge" class="badge badge-gold" style="font-size: 8.5px;">Email Account</span>
-                </div>
-              </div>
-              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <a href="reset.html" class="action-btn" style="padding: 0.45rem 0.85rem; font-size: 9px; text-decoration: none;">Change Password</a>
-                <a id="adminLink" href="admin.html" class="action-btn" style="display: none; padding: 0.45rem 0.85rem; font-size: 9px;">Admin Panel</a>
-              </div>
+        <!-- 3. Account Email -->
+        <div class="ledger-cell">
+          <div>
+            <div class="data-label">Account Email</div>
+            <div id="dashEmail" style="font-family: var(--font-heading); font-size: 1.15rem; color: var(--text-primary); word-break: break-all; margin-top: 4px;">Loading...</div>
+            <div style="display: flex; gap: 0.4rem; margin-top: 6px; flex-wrap: wrap;">
+              <span id="dashVerifiedBadge" class="badge badge-green" style="font-size: 8.5px; display: none;">Verified</span>
+              <span id="dashProviderBadge" class="badge badge-gold" style="font-size: 8.5px;">Email Account</span>
             </div>
+          </div>
+          <div style="display: flex; gap: 0.75rem; margin-top: 8px; flex-wrap: wrap;">
+            <a href="reset.html" style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-gold-text); text-decoration: none;">Change Password &rarr;</a>
+            <a id="adminLink" href="admin.html" style="display: none; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-red-text); text-decoration: none;">Admin Panel &rarr;</a>
           </div>
         </div>
 
-        <!-- CURATORIAL CREATIVE VAULT SUBMISSIONS -->
-        <div class="vault-feature-banner" style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px dashed var(--grid-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
-          <div style="max-width: 620px;">
-            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
-              <span class="data-label" style="margin-bottom: 0; color: var(--accent-gold-text); letter-spacing: 1.5px;">Curator's Creative Vault</span>
-              <span class="badge badge-gold" style="font-size: 9px;">Portfolios &amp; Manuscripts</span>
-            </div>
-            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
-              Directly submit your art portfolio, literary manuscript, or project proposal for curatorial review and archive consideration.
-            </p>
-          </div>
+        <!-- 4. Creative Vault -->
+        <div class="ledger-cell">
           <div>
-            <a href="submit.html" class="action-btn gold" style="padding: 0.65rem 1.5rem; font-size: 11px; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
-              Submit Creative Work &rarr;
+            <div class="data-label" style="color: var(--accent-gold-text);">Creative Vault</div>
+            <div style="font-family: var(--font-heading); font-size: 1.25rem; color: var(--text-primary); margin-top: 4px; line-height: 1.2;">Share Your Work</div>
+            <p style="font-size: 11px; color: var(--text-secondary); margin: 6px 0 0; line-height: 1.5;">Submit poems, essays, paintings, or cultural proposals directly to our curators.</p>
+          </div>
+          <div style="margin-top: 10px;">
+            <a href="submit.html" class="action-btn gold" style="padding: 0.45rem 1rem; font-size: 9px; letter-spacing: 1.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+              Deposit Work &rarr;
             </a>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- 2-COLUMN SYMMETRIC DROPDOWN TABS -->
-    <div class="grid-layout">
-      
-      <!-- LEFT COLUMN -->
-      <div style="display:flex; flex-direction:column; gap:1.25rem;">
+    <!-- SECTION 02: GATHERINGS & ADMISSION PASSES -->
+    <section class="folio-section anim-fade-up anim-delay-3">
+      <div class="folio-duo-grid">
         
-        <!-- CARD 1: CREATIVE CLUBS -->
-        <div class="dropdown-card collapsed" id="cardClubs">
-          <div class="card-header-clickable" onclick="toggleCard('cardClubs')" role="button" tabindex="0" aria-expanded="false">
-            <div class="card-title-group">
-              <h2 class="panel-title">Creative Clubs</h2>
-              <span class="badge badge-gold">Affiliation</span>
-            </div>
-            <span class="chevron-indicator">▼</span>
+        <!-- Left: Gatherings -->
+        <div id="cardEvents">
+          <div class="section-supertitle">SECTION 02-A // محفل</div>
+          <h2 class="section-heading">Upcoming Gatherings</h2>
+          <p class="section-description">
+            Poetry readings, craft workshops, and open salons under the Chinars. Reserve your spot below.
+          </p>
+          <div id="activeEventsContainer">
+            <p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Looking for upcoming gatherings...</p>
+          </div>
+        </div>
+
+        <!-- Right: Passes -->
+        <div id="cardTickets">
+          <div class="section-supertitle">SECTION 02-B // داخلہ کارڈ</div>
+          <h2 class="section-heading">My Event Passes</h2>
+          <p class="section-description">
+            Your confirmed passes for upcoming gatherings. Show this pass on your phone when you arrive.
+          </p>
+          <div id="myTicketsContainer">
+            <p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Retrieving your passes...</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 03: CLUBS & EXHIBITION SUBMISSIONS -->
+    <section class="folio-section anim-fade-up anim-delay-4">
+      <div class="folio-equal-grid">
+        
+        <!-- Left: Creative Clubs -->
+        <div id="cardClubs">
+          <div class="section-supertitle">SECTION 03-A // انجمن</div>
+          <h2 class="section-heading">Creative Clubs</h2>
+          <p class="section-description">
+            Join a creative club to collaborate with fellow artists in Literature, Pinjrakari &amp; Visual Arts, Cinema, Photography, or Philosophy.
+          </p>
+
+          <div id="clubStatusView" style="display: none; padding: 1.5rem 0; border-top: 1px dashed var(--grid-border); text-align: left;">
+            <div class="data-label" style="margin-bottom: 6px;">Your Active Club</div>
+            <div style="font-family: var(--font-heading); font-size: 2.2rem; color: var(--text-primary); line-height: 1.1;" id="myClubName"></div>
+            <div id="myClubBadge" style="margin-top: 10px;"></div>
+            <p id="myClubNote" style="font-size: 12px; color: var(--text-secondary); margin-top: 15px; font-style: italic; border-left: 2px solid var(--accent-gold); padding-left: 1rem; line-height: 1.6;"></p>
           </div>
           
-          <div class="card-body">
-            <div class="card-purpose-banner">
-              <strong>What this is for:</strong> Apply to join specialized creative groups (Literature, Art &amp; Craft, Film, Photography, Philosophy) to collaborate with other artists and receive guidance from our team.
-            </div>
+          <div id="clubApplyView" style="display: none;">
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.6;">Choose a club to join and collaborate with members:</p>
+            <div class="data-label">Select Club</div>
+            <select id="clubSelect">
+              <option value="Art & Craft">Art &amp; Craft (Visual Arts &amp; Pinjrakari)</option>
+              <option value="Film Club">Film Club (Cinema &amp; Video)</option>
+              <option value="Photography">Photography (Lens &amp; Documentary)</option>
+              <option value="Philosophy">Philosophy (Discourse &amp; Discussion)</option>
+              <option value="Literature">Literature (Prose &amp; Poetry)</option>
+            </select>
+            <div class="data-label">Tell Us About Your Work (Optional)</div>
+            <textarea id="clubNote" rows="3" placeholder="Share a few lines about your interests, creative projects, or what you'd like to explore..."></textarea>
+            <button id="clubSubmitBtn" class="action-btn gold" style="width: 100%;" onclick="submitClubApplication()">Join This Club</button>
+            <div id="clubMsg" style="font-size: 10px; margin-top: 12px; letter-spacing: 2px; text-transform: uppercase; text-align: center;"></div>
+          </div>
+        </div>
 
-            <div id="clubStatusView" style="display: none; padding: 2rem; background: var(--bg-primary); border: 1px dashed var(--grid-border); text-align: center;">
-               <div class="data-label" style="margin-bottom: 12px;">Your Assigned Club</div>
-               <div style="font-family: var(--font-heading); font-size: 2.2rem; color: var(--text-primary); line-height: 1.1;" id="myClubName"></div>
-               <div id="myClubBadge" style="margin-top: 15px;"></div>
-               <p id="myClubNote" style="font-size: 12px; color: var(--text-secondary); margin-top: 20px; font-style: italic; border-top: 1px solid var(--grid-border); padding-top: 15px; line-height: 1.6;"></p>
+        <!-- Right: Exhibition Submissions -->
+        <div id="cardExhib" style="display: block;">
+          <div class="section-supertitle">SECTION 03-B // نمائش</div>
+          <h2 class="section-heading">Art Exhibition Submissions</h2>
+          <p class="section-description">
+            Submit artwork for our gallery showcase and follow your submission through curatorial review.
+          </p>
+
+          <!-- Minimalist Typographic Stepper -->
+          <div class="stepper-bar" id="exhibStepper">
+            <div class="step-node" id="step1">1. Submit Artwork</div>
+            <div class="step-node" id="step2">2. Curatorial Review</div>
+            <div class="step-node" id="step3">3. Fee &amp; Agreement</div>
+            <div class="step-node" id="step4">4. Confirmed</div>
+          </div>
+
+          <div id="exhibitionPanel" style="display: none;">
+            <!-- State 1: Apply -->
+            <div id="exhibApplyView" style="display: none;">
+              <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.6;">The exhibition open call is currently open. Submit your portfolio to be evaluated for our upcoming gallery showcase.</p>
+              <a href="exhibition.html" class="action-btn gold" style="display: block; text-align: center; text-decoration: none;">Submit Artwork to Exhibition &rarr;</a>
             </div>
             
-            <div id="clubApplyView" style="display: none;">
-              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">Choose the club that best fits your creative practice:</p>
-              <div class="data-label">Select Club</div>
-              <select id="clubSelect">
-                <option value="Art & Craft">Art &amp; Craft (Visual Arts &amp; Pinjrakari)</option>
-                <option value="Film Club">Film Club (Cinema &amp; Video)</option>
-                <option value="Photography">Photography (Lens &amp; Documentary)</option>
-                <option value="Philosophy">Philosophy (Discourse &amp; Discussion)</option>
-                <option value="Literature">Literature (Prose &amp; Poetry)</option>
-              </select>
-              <div class="data-label">Introduce Yourself (Optional)</div>
-              <textarea id="clubNote" rows="3" placeholder="Tell us briefly about your interests or recent work..."></textarea>
-              <button id="clubSubmitBtn" class="action-btn gold" style="width: 100%;" onclick="submitClubApplication()">Apply to Join Club</button>
-              <div id="clubMsg" style="font-size: 10px; margin-top: 15px; letter-spacing: 2px; text-transform: uppercase; text-align: center;"></div>
+            <!-- State 2: Pending Review -->
+            <div id="exhibPendingView" style="display: none; padding: 2rem; background: rgba(255, 255, 255, 0.45); border: 1px dashed var(--grid-border); text-align: center;">
+              <div class="data-label" style="margin-bottom: 8px;">Review in Progress</div>
+              <span class="badge badge-gold">Under Review</span>
+              <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px; font-style: italic; line-height: 1.6;">Your artwork submission is currently being evaluated by our curatorial team. We'll update you here soon.</p>
             </div>
-          </div>
-        </div>
-
-        <!-- CARD 2: ART EXHIBITION SUBMISSIONS -->
-        <div class="dropdown-card collapsed" id="cardExhib" style="display: block;">
-          <div class="card-header-clickable" onclick="toggleCard('cardExhib')" role="button" tabindex="0" aria-expanded="false">
-            <div class="card-title-group">
-              <h2 class="panel-title">Art Exhibition</h2>
-              <span class="badge badge-gold">Submissions</span>
-            </div>
-            <span class="chevron-indicator">▼</span>
-          </div>
-
-          <div class="card-body">
-            <div class="card-purpose-banner">
-              <strong>What this is for:</strong> Track your exhibition artwork submission through 4 simple steps: Portfolio Submission, Review, Terms &amp; Payment Proof, and Final Confirmation.
+            
+            <!-- State 3: Not Selected -->
+            <div id="exhibRejectedView" style="display: none; padding: 2rem; background: rgba(201, 107, 101, 0.05); border: 1px solid var(--accent-red); text-align: center;">
+              <span class="badge badge-red" style="margin-bottom: 8px;">Not Selected</span>
+              <p id="exhibRejectedNote" style="font-size: 12px; color: var(--text-secondary); margin-top: 10px; font-style: italic; line-height: 1.6;"></p>
             </div>
 
-            <!-- Stepper Indicator -->
-            <div class="stepper-bar" id="exhibStepper">
-              <div class="step-node" id="step1">1. Submission</div>
-              <div class="step-node" id="step2">2. Review</div>
-              <div class="step-node" id="step3">3. Payment</div>
-              <div class="step-node" id="step4">4. Confirmed</div>
-            </div>
-
-            <div id="exhibitionPanel" style="display: none;">
-              <!-- State 1: Apply -->
-              <div id="exhibApplyView" style="display: none;">
-                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">The exhibition call is currently open. Submit your portfolio to be considered for the upcoming exhibition.</p>
-                <a href="exhibition.html" class="action-btn gold" style="display: block; text-align: center;">Submit Artwork to Exhibition</a>
-              </div>
-              
-              <!-- State 2: Pending Review -->
-              <div id="exhibPendingView" style="display: none; padding: 2rem; background: var(--bg-primary); border: 1px dashed var(--grid-border); text-align: center;">
-                <div class="data-label" style="margin-bottom: 12px;">Submission Status</div>
-                <span class="badge badge-gold">Under Review</span>
-                <p style="font-size: 12px; color: var(--text-secondary); margin-top: 15px; font-style: italic; line-height: 1.6;">Your artwork submission is currently being reviewed by our curatorial team. We will update you here soon.</p>
-              </div>
-              
-              <!-- State 3: Not Selected -->
-              <div id="exhibRejectedView" style="display: none; padding: 2rem; background: rgba(201, 107, 101, 0.05); border: 1px solid var(--accent-red); text-align: center;">
-                <span class="badge badge-red" style="margin-bottom: 12px;">Not Selected</span>
-                <p id="exhibRejectedNote" style="font-size: 12px; color: var(--text-secondary); margin-top: 10px; font-style: italic; line-height: 1.6;"></p>
-              </div>
-
-              <!-- State 4: Approved (Awaiting Payment Proof & T&C) -->
-              <div id="exhibApprovedView" style="display: none;">
-                <div style="border: 1px solid var(--accent-green); padding: 2rem; background: rgba(122, 143, 124, 0.06); margin-bottom: 1.5rem;">
-                  <span class="badge badge-green" style="margin-bottom: 1rem;">Selected!</span>
-                  <p style="font-family: var(--font-heading); font-size: 1.6rem; color: var(--text-primary); margin-bottom: 0.5rem;">Congratulations, your work is selected.</p>
-                  <p id="exhibApprovedNote" style="font-size:12px; color:var(--text-secondary); font-style:italic; border-left: 2px solid var(--accent-gold); padding-left: 1rem; margin-bottom: 1.5rem; line-height: 1.6;"></p>
+            <!-- State 4: Approved -->
+            <div id="exhibApprovedView" style="display: none;">
+              <div style="border: 1px solid var(--accent-green); padding: 1.75rem; background: rgba(122, 143, 124, 0.06); margin-bottom: 1.5rem;">
+                <span class="badge badge-green" style="margin-bottom: 0.75rem;">Selected for Showcase</span>
+                <p style="font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); margin-bottom: 0.5rem;">Congratulations, your artwork is selected!</p>
+                <p id="exhibApprovedNote" style="font-size:12px; color:var(--text-secondary); font-style:italic; border-left: 2px solid var(--accent-gold); padding-left: 1rem; margin-bottom: 1.25rem; line-height: 1.6;"></p>
+                
+                <div style="border-top: 1px dashed var(--accent-green); padding-top: 1.25rem;">
+                  <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-green-text); margin-bottom: 1rem; font-weight: 600;">Final Step: Confirm Your Registration</p>
                   
-                  <div style="border-top: 1px dashed var(--accent-green); padding-top: 1.5rem;">
-                    <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-green-text); margin-bottom: 1rem; font-weight: 600;">Final Step: Complete Registration</p>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
-                      <a id="btnTcLink" href="#" target="_blank" class="action-btn" style="text-align: center; text-decoration: none; padding: 0.8rem;">1. Read Terms &amp; Conditions</a>
-                      <a id="btnPaymentLink" href="#" target="_blank" class="action-btn gold" style="text-align: center; text-decoration: none; padding: 0.8rem;">2. Pay Registration Fee (UPI / QR)</a>
-                      <div id="paymentDetails" style="display:none; font-size: 11px; color: var(--text-secondary); line-height: 1.6; border-left: 2px solid var(--accent-gold); padding-left: 1rem;"></div>
-                    </div>
-
-                    <form id="paymentProofForm">
-                      <div class="data-label" style="color: var(--text-primary);">3. Upload Payment Screenshot</div>
-                      <input type="file" id="paymentScreenshot" required style="margin-bottom: 1rem;">
-                      
-                      <label style="display: flex; align-items: flex-start; gap: 0.8rem; cursor: pointer; margin-bottom: 1.5rem;">
-                        <input type="checkbox" id="tcCheckbox" required style="width: auto; margin-top: 4px;">
-                        <span style="font-size: 11px; color: var(--text-secondary); line-height: 1.5;">I have read and agree to the Terms &amp; Conditions of the exhibition.</span>
-                      </label>
-
-                      <button type="submit" id="finalizeExhibBtn" class="submit-btn" style="width: 100%;">Submit Payment Proof</button>
-                      <div id="finalizeMsg" style="font-size: 10px; margin-top: 1rem; text-align: center; text-transform: uppercase; letter-spacing: 1px;"></div>
-                    </form>
+                  <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+                    <a id="btnTcLink" href="#" target="_blank" class="action-btn" style="text-align: center; text-decoration: none; padding: 0.75rem;">1. Read Terms &amp; Conditions</a>
+                    <a id="btnPaymentLink" href="#" target="_blank" class="action-btn gold" style="text-align: center; text-decoration: none; padding: 0.75rem;">2. Pay Registration Fee (UPI / QR)</a>
+                    <div id="paymentDetails" style="display:none; font-size: 11px; color: var(--text-secondary); line-height: 1.6; border-left: 2px solid var(--accent-gold); padding-left: 1rem;"></div>
                   </div>
+
+                  <form id="paymentProofForm">
+                    <div class="data-label" style="color: var(--text-primary);">3. Upload Payment Receipt Screenshot</div>
+                    <input type="file" id="paymentScreenshot" required style="margin-bottom: 1rem;">
+                    
+                    <label style="display: flex; align-items: flex-start; gap: 0.8rem; cursor: pointer; margin-bottom: 1.25rem;">
+                      <input type="checkbox" id="tcCheckbox" required style="width: auto; margin-top: 4px;">
+                      <span style="font-size: 11px; color: var(--text-secondary); line-height: 1.5;">I have read and agree to the Terms &amp; Conditions of the exhibition.</span>
+                    </label>
+
+                    <button type="submit" id="finalizeExhibBtn" class="submit-btn" style="width: 100%;">Submit Payment Receipt</button>
+                    <div id="finalizeMsg" style="font-size: 10px; margin-top: 1rem; text-align: center; text-transform: uppercase; letter-spacing: 1px;"></div>
+                  </form>
                 </div>
               </div>
-              
-              <!-- State 5: Accession Finalized -->
-              <div id="exhibFinalizedView" style="display: none; padding: 2.5rem 2rem; background: var(--bg-primary); border: 1px solid var(--grid-border); text-align: center;">
-                <span class="badge badge-green" style="margin-bottom: 12px;">Registration Confirmed</span>
-                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; line-height: 1.6;">Your payment proof is received. Your spot in the exhibition is secured. We look forward to seeing your work in person!</p>
-              </div>
+            </div>
+            
+            <!-- State 5: Finalized -->
+            <div id="exhibFinalizedView" style="display: none; padding: 2rem; background: rgba(255, 255, 255, 0.45); border: 1px solid var(--grid-border); text-align: center;">
+              <span class="badge badge-green" style="margin-bottom: 10px;">Registration Confirmed</span>
+              <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.6;">Registration Confirmed! Your payment receipt has been received. We look forward to seeing your artwork in the gallery!</p>
             </div>
           </div>
         </div>
 
       </div>
+    </section>
 
-      <!-- RIGHT COLUMN -->
-      <div style="display:flex; flex-direction:column; gap:1.25rem;">
+    <!-- SECTION 04: ASK CURATOR AI -->
+    <section class="folio-section anim-fade-up anim-delay-5" id="cardAssistant" style="margin-bottom: 3.5rem;">
+      <div class="section-supertitle">SECTION 04 // حکیم</div>
+      <h2 class="section-heading">Ask Curator AI</h2>
+      <p class="section-description">
+        Have a question about Kashmiri literature, upcoming gathering dates, or submission rules? Ask our resident AI curator.
+      </p>
+
+      <div id="curatorTerminal" class="curator-terminal">
+        <div class="curator-chips">
+          <button type="button" class="inquiry-chip" onclick="setInquiry('What is the latest curatorial essay in the journal?')">Latest Journal Essay</button>
+          <button type="button" class="inquiry-chip" onclick="setInquiry('Tell me about upcoming poetry readings and gatherings')">Upcoming Gatherings</button>
+          <button type="button" class="inquiry-chip" onclick="setInquiry('What are the rules and guidelines for submitting artwork?')">Exhibition Rules</button>
+          <button type="button" class="inquiry-chip" onclick="setInquiry('How do creative clubs work at Alfaaz?')">How Clubs Work</button>
+        </div>
+
+        <div id="curatorOutput" class="curator-output">
+          <div style="color: var(--text-secondary); margin-bottom: 1rem; font-style: italic;">Welcome to Alfaaz Collective! Ask Curator AI anything about gatherings, exhibition submissions, or creative working clubs.</div>
+        </div>
         
-        <!-- CARD 3: UPCOMING EVENTS -->
-        <div class="dropdown-card collapsed" id="cardEvents">
-          <div class="card-header-clickable" onclick="toggleCard('cardEvents')" role="button" tabindex="0" aria-expanded="false">
-            <div class="card-title-group">
-              <h2 class="panel-title">Upcoming Events</h2>
-              <span class="badge badge-gold">Calendar</span>
-            </div>
-            <span class="chevron-indicator">▼</span>
-          </div>
-
-          <div class="card-body">
-            <div class="card-purpose-banner">
-              <strong>What this is for:</strong> Browse open community events, poetry sessions, and workshops. Click "Reserve Spot" to secure your attendance.
-            </div>
-            <div id="activeEventsContainer">
-              <p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Looking for upcoming events...</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 4: MY EVENT PASSES -->
-        <div class="dropdown-card collapsed" id="cardTickets">
-          <div class="card-header-clickable" onclick="toggleCard('cardTickets')" role="button" tabindex="0" aria-expanded="false">
-            <div class="card-title-group">
-              <h2 class="panel-title">My Event Passes</h2>
-              <span class="badge badge-gold">Tickets</span>
-            </div>
-            <span class="chevron-indicator">▼</span>
-          </div>
-
-          <div class="card-body">
-            <div class="card-purpose-banner">
-              <strong>What this is for:</strong> Here are your confirmed bookings. Show this pass at the entrance when attending the gathering.
-            </div>
-            <div id="myTicketsContainer">
-              <p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">Retrieving your passes...</p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-    <!-- CARD 5: CURATOR AI (FULL-WIDTH DROPDOWN) -->
-    <div class="dropdown-card collapsed" id="cardAssistant" style="margin-bottom: 2.5rem;">
-      <div class="card-header-clickable" onclick="toggleCard('cardAssistant')" role="button" tabindex="0" aria-expanded="false">
-        <div class="card-title-group">
-          <h2 class="panel-title">Curator AI Assistant</h2>
-          <span class="badge badge-gold">Curator AI</span>
-        </div>
-        <span class="chevron-indicator">▼</span>
-      </div>
-
-      <div class="card-body">
-        <div class="card-purpose-banner">
-          <strong>What this is for:</strong> Have questions about how events work, exhibition guidelines, creative clubs, or Kashmiri arts and literature? Chat with Curator AI anytime.
-        </div>
-
-        <div id="curatorTerminal" class="curator-terminal" style="border:none; padding:0; box-shadow:none;">
-          <div class="curator-chips">
-            <button type="button" class="inquiry-chip" onclick="setInquiry('What is the latest curatorial essay in the journal?')">Latest Reading</button>
-            <button type="button" class="inquiry-chip" onclick="setInquiry('Tell me about upcoming poetry readings and gatherings')">Poetry Gatherings</button>
-            <button type="button" class="inquiry-chip" onclick="setInquiry('What are the rules and guidelines for submitting artwork?')">Exhibition Rules</button>
-            <button type="button" class="inquiry-chip" onclick="setInquiry('How do creative clubs work at Alfaaz?')">How Clubs Work</button>
-          </div>
-
-          <div id="curatorOutput" class="curator-output">
-            <div style="color: var(--text-secondary); margin-bottom: 1rem; font-style: italic;">Welcome to Alfaaz Collective. Ask Curator AI anything about our upcoming events, exhibition submissions, or creative clubs.</div>
-          </div>
-          
-          <div class="curator-input-wrapper">
-            <input type="text" id="curatorInput" placeholder="Type your question for Curator AI here...">
-            <button onclick="askCurator()" class="curator-btn">Ask</button>
-          </div>
+        <div class="curator-input-wrapper">
+          <input type="text" id="curatorInput" placeholder="Ask anything about Alfaaz, events, or art...">
+          <button onclick="askCurator()" class="curator-btn">Ask</button>
         </div>
       </div>
-    </div>
+    </section>
 
   </div>
   
@@ -889,12 +1204,12 @@
          <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin: 0; font-weight: 400;">Reserve Your Spot</h3>
          <button onclick="closeRsvpModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.6rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;" aria-label="Close RSVP modal">&times;</button>
        </div>
-       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">Enter your active WhatsApp number so we can confirm your pass and send event details.</p>
-       <label class="data-label" for="rsvpWhatsapp">WhatsApp Contact Number</label>
+       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">Enter your WhatsApp number so we can text you your entry pass and venue coordinates.</p>
+       <label class="data-label" for="rsvpWhatsapp">WhatsApp Number</label>
        <input type="tel" id="rsvpWhatsapp" placeholder="+91 94190 00000" required>
        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
           <button onclick="closeRsvpModal()" class="action-btn" style="background:transparent; color:var(--text-secondary); border-color:transparent; padding: 0.7rem 1.2rem; font-size: 10px;">Cancel</button>
-          <button id="confirmRsvpBtn" onclick="submitRsvp()" class="action-btn gold" style="padding: 0.7rem 1.8rem; font-size: 10px;">Reserve Spot</button>
+          <button id="confirmRsvpBtn" onclick="submitRsvp()" class="action-btn gold" style="padding: 0.7rem 1.8rem; font-size: 10px;">Reserve Pass</button>
        </div>
     </div>
   </div>
@@ -903,37 +1218,105 @@
   <div class="modal-overlay" id="guideModal" style="display: none; position: fixed; inset: 0; background: rgba(244, 241, 234, 0.94); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="max-width: 580px; width: 92%; max-height: 85vh; overflow-y: auto; padding: 3rem 2.5rem; background: var(--bg-secondary); border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); position: relative;">
        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-         <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); font-weight: 400; margin: 0;">How Your Dashboard Works</h3>
+         <h3 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); font-weight: 400; margin: 0;">Welcome to Your Member Space</h3>
          <button onclick="closeGuideModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.6rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;" aria-label="Close guide">&times;</button>
        </div>
        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
-         Welcome to your personal account on Alfaaz Collective. Here is a simple explanation of what each section does:
+         Here is a quick overview of what you can do in your Alfaaz Collective account:
        </p>
        <div style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 2rem;">
          <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
-           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">1. Display Name &amp; Profile</strong>
-           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">See your registered email and membership status. Click <em>[Edit Name]</em> anytime to change how your name appears on your passes and certificates.</span>
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 01: Your Profile &amp; Creative Vault</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Update your member name, add your WhatsApp number for pass dispatch, and submit literary pieces, essays, or artwork directly to our creative vault.</span>
          </div>
          <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
-           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">2. Creative Clubs</strong>
-           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Apply to join specialized creative groups (Literature, Art &amp; Craft, Cinema, Photography, or Philosophy) to collaborate with other artists.</span>
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 02: Gatherings &amp; Event Passes</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Discover poetry readings, salons, and workshops. Reserve your spot; your digital entry passes appear here with one-click Google Calendar integration.</span>
          </div>
          <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
-           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">3. Art Exhibition</strong>
-           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Track your exhibition artwork submission through 4 clear steps: Portfolio Submission, Review, Payment Proof, and Confirmed Selection.</span>
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 03: Creative Clubs &amp; Exhibition Submissions</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Join a creative club (Literature, Cinema, Visual Arts, Photography, Philosophy) and submit artwork to our open call gallery showcases.</span>
          </div>
          <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
-           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">4. Upcoming Events &amp; My Passes</strong>
-           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Discover poetry readings, cultural gatherings, and workshops. Reserve your spot with WhatsApp, and your entry pass will appear under <em>My Event Passes</em>.</span>
-         </div>
-         <div style="border-left: 2px solid var(--accent-gold); padding-left: 1rem;">
-           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">5. Ask AI Assistant</strong>
-           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Have questions about guidelines, submission criteria, or Kashmiri poetry? Ask our AI assistant anytime at the bottom of the page.</span>
+           <strong style="font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 2px;">Section 04: Ask Curator AI</strong>
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Ask our AI curator questions about Kashmiri literature, upcoming gatherings, or submission requirements anytime.</span>
          </div>
        </div>
        <div style="text-align: right;">
           <button onclick="closeGuideModal()" class="action-btn gold" style="padding: 0.7rem 1.8rem; font-size: 10px;">Got It, Close Guide</button>
        </div>
+    </div>
+  </div>
+
+  <!-- CURATORIAL WELCOME NOTE & CELEBRATION CEREMONY MODAL -->
+  <div class="modal-overlay" id="welcomeModal" style="display: none; position: fixed; inset: 0; background: rgba(45, 49, 46, 0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+    <div class="welcome-card anim-welcome-scale" style="max-width: 620px; width: 92%; max-height: 88vh; overflow-y: auto; background: var(--bg-secondary); border: 1px solid var(--grid-border); border-top: 4px solid var(--accent-gold); box-shadow: var(--shadow-float); position: relative; padding: 2.75rem 2.5rem 2.25rem;">
+      
+      <!-- Close button -->
+      <button onclick="dismissWelcomeModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.5rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; position: absolute; top: 1.25rem; right: 1.25rem; -webkit-tap-highlight-color: transparent;" aria-label="Close welcome letter">&times;</button>
+
+      <!-- Welcome Ornament & Badges -->
+      <div style="text-align: center; margin-bottom: 1.25rem;">
+        <div style="font-size: 2.2rem; color: var(--accent-gold); line-height: 1; margin-bottom: 0.5rem;">❦</div>
+        <div class="badge badge-gold" style="font-size: 9.5px; letter-spacing: 2.5px; padding: 0.4rem 1rem;">خوش آمدید · WELCOME TO ALFAAZ</div>
+      </div>
+
+      <!-- Welcome Title -->
+      <h2 style="font-family: var(--font-heading); font-size: clamp(2rem, 3.5vw, 2.6rem); color: var(--text-primary); text-align: center; font-weight: 400; line-height: 1.15; margin: 0 0 0.5rem;">
+        Welcome to the Circle, <span id="welcomeModalName" style="color: var(--accent-gold-text);">Friend</span>
+      </h2>
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); text-align: center; margin-bottom: 1.5rem;">
+        A personal welcome note from the Curators &amp; Artists of Alfaaz
+      </div>
+
+      <!-- Curatorial Letter Prose -->
+      <div style="border-left: 2px solid var(--accent-gold); padding: 1rem 1.25rem; margin-bottom: 1.75rem; font-size: 13.5px; color: var(--text-primary); line-height: 1.75; background: rgba(189, 111, 93, 0.03);">
+        <p>
+          We are truly delighted to welcome you under the shade of the ancient Chinars. In Kashmir, gathering together is an age-old tradition of warmth, contemplation, and shared creative memory.
+        </p>
+        <p style="margin-top: 0.75rem;">
+          Alfaaz Collective is your sanctuary — where poets, craftspeople, filmmakers, visual artists, and thinkers come together to celebrate vernacular culture, share work-in-progress, and create lasting art.
+        </p>
+        <p style="margin-top: 0.75rem; font-style: italic; color: var(--accent-gold-text);">
+          "Every story told and every canvas painted enriches the collective soul of the valley."
+        </p>
+      </div>
+
+      <!-- Quick Highlights: Next 3 Steps -->
+      <div style="margin-bottom: 2rem;">
+        <div class="data-label" style="color: var(--accent-gold-text); margin-bottom: 0.75rem; letter-spacing: 1.5px;">YOUR FIRST THREE STEPS IN THE COLLECTIVE</div>
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.5);">
+            <span style="font-size: 1.2rem; flex-shrink: 0;">📱</span>
+            <div>
+              <strong style="font-size: 12.5px; color: var(--text-primary); display: block;">1. Add your WhatsApp Number</strong>
+              <span style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">Direct gathering invitations, pass confirmations, and venue directions are texted to your phone.</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.5);">
+            <span style="font-size: 1.2rem; flex-shrink: 0;">🎫</span>
+            <div>
+              <strong style="font-size: 12.5px; color: var(--text-primary); display: block;">2. Reserve a Free Gathering Pass</strong>
+              <span style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">Explore upcoming poetry readings, craft workshops, and salon circles under the Chinars.</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.75rem 1rem; border: 1px solid var(--grid-border); background: rgba(255, 255, 255, 0.5);">
+            <span style="font-size: 1.2rem; flex-shrink: 0;">🏛️</span>
+            <div>
+              <strong style="font-size: 12.5px; color: var(--text-primary); display: block;">3. Join a Creative Club</strong>
+              <span style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">Collaborate in Literature, Visual Arts, Film, Photography, or Philosophy circles.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div>
+        <button id="btnEnterCollective" type="button" onclick="dismissWelcomeModal()" class="action-btn gold" style="width: 100%; padding: 0.9rem 1.5rem; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; justify-content: center; min-height: 46px;">
+          Step Inside Your Folio &rarr;
+        </button>
+      </div>
+
     </div>
   </div>
 

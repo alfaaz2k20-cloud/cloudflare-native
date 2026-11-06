@@ -75,6 +75,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const btnEditPhone = document.getElementById('btnEditPhone');
       const dashVerifiedBadge = document.getElementById('dashVerifiedBadge');
       const dashProviderBadge = document.getElementById('dashProviderBadge');
+      const welcomeHeading = document.getElementById('welcomeHeading');
+      const statStatus = document.getElementById('statStatus');
+
+      const fullName = (data.full_name || '').trim();
+      const firstName = fullName ? fullName.split(/\s+/)[0] : '';
+      if (welcomeHeading) {
+        welcomeHeading.textContent = firstName ? `Welcome back, ${firstName}` : 'Welcome back';
+      }
 
       if (dashName) dashName.textContent = data.full_name || user.email || '—';
       if (nameEditInput) nameEditInput.value = data.full_name || '';
@@ -83,11 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.phone) {
           dashPhone.textContent = data.phone;
           dashPhone.style.color = 'var(--text-primary)';
-          if (btnEditPhone) btnEditPhone.textContent = '[Edit Phone]';
+          if (btnEditPhone) btnEditPhone.textContent = 'Edit';
         } else {
           dashPhone.textContent = 'Not provided';
           dashPhone.style.color = 'var(--text-secondary)';
-          if (btnEditPhone) btnEditPhone.textContent = '[Add WhatsApp]';
+          if (btnEditPhone) btnEditPhone.textContent = 'Add WhatsApp';
         }
       }
       if (phoneEditInput) phoneEditInput.value = data.phone || '';
@@ -105,9 +113,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      if (statStatus) {
+        statStatus.textContent = data.status === 'ADMIN' ? 'Admin' : 'Active Member';
+      }
+
       if (data.status && dashStatus) {
         dashStatus.textContent = `[ ${data.status} ]`;
         if (data.status === 'ADMIN' && adminLink) adminLink.style.display = 'inline-block';
+      }
+
+      // Check for first-time / newly joined member arrival
+      const userKey = data.id || user.id || data.email || user.email || 'guest';
+      const isJustJoined = sessionStorage.getItem('alfaaz_just_joined') === 'true';
+      const hasSeenWelcome = localStorage.getItem('alfaaz_welcome_seen_' + userKey) === 'true';
+
+      if (isJustJoined || !hasSeenWelcome) {
+        setTimeout(() => {
+          window.openWelcomeModal();
+        }, 550);
+      }
+
+      // Check onboarding banner visibility for new members
+      const isOnboardingDismissed = localStorage.getItem('alfaaz_onboarding_dismissed_' + userKey) === 'true';
+      const newMemberOnboarding = document.getElementById('newMemberOnboarding');
+      if (newMemberOnboarding && !isOnboardingDismissed) {
+        newMemberOnboarding.style.display = 'block';
+        if (data.phone) {
+          const step1Status = document.getElementById('onboardStep1Status');
+          if (step1Status) {
+            step1Status.textContent = 'Completed ✓';
+            step1Status.style.color = 'var(--accent-green-text)';
+          }
+        }
       }
     } catch (e) {
       console.error('Profile load error:', e);
@@ -201,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
           dashPhone.textContent = val;
           dashPhone.style.color = 'var(--text-primary)';
         }
-        if (btnEditPhone) btnEditPhone.textContent = '[Edit Phone]';
+        if (btnEditPhone) btnEditPhone.textContent = 'Edit';
         window.cancelEditPhone();
         showToast('WhatsApp number saved successfully.', 'success');
       } else if (res && res.status === 409) {
@@ -314,18 +351,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res || !res.ok) return;
       const events = await res.json().catch(() => []);
       if (!events.length) {
-        container.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); font-style:italic; padding: 1rem 0;">No gatherings currently scheduled under the Chinars. Upcoming circles and readings will appear here.</div>';
+        container.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); font-style:italic; padding: 1rem 0;">No gatherings currently scheduled under the Chinars. Upcoming events will appear here.</div>';
         return;
       }
       container.innerHTML = events.map((e) => `
         <div class="list-item">
           <div style="flex:1;">
-            <div style="font-family:var(--font-heading); font-size:1.5rem; color:var(--text-primary); margin-bottom:4px;">${window.escapeHtml(e.name)}</div>
+            <div style="font-family:var(--font-heading); font-size:1.45rem; color:var(--text-primary); margin-bottom:4px; line-height: 1.2;">${window.escapeHtml(e.name)}</div>
             <div style="font-size:10px; color:var(--accent-gold-text); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px; font-weight:600;">${window.escapeHtml(e.event_date || 'TBD')}</div>
-            <div style="font-size:12px; color:var(--text-secondary); line-height: 1.5;">${window.escapeHtml(e.description || '')}</div>
+            <div style="font-size:12.5px; color:var(--text-secondary); line-height: 1.55;">${window.escapeHtml(e.description || '')}</div>
           </div>
           <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
-            <button class="action-btn gold" style="padding:0.6rem 1.4rem; font-size:10px;" ${e.full ? 'disabled' : ''} onclick="openRsvpModal(${parseInt(e.id, 10)})">${e.full ? 'GATHERING FULL' : 'SECURE SPOT'}</button>
+            <button class="action-btn gold" style="padding:0.6rem 1.4rem; font-size:10px;" ${e.full ? 'disabled' : ''} onclick="openRsvpModal(${parseInt(e.id, 10)})">${e.full ? 'GATHERING FULL' : 'RESERVE SPOT'}</button>
             ${e.spots_left != null && !e.full ? `<span style="font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--text-secondary);">${e.spots_left} spots left</span>` : ''}
           </div>
         </div>`).join('');
@@ -337,25 +374,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadMyTickets() {
     const container = document.getElementById('myTicketsContainer');
+    const statPasses = document.getElementById('statPasses');
     if (!container) return;
     try {
       const res = await window.globalApiFetch('/events/my-registrations');
       if (!res || !res.ok) return;
       const tickets = await res.json().catch(() => []);
+      
+      if (statPasses) {
+        statPasses.textContent = tickets.length > 0 ? `${tickets.length} Active` : '0 Active';
+      }
+
+      if (tickets.length > 0) {
+        const step2Status = document.getElementById('onboardStep2Status');
+        if (step2Status) {
+          step2Status.textContent = 'Pass Confirmed ✓';
+          step2Status.style.color = 'var(--accent-green-text)';
+        }
+      }
+
       if (!tickets.length) {
-        container.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); font-style:italic; padding: 1rem 0;">No active registrations found. RSVP to an upcoming gathering to receive your pass.</div>';
+        container.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); font-style:italic; padding: 1rem 0;">No active passes yet. Choose an upcoming gathering above to reserve your spot.</div>';
         return;
       }
-      container.innerHTML = tickets.map((t) => `
+      container.innerHTML = tickets.map((t) => {
+        const serial = `ALF-EVT-${String(t.event_id || '').padStart(4, '0')}`;
+        const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(t.event_name || 'Alfaaz Gathering')}&details=${encodeURIComponent('Confirmed Admission Pass - Alfaaz Collective')}`;
+        return `
         <div class="ticket-item">
-          <div>
-            <div style="font-family:var(--font-heading); font-size:1.4rem; color:var(--text-primary);">${window.escapeHtml(t.event_name)}</div>
-            <div style="font-size:10px; color:var(--text-secondary); margin-top:4px; letter-spacing: 1.5px; text-transform: uppercase;">Date: ${window.escapeHtml(t.event_date || 'TBD')}</div>
+          <div style="flex: 1; min-width: 220px;">
+            <div class="ticket-serial">NO. ${serial} · ADMISSION PASS</div>
+            <div style="font-family:var(--font-heading); font-size:1.45rem; color:var(--text-primary); line-height: 1.2; margin-top:2px;">${window.escapeHtml(t.event_name)}</div>
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:6px; letter-spacing: 0.5px;">
+              <span style="color:var(--text-primary); font-weight:600;">DATE &amp; TIME:</span> ${window.escapeHtml(t.event_date || 'Schedule Announced Shortly')}
+            </div>
           </div>
-          <div>
-            <span class="badge badge-green">[ ACCREDITED ]</span>
+          <div class="ticket-actions" style="display:flex; flex-direction:column; align-items:flex-end; gap:0.6rem;">
+            <span class="badge badge-green" style="letter-spacing:1.5px;">CONFIRMED PASS</span>
+            <a href="${calUrl}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.4rem 0.85rem; font-size:9.5px; letter-spacing:1px; text-decoration:none; color:var(--text-secondary); border-color:var(--grid-border); background:transparent;">+ Add to Calendar</a>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     } catch (e) {}
   }
 
@@ -420,6 +479,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json().catch(() => ({}));
       const viewStatus = document.getElementById('clubStatusView');
       const viewApply = document.getElementById('clubApplyView');
+      const statClub = document.getElementById('statClub');
+
+      if (statClub) {
+        if (data.status === 'APPROVED') {
+          statClub.textContent = data.club || 'Member';
+        } else if (data.status === 'PENDING') {
+          statClub.textContent = `${data.club || 'Club'} (Pending)`;
+        } else {
+          statClub.textContent = 'Open to Join';
+        }
+      }
+
+      if (data.status === 'APPROVED' || data.status === 'PENDING') {
+        const step3Status = document.getElementById('onboardStep3Status');
+        if (step3Status) {
+          step3Status.textContent = `${data.club} (${data.status === 'APPROVED' ? 'Member' : 'Applied'}) ✓`;
+          step3Status.style.color = 'var(--accent-green-text)';
+        }
+      }
 
       if (data.status === 'NONE') {
         if (viewStatus) viewStatus.style.display = 'none';
@@ -533,6 +611,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await statusRes.json().catch(() => ({}));
 
       const masterPanel = document.getElementById('exhibitionPanel');
+      const statExhib = document.getElementById('statExhib');
+
+      if (statExhib) {
+        if (data.status === 'APPROVED' && (data.registration_status === 'SUBMITTED' || data.registration_status === 'CONFIRMED')) {
+          statExhib.textContent = 'Confirmed ✨';
+        } else if (data.status === 'APPROVED') {
+          statExhib.textContent = 'Selected 🎉';
+        } else if (data.status === 'PENDING') {
+          statExhib.textContent = 'In Review';
+        } else if (data.status === 'REJECTED') {
+          statExhib.textContent = 'Completed';
+        } else {
+          statExhib.textContent = cfg.is_open ? 'Open Call' : 'Cycle Closed';
+        }
+      }
+
       if (!masterPanel) return;
 
       if (!cfg.is_open && data.status === 'NONE') {
@@ -684,22 +778,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // CARD DROPDOWN ACCORDION
+  // FOLIO COMPATIBILITY HELPERS (CARD SYSTEM RETIRED)
   window.toggleCard = function(cardId) {
     const card = document.getElementById(cardId);
     if (!card) return;
-    const isCollapsed = card.classList.toggle('collapsed');
-    card.querySelector('.card-header-clickable')?.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
-
-    const cards = document.querySelectorAll('.dropdown-card');
-    const hasCollapsed = Array.from(cards).some((c) => c.classList.contains('collapsed'));
-    const btn = document.getElementById('toggleAllBtn');
-    if (btn) btn.textContent = hasCollapsed ? 'Expand All Panels' : 'Collapse All Panels';
+    if (card.classList.contains('dropdown-card')) {
+      const isCollapsed = card.classList.toggle('collapsed');
+      card.querySelector('.card-header-clickable')?.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    }
   };
 
-  // BULK ACCORDION TOGGLE (EXPAND ALL / COLLAPSE ALL)
   window.toggleAllCards = function() {
     const cards = document.querySelectorAll('.dropdown-card');
+    if (!cards.length) return;
     const hasCollapsed = Array.from(cards).some((c) => c.classList.contains('collapsed'));
     cards.forEach((c) => {
       if (hasCollapsed) {
@@ -710,8 +801,6 @@ document.addEventListener('DOMContentLoaded', () => {
         c.querySelector('.card-header-clickable')?.setAttribute('aria-expanded', 'false');
       }
     });
-    const btn = document.getElementById('toggleAllBtn');
-    if (btn) btn.textContent = hasCollapsed ? 'Collapse All Panels' : 'Expand All Panels';
   };
 
   // ACCESSIBILITY: KEYBOARD NAVIGATION FOR CLICKABLE HEADERS
@@ -746,6 +835,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // WELCOME CEREMONY & CELEBRATION PARTICLES
+  function triggerWelcomeCelebration() {
+    const emojis = ['🍂', '✦', '🍁', '✧', '✨', '🍃'];
+    const total = window.innerWidth < 600 ? 16 : 28;
+    for (let i = 0; i < total; i++) {
+      const p = document.createElement('span');
+      p.className = 'floating-particle';
+      p.textContent = emojis[i % emojis.length];
+      p.style.left = `${Math.random() * 92 + 4}%`;
+      p.style.animationDelay = `${Math.random() * 1.6}s`;
+      p.style.animationDuration = `${3.2 + Math.random() * 2.2}s`;
+      p.style.fontSize = `${14 + Math.random() * 14}px`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 6000);
+    }
+  }
+
+  window.openWelcomeModal = function() {
+    const modal = document.getElementById('welcomeModal');
+    if (!modal) return;
+    const nameEl = document.getElementById('welcomeModalName');
+    const currentName = (document.getElementById('dashName')?.textContent || '').trim();
+    if (nameEl && currentName && currentName !== '—') {
+      const first = currentName.split(/\s+/)[0];
+      nameEl.textContent = first || 'Friend';
+    }
+    modal.style.display = 'flex';
+    triggerWelcomeCelebration();
+  };
+
+  window.dismissWelcomeModal = function() {
+    const modal = document.getElementById('welcomeModal');
+    if (modal) modal.style.display = 'none';
+    const userKey = user?.id || user?.email || 'guest';
+    localStorage.setItem('alfaaz_welcome_seen_' + userKey, 'true');
+    sessionStorage.removeItem('alfaaz_just_joined');
+    showToast('✨ Welcome home to Alfaaz Collective.', 'success', 4000);
+  };
+
+  window.dismissOnboardingBanner = function() {
+    const banner = document.getElementById('newMemberOnboarding');
+    if (banner) banner.style.display = 'none';
+    const userKey = user?.id || user?.email || 'guest';
+    localStorage.setItem('alfaaz_onboarding_dismissed_' + userKey, 'true');
+    showToast('Quick-start guide hidden. Access any section anytime.', 'info', 3000);
+  };
+
   // GUIDE TUTORIAL MODAL
   window.openGuideModal = function() {
     const m = document.getElementById('guideModal');
@@ -760,9 +896,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // ESCAPE KEY & BACKDROP CLICK HANDLERS
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      window.dismissWelcomeModal();
       window.closeGuideModal();
       window.closeRsvpModal();
     }
+  });
+
+  document.getElementById('welcomeModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'welcomeModal') window.dismissWelcomeModal();
   });
 
   document.getElementById('guideModal')?.addEventListener('click', (e) => {

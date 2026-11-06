@@ -52,6 +52,10 @@ function finalizeAuth(data, redirectTarget) {
   localStorage.setItem('alfaaz_user', JSON.stringify(data.user));
   localStorage.setItem('alfaaz_token', data.token);
 
+  if (currentMode === 'register' || data.is_new_user) {
+    sessionStorage.setItem('alfaaz_just_joined', 'true');
+  }
+
   const defaultDest = (data.user?.status === 'ADMIN' || data.user?.role === 'ADMIN') ? 'admin.html' : 'dashboard.html';
   const finalDest = redirectTarget || defaultDest;
 
