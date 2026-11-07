@@ -25,7 +25,7 @@
   --font-heading: 'Alegreya', serif;
   --font-body:    'Alegreya Sans', sans-serif;
   --font-amiri:   'Amiri', serif;
-  --font-urdu:    'Amiri', 'Noto Nastaliq Urdu', serif;
+  --font-urdu:    'Noto Nastaliq Urdu', serif;
 
   --grid-border:  rgba(45, 49, 46, 0.12);
   --shadow-base:  0 4px 20px -2px rgba(0,0,0,0.03), 0 0 3px rgba(0,0,0,0.02);
@@ -198,6 +198,7 @@ nav.hidden {
 }
 
 .tch-nav-badge.ur-hover:hover::before,
+.tch-nav-badge.ur-hover:focus-visible::before,
 .tch-nav-badge.ur-hover.lang-swapped::before {
   opacity: 1;
   color: var(--bg-primary);
@@ -205,6 +206,7 @@ nav.hidden {
 }
 
 .tch-nav-badge.ur-hover:hover .en-text,
+.tch-nav-badge.ur-hover:focus-visible .en-text,
 .tch-nav-badge.ur-hover.lang-swapped .en-text {
   opacity: 0;
   transform: translateY(-6px);
@@ -245,7 +247,7 @@ nav.hidden {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) translateY(6px);
-  font-family: var(--font-amiri), var(--font-urdu), serif;
+  font-family: var(--font-amiri), serif;
   font-size: 1.25em;
   line-height: 1.2;
   font-style: normal;
@@ -260,14 +262,16 @@ nav.hidden {
   direction: rtl;
 }
 
-/* Trigger: hover or JS-toggled class */
+/* Trigger: hover, keyboard focus, or JS-toggled class */
 .ur-hover:hover .en-text,
+.ur-hover:focus-visible .en-text,
 .ur-hover.lang-swapped .en-text {
   opacity: 0;
   transform: translateY(-6px);
 }
 
 .ur-hover:hover::before,
+.ur-hover:focus-visible::before,
 .ur-hover.lang-swapped::before {
   opacity: 1;
   transform: translate(-50%, -50%) translateY(0);
