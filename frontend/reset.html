@@ -30,7 +30,7 @@
     .auth-input:focus { outline: none; border-bottom-color: var(--accent-gold); }
     .password-wrap { position: relative; }
     .password-wrap .auth-input { padding-right: 3rem; }
-    .toggle-pw { position: absolute; right: 0; bottom: 0.5rem; background: none; border: none; color: var(--text-secondary); font-family: var(--font-body); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 0; transition: color 0.3s ease; }
+    .toggle-pw { position: absolute; right: 0; bottom: 0.15rem; min-width: 36px; min-height: 32px; padding: 6px 4px; display: inline-flex; align-items: center; justify-content: flex-end; background: none; border: none; color: var(--text-secondary); font-family: var(--font-body); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: color 0.3s ease; }
     .toggle-pw:hover { color: var(--accent-gold); }
     .strength-bar-wrap { margin-top: 8px; height: 2px; background: var(--grid-border); }
     .strength-bar { height: 100%; width: 0%; transition: width 0.4s ease, background 0.4s ease; }
@@ -76,7 +76,7 @@
         <label class="input-label" for="newPassword">New Password</label>
         <div class="password-wrap">
           <input type="password" id="newPassword" class="auth-input" required minlength="8" maxlength="128" autocomplete="new-password" placeholder="At least 8 characters">
-          <button type="button" class="toggle-pw" id="toggleNew" tabindex="-1" aria-label="Toggle new password visibility">show</button>
+          <button type="button" class="toggle-pw" id="toggleNew" aria-label="Show new password">show</button>
         </div>
         <div class="strength-bar-wrap"><div class="strength-bar" id="strengthBar"></div></div>
         <div class="strength-label" id="strengthLabel"></div>
@@ -85,7 +85,7 @@
         <label class="input-label" for="confirmPassword">Confirm Password</label>
         <div class="password-wrap">
           <input type="password" id="confirmPassword" class="auth-input" required minlength="8" maxlength="128" autocomplete="new-password" placeholder="Re-enter new password">
-          <button type="button" class="toggle-pw" id="toggleConfirm" tabindex="-1" aria-label="Toggle confirm password visibility">show</button>
+          <button type="button" class="toggle-pw" id="toggleConfirm" aria-label="Show confirm password">show</button>
         </div>
         <div class="match-indicator" id="matchIndicator"></div>
       </div>
