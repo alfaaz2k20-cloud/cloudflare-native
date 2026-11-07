@@ -43,7 +43,7 @@
     .tab-nav::-webkit-scrollbar { display: none; }
     .tab-btn { padding: 1rem 1.4rem; font-family: var(--font-body); font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--text-secondary); border: none; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; scroll-snap-align: center; display: inline-flex; align-items: center; gap: 6px; }
     .tab-btn:hover { color: var(--accent-gold); } 
-    .tab-btn.active { color: var(--accent-gold); border-bottom-color: var(--accent-gold); font-weight: 600; }
+    .tab-btn.active { color: var(--accent-gold-text); border-bottom-color: var(--accent-gold); font-weight: 600; }
     .tab-count { font-size: 9px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--grid-border); background: var(--bg-primary); color: var(--text-secondary); font-weight: 600; }
     .tab-count.pending { border-color: var(--accent-gold); color: var(--accent-gold-text); background: rgba(189, 111, 93, 0.08); }
     
@@ -163,9 +163,11 @@
   </style>
 </head>
 <body>
-  <nav id="navbar" style="justify-content: space-between;">
+  <nav id="navbar">
     <div style="display: flex; align-items: center; gap: 0.8rem;">
-      <a href="index.html" class="logo">ALFAAZ</a>
+      <a href="index.html" class="logo ur-hover" data-ur="الفاظ" aria-label="Alfaaz Collective Home">
+        <span class="en-text">ALFAAZ</span>
+      </a>
       <span style="font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent-gold-text); border: 1px solid var(--accent-gold); padding: 2px 6px; border-radius: 2px;">Admin Suite</span>
     </div>
     
@@ -216,7 +218,7 @@
           <option value="exhibitions">Exhibitions & Portfolios</option>
           <option value="clubs">Club Applications</option>
           <option value="roster">Collective Roster</option>
-          <option value="submissions">Storage Vault</option>
+          <option value="submissions">Submissions</option>
           <option value="blogs">Journal & Essays</option>
           <option value="audit">Audit Ledger</option>
           <option value="diagnostics">Diagnostics & Health</option>
@@ -241,7 +243,7 @@
           Roster <span class="tab-count" id="count-roster"></span>
         </button>
         <button class="tab-btn" data-tab="submissions" onclick="switchTab('submissions')">
-          Vault <span class="tab-count" id="count-submissions"></span>
+          Submissions <span class="tab-count" id="count-submissions"></span>
         </button>
         <button class="tab-btn" data-tab="blogs" onclick="switchTab('blogs')">
           Journal <span class="tab-count" id="count-blogs"></span>
@@ -260,10 +262,10 @@
       <div class="section-title">Create Event</div>
       <div class="panel">
         <div class="form-grid">
-          <div class="form-group"><label class="data-label">Event Name *</label><input type="text" id="ev-name" placeholder="e.g. Live Painting"></div>
-          <div class="form-group"><label class="data-label">Event Date</label><input type="text" id="ev-date" placeholder="e.g. Sunday 4PM"></div>
-          <div class="form-group"><label class="data-label">Capacity (0 = unlimited)</label><input type="number" id="ev-capacity" value="0" min="0" style="background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); padding: 0.8rem 0; width: 100%; font-family: var(--font-body); font-size: 13px; outline: none;"></div>
-          <div class="form-group"><label class="data-label">Description</label><input type="text" id="ev-desc" placeholder="Brief description..."></div>
+          <div class="form-group"><label class="data-label" for="ev-name">Event Name *</label><input type="text" id="ev-name" placeholder="e.g. Live Painting"></div>
+          <div class="form-group"><label class="data-label" for="ev-date">Event Date</label><input type="text" id="ev-date" placeholder="e.g. Sunday 4PM"></div>
+          <div class="form-group"><label class="data-label" for="ev-capacity">Capacity (0 = unlimited)</label><input type="number" id="ev-capacity" value="0" min="0" style="background: transparent; border: none; border-bottom: 1px solid var(--grid-border); color: var(--text-primary); padding: 0.8rem 0; width: 100%; font-family: var(--font-body); font-size: 13px; outline: none;"></div>
+          <div class="form-group"><label class="data-label" for="ev-desc">Description</label><input type="text" id="ev-desc" placeholder="Brief description..."></div>
         </div>
         <button class="action-btn gold" id="ev-create-btn" style="padding: 1rem 2rem;" onclick="handleCreateEvent()">Create Event</button>
         <span id="ev-create-msg" style="font-size:11px; margin-left:1rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;"></span>
@@ -396,7 +398,7 @@
               <option value="WITH_EXHIBITIONS">Has Exhibitions</option>
               <option value="WITH_CLUBS">Has Club Applications</option>
               <option value="WITH_EVENTS">Has Event RSVPs</option>
-              <option value="WITH_SUBMISSIONS">Has Vault Works</option>
+              <option value="WITH_SUBMISSIONS">Has Submissions</option>
               <option value="VERIFIED_ONLY">Verified Contacts Only</option>
             </select>
           </div>
@@ -414,9 +416,9 @@
       <div id="rosterContainer"><div class="empty-state">Loading roster...</div></div>
     </div>
 
-    <!-- 5. STORAGE VAULT SUBMISSIONS PANEL -->
+    <!-- 5. SUBMISSIONS PANEL -->
     <div id="tab-submissions" class="tab-panel">
-      <div class="section-title">Storage Vault Submissions</div>
+      <div class="section-title">Creative Submissions</div>
       <div id="submissionsContainer"><div class="empty-state">Loading submissions...</div></div>
     </div>
 
@@ -508,7 +510,7 @@
             <div>Active Cycle: <strong id="m-cycle" style="color:var(--accent-gold-text);">-</strong></div>
             <div>Exhibitions (Pending / Total): <strong id="m-exhibs" style="color:var(--text-primary);">- / -</strong></div>
             <div>Club Applications (Pending): <strong id="m-clubs" style="color:var(--text-primary);">-</strong></div>
-            <div>Vault Works & Blogs: <strong id="m-vault" style="color:var(--text-primary);">-</strong></div>
+            <div>Submissions & Blogs: <strong id="m-vault" style="color:var(--text-primary);">-</strong></div>
           </div>
         </div>
 
@@ -520,7 +522,7 @@
           </div>
           <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-secondary); margin-top: 6px;">
             <div>Cloudflare KV: <span id="m-kv" style="font-weight:600;">-</span></div>
-            <div>R2 Vault Bucket: <span id="m-r2" style="font-weight:600;">-</span></div>
+            <div>R2 Storage Bucket: <span id="m-r2" style="font-weight:600;">-</span></div>
             <div>Notices Cache: <span style="font-size: 11px;">Invalidated on admin edits</span></div>
           </div>
         </div>
