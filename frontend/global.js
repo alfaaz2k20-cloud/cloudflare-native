@@ -152,6 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const bilingualElements = document.querySelectorAll('.ur-hover');
     if (bilingualElements.length === 0) return;
 
+    // Respect user's motion preferences: do not run automated flipping if reduced motion is requested
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
     setInterval(() => {
       bilingualElements.forEach((el, index) => {
         setTimeout(() => {
