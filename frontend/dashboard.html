@@ -423,6 +423,7 @@
       border-bottom: 1px solid var(--grid-border);
     }
     .field-label {
+      display: block;
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 1px;
@@ -483,9 +484,9 @@
       background: #ffffff;
     }
     .action-btn-primary {
-      background: var(--accent-gold);
+      background: var(--accent-gold-text);
       color: #ffffff;
-      border: 1px solid var(--accent-gold);
+      border: 1px solid var(--accent-gold-text);
       padding: 0.65rem 1.4rem;
       font-family: var(--font-body);
       font-size: 12.5px;
@@ -496,11 +497,11 @@
       align-items: center;
       justify-content: center;
       min-height: 42px;
-      transition: background 0.2s ease;
+      transition: background 0.2s ease, border-color 0.2s ease;
     }
     .action-btn-primary:hover {
-      background: var(--accent-gold-text);
-      border-color: var(--accent-gold-text);
+      background: var(--text-primary);
+      border-color: var(--text-primary);
     }
     .action-btn-secondary {
       background: transparent;
@@ -651,7 +652,7 @@
 
   <!-- TOP BRAND & DESKTOP NAVIGATION -->
   <nav id="navbar">
-    <a href="index.html" class="logo ur-hover" data-ur="الفاظ">
+    <a href="index.html" class="logo ur-hover" data-ur="الفاظ" aria-label="Alfaaz Collective Home">
       <span class="en-text">ALFAAZ</span>
     </a>
     
@@ -741,7 +742,7 @@
           <p class="subsection-desc">Collaborate with fellow members in Literature, Art &amp; Craft, Film Club, Photography, or Philosophy.</p>
           
           <div id="clubApplyView" class="circle-application-box">
-            <div class="field-label">Select Creative Circle</div>
+            <label class="field-label" for="clubSelect">Select Creative Circle</label>
             <select id="clubSelect">
               <option value="Literature">Literature</option>
               <option value="Art & Craft">Art &amp; Craft</option>
@@ -750,7 +751,7 @@
               <option value="Philosophy">Philosophy</option>
             </select>
             
-            <div class="field-label">Share a brief note about your interest (Optional)</div>
+            <label class="field-label" for="clubNote">Share a brief note about your interest (Optional)</label>
             <textarea id="clubNote" rows="3" placeholder="A few lines on what you would like to explore or contribute..."></textarea>
             
             <button id="clubSubmitBtn" class="action-btn-primary" onclick="submitClubApplication()">Join Circle</button>
@@ -804,7 +805,7 @@
             </div>
             
             <div class="curator-input-wrapper">
-              <input type="text" id="curatorInput" placeholder="Ask a question about Alfaaz...">
+              <input type="text" id="curatorInput" placeholder="Ask a question about Alfaaz..." aria-label="Ask a question about Alfaaz">
               <button onclick="askCurator()" class="curator-btn">Ask</button>
             </div>
           </div>
