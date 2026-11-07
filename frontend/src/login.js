@@ -248,6 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isHidden = pwInput.type === 'password';
     pwInput.type = isHidden ? 'text' : 'password';
     togglePw.textContent = isHidden ? 'hide' : 'show';
+    togglePw.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
   });
 
   // 4. Lost Password Hint Behavior
