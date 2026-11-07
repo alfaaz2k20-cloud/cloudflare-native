@@ -1324,7 +1324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
       }
 
-      let submissionsHtml = '<div class="activity-empty">No storage vault works uploaded.</div>';
+      let submissionsHtml = '<div class="activity-empty">No submissions uploaded.</div>';
       if (u.submissions && u.submissions.length) {
         submissionsHtml = u.submissions.map(s => {
           const safeSubUrl = window.safeHttpUrl ? window.safeHttpUrl(s.file_url) : null;
@@ -1363,7 +1363,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="stat-pill"><strong>${u.events?.length || 0}</strong> Events</span>
               <span class="stat-pill"><strong>${u.clubs?.length || 0}</strong> Circles</span>
               <span class="stat-pill"><strong>${u.exhibitions?.length || 0}</strong> Exhibitions</span>
-              <span class="stat-pill"><strong>${u.submissions?.length || 0}</strong> Vault</span>
+              <span class="stat-pill"><strong>${u.submissions?.length || 0}</strong> Submissions</span>
             </div>
           </div>
           <div>
@@ -1410,7 +1410,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${feesHtml}
             </div>
             <div>
-              <div class="activity-col-title">Storage Vault Works (${u.submissions?.length || 0})</div>
+              <div class="activity-col-title">Submissions (${u.submissions?.length || 0})</div>
               ${submissionsHtml}
             </div>
           </div>
@@ -1511,7 +1511,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const subs = await res.json();
       if (!subs || !subs.length) {
-        container.innerHTML = '<div class="empty-state">No submissions found in Storage Vault.</div>';
+        container.innerHTML = '<div class="empty-state">No submissions found.</div>';
         return;
       }
       container.innerHTML = '';
@@ -1849,7 +1849,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setEl('m-cycle', m.active_cycle ? `${m.active_cycle} (${m.active_cycle_over_18 ? '18+' : 'Youth'})` : 'None (Closed)');
       setEl('m-exhibs', `${m.exhibition_apps_pending} Pending / ${m.exhibition_apps_total} Total`);
       setEl('m-clubs', `${m.club_apps_pending} Pending / ${m.club_apps_total} Total`);
-      setEl('m-vault', `${m.submissions_total} Vault / ${m.blogs_total} Essays`);
+      setEl('m-vault', `${m.submissions_total} Submissions / ${m.blogs_total} Essays`);
 
       // Bindings
       const kvEl = document.getElementById('m-kv');
