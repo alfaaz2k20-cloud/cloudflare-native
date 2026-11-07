@@ -26,6 +26,7 @@ function buildCsp(scriptSrc: string): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.googleusercontent.com https://www.gstatic.com https://ssl.gstatic.com",
+    "media-src 'self' https://res.cloudinary.com",
     "connect-src 'self' https://challenges.cloudflare.com https://api.cloudinary.com https://res.cloudinary.com https://*.googleapis.com https://accounts.google.com",
     "frame-src 'self' https://challenges.cloudflare.com https://accounts.google.com",
     "frame-ancestors 'none'",
