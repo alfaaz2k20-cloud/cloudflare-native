@@ -12,8 +12,8 @@
   <meta name="apple-mobile-web-app-title" content="Alfaaz">
   <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
-  <meta name="description" content="Submit portfolios, manuscripts, and project proposals securely to the Curator's Storage at Alfaaz Collective." />
-  <title>Curator's Storage — ALFAAZ</title>
+  <meta name="description" content="Submit portfolios, manuscripts, and project proposals to Alfaaz Collective." />
+  <title>Submit Work — ALFAAZ</title>
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
   <script type="module" src="global.js"></script>
@@ -73,8 +73,10 @@
 </head>
 <body>
 
-  <nav id="navbar" style="justify-content: space-between;">
-    <a href="index.html" class="logo">ALFAAZ</a>
+  <nav id="navbar">
+    <a href="index.html" class="logo ur-hover" data-ur="الفاظ" aria-label="Alfaaz Collective Home">
+      <span class="en-text">ALFAAZ</span>
+    </a>
     <div class="nav-actions" style="display: flex; gap: 1.5rem; align-items: center;">
       <a href="dashboard.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">Dashboard</a>
       <a href="index.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px; transition: color 0.3s ease;">Return</a>
@@ -83,8 +85,8 @@
 
   <div class="vault-container">
     <div class="vault-card panel">
-      <h1 class="panel-title">The Curator's Storage</h1>
-      <p class="panel-subtitle">مخزنِ کلام // Securely Deposit Creative Works &amp; Proposals</p>
+      <h1 class="panel-title">Submit Work</h1>
+      <p class="panel-subtitle">ارسالِ کلام // Portfolios, Manuscripts &amp; Project Proposals</p>
       
       <form id="submission-form">
         <div class="input-group">
@@ -93,7 +95,6 @@
             <option value="Art Portfolio (PDF/IMG)">Art Portfolio (PDF / Visual Arts)</option>
             <option value="Literary Manuscript (PDF/Doc)">Literary Manuscript / Poetry</option>
             <option value="Project Proposal">Exhibition / Project Proposal</option>
-            <option value="Membership Form">Collective Membership Ingestion</option>
           </select>
         </div>
 
@@ -117,7 +118,7 @@
           <textarea id="note" rows="3" maxlength="1500" placeholder="Provide any relevant context for the curatorial review team..."></textarea>
         </div>
 
-        <button type="submit" id="submit-btn" class="submit-btn" style="width: 100%; margin-top: 1rem;">Deposit into Storage</button>
+        <button type="submit" id="submit-btn" class="submit-btn" style="width: 100%; margin-top: 1rem;">Submit for Review</button>
       </form>
       <div id="status-msg" aria-live="polite"></div>
     </div>
