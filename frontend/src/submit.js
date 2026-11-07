@@ -1,4 +1,4 @@
-// submit.js — Centralized Creative Vault Submission Logic
+// submit.js — Centralized Work & Portfolio Submission Logic
 document.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('alfaaz_token');
   const userData = localStorage.getItem('alfaaz_user');
@@ -90,17 +90,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btn) {
-      btn.innerText = 'Uploading to Storage...';
+      btn.innerText = 'Submitting Work...';
       btn.disabled = true;
     }
     if (statusMsg) {
       statusMsg.style.color = 'var(--accent-gold-text)';
-      statusMsg.textContent = 'Securing asset in the Alfaaz Storage Vault...';
+      statusMsg.textContent = 'Uploading work to Alfaaz submissions...';
     }
 
     const restoreBtn = () => {
       if (btn) {
-        btn.innerText = 'Deposit into Storage';
+        btn.innerText = 'Submit for Review';
         btn.disabled = false;
         btn.style.background = '';
         btn.style.borderColor = '';
@@ -108,10 +108,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      if (btn) btn.innerText = 'Depositing in Vault...';
+      if (btn) btn.innerText = 'Uploading Work...';
       if (statusMsg) {
         statusMsg.style.color = 'var(--text-secondary)';
-        statusMsg.textContent = 'Transmitting creative work directly to encrypted vault...';
+        statusMsg.textContent = 'Transmitting creative work for curatorial review...';
       }
 
       // Direct authenticated multipart upload to Cloudflare R2 via /vault/submit
@@ -129,12 +129,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res && res.ok) {
         if (statusMsg) {
           statusMsg.style.color = 'var(--accent-green-text)';
-          statusMsg.textContent = '✓ Work deposited successfully into the Curator\'s Storage.';
+          statusMsg.textContent = '✓ Work submitted successfully for curatorial review.';
         }
         if (btn) {
           btn.style.background = 'var(--accent-gold)';
           btn.style.borderColor = 'var(--accent-gold)';
-          btn.innerText = 'File Secured';
+          btn.innerText = 'Submitted';
         }
         setTimeout(() => {
           window.location.href = 'dashboard.html';
