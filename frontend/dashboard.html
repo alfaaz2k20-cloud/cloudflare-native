@@ -49,21 +49,34 @@
     .desktop-dest-nav {
       display: flex;
       align-items: center;
-      gap: 2rem;
+      gap: 0.35rem;
+      background: rgba(45, 49, 46, 0.04);
+      padding: 3px;
+      border: 1px solid var(--grid-border);
     }
     .dest-link {
       font-family: var(--font-body);
-      font-size: 13.5px;
+      font-size: 13px;
       color: var(--text-secondary);
       text-decoration: none;
       font-weight: 500;
-      transition: color 0.2s ease;
-      padding: 0.35rem 0;
+      padding: 0.4rem 1.15rem;
+      border: 1px solid transparent;
       border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      cursor: pointer;
     }
-    .dest-link:hover, .dest-link.active {
+    .dest-link:hover {
       color: var(--text-primary);
-      border-bottom-color: var(--accent-gold);
+      background: rgba(255, 255, 255, 0.6);
+    }
+    .dest-link.active {
+      color: var(--text-primary);
+      background: #ffffff;
+      border-color: var(--grid-border);
+      border-bottom: 2px solid var(--accent-gold);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
     .nav-actions {
       display: flex;
@@ -91,14 +104,119 @@
       height: auto;
     }
 
-    /* Destination Section Architecture */
+    /* True Tab Architecture */
     .dest-section {
-      padding: 3.5rem 0 2.5rem;
-      border-bottom: 1px solid var(--grid-border);
-      scroll-margin-top: 80px;
-    }
-    .dest-section:last-of-type {
+      display: none;
+      padding: 2rem 0 3.5rem;
       border-bottom: none;
+    }
+    .dest-section.active {
+      display: block;
+      animation: tabFadeIn 0.22s ease-out;
+    }
+    @keyframes tabFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Bottom Tab Navigation Directory */
+    .dash-tab-directory {
+      margin-top: 3.5rem;
+      padding-top: 2.25rem;
+      border-top: 1px solid var(--grid-border);
+    }
+    .tab-directory-title {
+      font-family: var(--font-heading);
+      font-size: 1.55rem;
+      color: var(--text-primary);
+      font-weight: 400;
+      margin: 0 0 0.25rem;
+    }
+    .tab-directory-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 0 0 1.5rem;
+    }
+    .tab-directory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1rem;
+    }
+    .tab-directory-card {
+      background: #ffffff;
+      border: 1px solid var(--grid-border);
+      padding: 1.25rem 1.35rem;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 120px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .tab-directory-card:hover {
+      border-color: var(--accent-gold);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(45, 49, 46, 0.05);
+    }
+    .tab-directory-card.active-tab-card {
+      background: var(--bg-secondary);
+      border-color: var(--accent-gold);
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+    .tab-directory-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .tab-directory-card-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    .tab-directory-card-arrow {
+      color: var(--accent-gold-text);
+      font-size: 1.1rem;
+      transition: transform 0.2s ease;
+    }
+    .tab-directory-card:hover .tab-directory-card-arrow {
+      transform: translateX(4px);
+    }
+    .tab-directory-card.active-tab-card .tab-directory-card-arrow {
+      display: none;
+    }
+    .tab-directory-card-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin: 0 0 0.75rem;
+      flex-grow: 1;
+    }
+    .tab-directory-badge {
+      display: none;
+      align-self: flex-start;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      color: var(--accent-gold-text);
+      background: rgba(140, 109, 59, 0.1);
+      padding: 2px 6px;
+      border: 1px solid rgba(140, 109, 59, 0.25);
+    }
+    .tab-directory-card.active-tab-card .tab-directory-badge {
+      display: inline-block;
     }
     .dest-header {
       margin-bottom: 2rem;
@@ -618,8 +736,18 @@
         padding: 1.5rem 1.25rem;
       }
       .dest-section {
-        padding: 2.25rem 0 1.75rem;
-        scroll-margin-top: calc(54px + 42px + 12px);
+        display: none;
+        padding: 1.75rem 0 2.25rem;
+      }
+      .dest-section.active {
+        display: block;
+      }
+      .dash-tab-directory {
+        margin-top: 2.25rem;
+        padding-top: 1.5rem;
+      }
+      .tab-directory-grid {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -656,11 +784,11 @@
       <span class="en-text">ALFAAZ</span>
     </a>
     
-    <div class="desktop-dest-nav">
-      <a href="#sectionHome" class="dest-link active" id="navLinkHome">Home</a>
-      <a href="#sectionExplore" class="dest-link" id="navLinkExplore">Explore</a>
-      <a href="#sectionActivity" class="dest-link" id="navLinkActivity">My Activity</a>
-      <a href="#sectionProfile" class="dest-link" id="navLinkProfile">Profile</a>
+    <div class="desktop-dest-nav" role="tablist" aria-label="Dashboard Tabs">
+      <a href="#home" class="dest-link active" id="navLinkHome" role="tab" aria-selected="true">Home</a>
+      <a href="#explore" class="dest-link" id="navLinkExplore" role="tab" aria-selected="false">Explore</a>
+      <a href="#activity" class="dest-link" id="navLinkActivity" role="tab" aria-selected="false">My Activity</a>
+      <a href="#profile" class="dest-link" id="navLinkProfile" role="tab" aria-selected="false">Profile</a>
     </div>
 
     <div class="nav-actions">
@@ -669,11 +797,11 @@
   </nav>
 
   <!-- TOP MOBILE SUB-NAVIGATION BAR (Directly below main navbar) -->
-  <nav class="mobile-dest-nav mobile-bottom-nav" aria-label="Dashboard Destination Navigation">
-    <a href="#sectionHome" class="mobile-tab-btn active" id="mTabHome">Home</a>
-    <a href="#sectionExplore" class="mobile-tab-btn" id="mTabExplore">Explore</a>
-    <a href="#sectionActivity" class="mobile-tab-btn" id="mTabActivity">Activity</a>
-    <a href="#sectionProfile" class="mobile-tab-btn" id="mTabProfile">Profile</a>
+  <nav class="mobile-dest-nav mobile-bottom-nav" role="tablist" aria-label="Mobile Dashboard Tabs">
+    <a href="#home" class="mobile-tab-btn active" id="mTabHome" role="tab" aria-selected="true">Home</a>
+    <a href="#explore" class="mobile-tab-btn" id="mTabExplore" role="tab" aria-selected="false">Explore</a>
+    <a href="#activity" class="mobile-tab-btn" id="mTabActivity" role="tab" aria-selected="false">Activity</a>
+    <a href="#profile" class="mobile-tab-btn" id="mTabProfile" role="tab" aria-selected="false">Profile</a>
   </nav>
 
   <main class="dash-container">
@@ -682,7 +810,7 @@
          DESTINATION 1: HOME
          Compact greeting, singular personal activity, singular next action
          ========================================================= -->
-    <section class="dest-section" id="sectionHome">
+    <section class="dest-section active" id="sectionHome" role="tabpanel" aria-labelledby="navLinkHome">
       <div class="home-hero-panel">
         <div class="dest-label">Overview</div>
         <h1 class="home-greeting-lead" id="welcomeHeading">Welcome back</h1>
@@ -697,7 +825,7 @@
               <div class="home-focus-desc" id="homeHighlightSubtitle">—</div>
             </div>
             <div>
-              <a href="#sectionActivity" class="action-btn-secondary" id="homeHighlightAction">View in Activity &rarr;</a>
+              <a href="#activity" class="action-btn-secondary" id="homeHighlightAction">View in Activity &rarr;</a>
             </div>
           </div>
         </div>
@@ -707,18 +835,63 @@
           <p class="home-empty-text">
             You have no upcoming event passes or active applications. Explore upcoming events or choose a creative circle to get involved.
           </p>
-          <a href="#sectionExplore" class="action-btn-primary">Explore Upcoming Events &rarr;</a>
+          <a href="#explore" class="action-btn-primary">Explore Upcoming Events &rarr;</a>
         </div>
       </div>
       <!-- Hidden compatibility node for legacy callers -->
       <span id="dashStatus" style="display:none;"></span>
+
+      <!-- Tab Directory Footer -->
+      <nav class="dash-tab-directory" aria-label="Dashboard Directory">
+        <div class="dest-label">Dashboard Directory</div>
+        <h3 class="tab-directory-title">Dashboard Sections</h3>
+        <p class="tab-directory-subtitle">Explore other sections of your Alfaaz dashboard.</p>
+        
+        <div class="tab-directory-grid">
+          <a href="#home" class="tab-directory-card active-tab-card" data-tab-link="home" aria-current="page">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Home</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Personal overview with your next active pass, announcements, and quick status highlights.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#explore" class="tab-directory-card" data-tab-link="explore">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Explore</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Browse upcoming gatherings, apply to 5 creative circles, and submit artwork to open exhibitions.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#activity" class="tab-directory-card" data-tab-link="activity">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">My Activity</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">View your confirmed event passes, circle membership status, and exhibition review stages.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#profile" class="tab-directory-card" data-tab-link="profile">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Profile</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Manage your full name, WhatsApp contact number for event passes, and account security.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+        </div>
+      </nav>
     </section>
 
     <!-- =========================================================
          DESTINATION 2: EXPLORE
          Active events list, 5 creative circles, singular exhibition open call, secondary curator
          ========================================================= -->
-    <section class="dest-section" id="sectionExplore">
+    <section class="dest-section" id="sectionExplore" role="tabpanel" aria-labelledby="navLinkExplore" hidden>
       <div class="dest-header">
         <div class="dest-label">Discover</div>
         <h2 class="dest-title">Explore</h2>
@@ -761,7 +934,7 @@
           <!-- Existing Active Circle Note for Explore View if already enrolled -->
           <div id="clubExploreStatusNote" style="display: none; padding: 1.25rem; background: #ffffff; border: 1px solid var(--grid-border);">
             <span style="font-size: 13px; color: var(--text-secondary);">You currently have an active circle affiliation. View your status under </span>
-            <a href="#sectionActivity" style="color: var(--accent-gold-text); font-weight: 600; text-decoration: none;">My Activity &rarr;</a>
+            <a href="#activity" style="color: var(--accent-gold-text); font-weight: 600; text-decoration: none;">My Activity &rarr;</a>
           </div>
         </div>
 
@@ -812,13 +985,58 @@
         </div>
 
       </div>
+
+      <!-- Tab Directory Footer -->
+      <nav class="dash-tab-directory" aria-label="Dashboard Directory">
+        <div class="dest-label">Dashboard Directory</div>
+        <h3 class="tab-directory-title">Dashboard Sections</h3>
+        <p class="tab-directory-subtitle">Explore other sections of your Alfaaz dashboard.</p>
+        
+        <div class="tab-directory-grid">
+          <a href="#home" class="tab-directory-card" data-tab-link="home">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Home</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Personal overview with your next active pass, announcements, and quick status highlights.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#explore" class="tab-directory-card active-tab-card" data-tab-link="explore" aria-current="page">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Explore</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Browse upcoming gatherings, apply to 5 creative circles, and submit artwork to open exhibitions.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#activity" class="tab-directory-card" data-tab-link="activity">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">My Activity</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">View your confirmed event passes, circle membership status, and exhibition review stages.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#profile" class="tab-directory-card" data-tab-link="profile">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Profile</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Manage your full name, WhatsApp contact number for event passes, and account security.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+        </div>
+      </nav>
     </section>
 
     <!-- =========================================================
          DESTINATION 3: MY ACTIVITY
          Confirmed passes (real data), circle status, exhibition status, My Submissions
          ========================================================= -->
-    <section class="dest-section" id="sectionActivity">
+    <section class="dest-section" id="sectionActivity" role="tabpanel" aria-labelledby="navLinkActivity" hidden>
       <div class="dest-header">
         <div class="dest-label">Records</div>
         <h2 class="dest-title">My Activity</h2>
@@ -850,7 +1068,7 @@
 
           <div id="clubEmptyActivityNote" style="display: none; background: #faf8f5; border: 1px dashed var(--grid-border); padding: 1.5rem;">
             <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; line-height: 1.5;">You haven't joined a creative circle yet.</p>
-            <a href="#sectionExplore" class="action-btn-secondary">Choose a Circle to Join &rarr;</a>
+            <a href="#explore" class="action-btn-secondary">Choose a Circle to Join &rarr;</a>
           </div>
         </div>
 
@@ -939,13 +1157,58 @@
         </div>
 
       </div>
+
+      <!-- Tab Directory Footer -->
+      <nav class="dash-tab-directory" aria-label="Dashboard Directory">
+        <div class="dest-label">Dashboard Directory</div>
+        <h3 class="tab-directory-title">Dashboard Sections</h3>
+        <p class="tab-directory-subtitle">Explore other sections of your Alfaaz dashboard.</p>
+        
+        <div class="tab-directory-grid">
+          <a href="#home" class="tab-directory-card" data-tab-link="home">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Home</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Personal overview with your next active pass, announcements, and quick status highlights.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#explore" class="tab-directory-card" data-tab-link="explore">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Explore</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Browse upcoming gatherings, apply to 5 creative circles, and submit artwork to open exhibitions.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#activity" class="tab-directory-card active-tab-card" data-tab-link="activity" aria-current="page">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">My Activity</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">View your confirmed event passes, circle membership status, and exhibition review stages.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#profile" class="tab-directory-card" data-tab-link="profile">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Profile</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Manage your full name, WhatsApp contact number for event passes, and account security.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+        </div>
+      </nav>
     </section>
 
     <!-- =========================================================
          DESTINATION 4: PROFILE
          Monogram avatar, Full Name & WhatsApp (immediate), Account & Security (secondary)
          ========================================================= -->
-    <section class="dest-section" id="sectionProfile">
+    <section class="dest-section" id="sectionProfile" role="tabpanel" aria-labelledby="navLinkProfile" hidden>
       <div class="dest-header">
         <div class="dest-label">Identity</div>
         <h2 class="dest-title">Profile</h2>
@@ -1015,6 +1278,51 @@
           </div>
         </div>
       </div>
+
+      <!-- Tab Directory Footer -->
+      <nav class="dash-tab-directory" aria-label="Dashboard Directory">
+        <div class="dest-label">Dashboard Directory</div>
+        <h3 class="tab-directory-title">Dashboard Sections</h3>
+        <p class="tab-directory-subtitle">Explore other sections of your Alfaaz dashboard.</p>
+        
+        <div class="tab-directory-grid">
+          <a href="#home" class="tab-directory-card" data-tab-link="home">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Home</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Personal overview with your next active pass, announcements, and quick status highlights.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#explore" class="tab-directory-card" data-tab-link="explore">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Explore</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Browse upcoming gatherings, apply to 5 creative circles, and submit artwork to open exhibitions.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#activity" class="tab-directory-card" data-tab-link="activity">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">My Activity</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">View your confirmed event passes, circle membership status, and exhibition review stages.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#profile" class="tab-directory-card active-tab-card" data-tab-link="profile" aria-current="page">
+            <div class="tab-directory-card-top">
+              <span class="tab-directory-card-title">Profile</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
+            <p class="tab-directory-card-desc">Manage your full name, WhatsApp contact number for event passes, and account security.</p>
+            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+        </div>
+      </nav>
     </section>
 
   </main>

@@ -989,49 +989,114 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 11. Navigation Scroll-Spy & Active Destination Synchronization
-  function initNavigationScrollSpy() {
-    const desktopLinks = [
-      { id: 'sectionHome', link: document.getElementById('navLinkHome') },
-      { id: 'sectionExplore', link: document.getElementById('navLinkExplore') },
-      { id: 'sectionActivity', link: document.getElementById('navLinkActivity') },
-      { id: 'sectionProfile', link: document.getElementById('navLinkProfile') }
-    ];
+  // 11. Dashboard Tab System Architecture
+  const TAB_CONFIG = {
+    home: { sectionId: 'sectionHome', desktopId: 'navLinkHome', mobileId: 'mTabHome' },
+    explore: { sectionId: 'sectionExplore', desktopId: 'navLinkExplore', mobileId: 'mTabExplore' },
+    activity: { sectionId: 'sectionActivity', desktopId: 'navLinkActivity', mobileId: 'mTabActivity' },
+    profile: { sectionId: 'sectionProfile', desktopId: 'navLinkProfile', mobileId: 'mTabProfile' }
+  };
 
-    const mobileLinks = [
-      { id: 'sectionHome', link: document.getElementById('mTabHome') },
-      { id: 'sectionExplore', link: document.getElementById('mTabExplore') },
-      { id: 'sectionActivity', link: document.getElementById('mTabActivity') },
-      { id: 'sectionProfile', link: document.getElementById('mTabProfile') }
-    ];
+  function normalizeTabKey(rawKey) {
+    if (!rawKey) return 'home';
+    let key = String(rawKey).trim().toLowerCase().replace(/^#/, '').replace(/^section/, '');
+    if (key === 'tickets' || key === 'submissions' || key === 'club') key = 'activity';
+    if (key === 'events' || key === 'clubs' || key === 'exhib') key = 'explore';
+    return TAB_CONFIG[key] ? key : 'home';
+  }
 
-    const sections = desktopLinks.map(d => document.getElementById(d.id)).filter(Boolean);
-    if (!('IntersectionObserver' in window) || !sections.length) return;
+  function switchTab(targetKey, updateHash = true) {
+    const activeKey = normalizeTabKey(targetKey);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const sid = entry.target.id;
-            desktopLinks.forEach(d => {
-              if (d.link) {
-                if (d.id === sid) d.link.classList.add('active');
-                else d.link.classList.remove('active');
-              }
-            });
-            mobileLinks.forEach(m => {
-              if (m.link) {
-                if (m.id === sid) m.link.classList.add('active');
-                else m.link.classList.remove('active');
-              }
-            });
-          }
-        });
-      },
-      { rootMargin: '-15% 0px -65% 0px', threshold: 0 }
-    );
+    Object.keys(TAB_CONFIG).forEach((key) => {
+      const cfg = TAB_CONFIG[key];
+      const sectionEl = document.getElementById(cfg.sectionId);
+      const deskEl = document.getElementById(cfg.desktopId);
+      const mobEl = document.getElementById(cfg.mobileId);
+      const isTarget = (key === activeKey);
 
-    sections.forEach(s => observer.observe(s));
+      if (sectionEl) {
+        if (isTarget) {
+          sectionEl.classList.add('active');
+          sectionEl.removeAttribute('hidden');
+        } else {
+          sectionEl.classList.remove('active');
+          sectionEl.setAttribute('hidden', 'true');
+        }
+      }
+
+      if (deskEl) {
+        if (isTarget) {
+          deskEl.classList.add('active');
+          deskEl.setAttribute('aria-selected', 'true');
+        } else {
+          deskEl.classList.remove('active');
+          deskEl.setAttribute('aria-selected', 'false');
+        }
+      }
+
+      if (mobEl) {
+        if (isTarget) {
+          mobEl.classList.add('active');
+          mobEl.setAttribute('aria-selected', 'true');
+        } else {
+          mobEl.classList.remove('active');
+          mobEl.setAttribute('aria-selected', 'false');
+        }
+      }
+    });
+
+    // Synchronize all bottom directory navigation cards
+    document.querySelectorAll('.tab-directory-card').forEach((card) => {
+      const cardKey = normalizeTabKey(card.getAttribute('data-tab-link'));
+      if (cardKey === activeKey) {
+        card.classList.add('active-tab-card');
+        card.setAttribute('aria-current', 'page');
+      } else {
+        card.classList.remove('active-tab-card');
+        card.removeAttribute('aria-current');
+      }
+    });
+
+    if (updateHash) {
+      if (window.location.hash !== '#' + activeKey) {
+        try {
+          history.pushState(null, '', '#' + activeKey);
+        } catch (_) {
+          window.location.hash = activeKey;
+        }
+      }
+    }
+
+    // Scroll cleanly to the top of the dashboard
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  window.switchTab = switchTab;
+
+  function initDashboardTabSystem() {
+    // Intercept clicks on links that target a dashboard tab
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('a[href^="#"]');
+      if (!target) return;
+      const href = target.getAttribute('href');
+      if (!href || href === '#' || href.length < 2) return;
+
+      const cleanKey = href.replace(/^#/, '').replace(/^section/, '').toLowerCase();
+      if (['home', 'explore', 'activity', 'profile', 'tickets', 'submissions', 'clubs', 'events'].includes(cleanKey)) {
+        e.preventDefault();
+        switchTab(cleanKey, true);
+      }
+    });
+
+    // Handle browser back and forward navigation
+    window.addEventListener('hashchange', () => {
+      switchTab(window.location.hash, false);
+    });
+
+    // Initial load: activate tab based on hash or default to home
+    const initialKey = normalizeTabKey(window.location.hash || 'home');
+    switchTab(initialKey, false);
   }
 
   // Keyboard shortcut handlers
@@ -1072,5 +1137,5 @@ document.addEventListener('DOMContentLoaded', () => {
   loadMyTickets();
   loadClubStatus();
   loadExhibitionStatus();
-  initNavigationScrollSpy();
+  initDashboardTabSystem();
 });
