@@ -26,7 +26,7 @@
 
     .dash-container {
       max-width: 1140px;
-      margin: 5.5rem auto 5rem;
+      margin: 1.5rem auto 5rem;
       padding: 0 2rem;
     }
 
@@ -40,11 +40,13 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--grid-border);
-      position: fixed;
+      position: sticky;
       top: 0;
       left: 0;
       right: 0;
-      z-index: 100;
+      width: 100%;
+      box-sizing: border-box;
+      z-index: 1000;
     }
     .desktop-dest-nav {
       display: flex;
@@ -127,9 +129,15 @@
 
     /* Bottom Tab Navigation Directory */
     .dash-tab-directory {
-      margin-top: 3.5rem;
-      padding-top: 2.25rem;
-      border-top: 1px solid var(--grid-border);
+      position: static !important;
+      display: block !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      margin-top: 3.5rem !important;
+      padding-top: 2.25rem !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      border-top: 1px solid var(--grid-border) !important;
     }
     .tab-directory-title {
       font-family: var(--font-heading);
@@ -674,9 +682,12 @@
         height: 54px;
         padding: 0.75rem 1.25rem;
         box-sizing: border-box;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
       }
       .dash-container {
-        margin: calc(54px + 42px + 1.25rem) auto 3.5rem;
+        margin: 1.25rem auto 3.5rem;
         padding: 0 1.15rem;
       }
       .desktop-dest-nav {
@@ -684,7 +695,7 @@
       }
       .mobile-dest-nav, .mobile-bottom-nav {
         display: flex;
-        position: fixed;
+        position: sticky;
         top: 54px;
         bottom: auto;
         left: 0;
@@ -692,7 +703,7 @@
         width: 100%;
         height: 42px;
         box-sizing: border-box;
-        z-index: 99;
+        z-index: 999;
         background: rgba(244, 241, 234, 0.96);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
@@ -797,12 +808,12 @@
   </nav>
 
   <!-- TOP MOBILE SUB-NAVIGATION BAR (Directly below main navbar) -->
-  <nav class="mobile-dest-nav mobile-bottom-nav" role="tablist" aria-label="Mobile Dashboard Tabs">
+  <div class="mobile-dest-nav mobile-bottom-nav" role="tablist" aria-label="Mobile Dashboard Tabs">
     <a href="#home" class="mobile-tab-btn active" id="mTabHome" role="tab" aria-selected="true">Home</a>
     <a href="#explore" class="mobile-tab-btn" id="mTabExplore" role="tab" aria-selected="false">Explore</a>
     <a href="#activity" class="mobile-tab-btn" id="mTabActivity" role="tab" aria-selected="false">Activity</a>
     <a href="#profile" class="mobile-tab-btn" id="mTabProfile" role="tab" aria-selected="false">Profile</a>
-  </nav>
+  </div>
 
   <main class="dash-container">
 
@@ -842,7 +853,7 @@
       <span id="dashStatus" style="display:none;"></span>
 
       <!-- Tab Directory Footer -->
-      <nav class="dash-tab-directory" aria-label="Dashboard Directory">
+      <div class="dash-tab-directory" aria-label="Dashboard Directory">
         <div class="dest-label">Dashboard Directory</div>
         <h3 class="tab-directory-title">Dashboard Sections</h3>
         <p class="tab-directory-subtitle">Explore other sections of your Alfaaz dashboard.</p>
@@ -884,7 +895,7 @@
             <span class="tab-directory-badge">Current Tab</span>
           </a>
         </div>
-      </nav>
+      </div>
     </section>
 
     <!-- =========================================================
@@ -987,7 +998,7 @@
       </div>
 
       <!-- Tab Directory Footer -->
-      <nav class="dash-tab-directory" aria-label="Dashboard Directory">
+      <div class="dash-tab-directory" aria-label="Dashboard Directory">
         <div class="dest-label">Dashboard Directory</div>
         <h3 class="tab-directory-title">Dashboard Sections</h3>
         <p class="tab-directory-subtitle">Explore other sections of your Alfaaz dashboard.</p>
@@ -1029,7 +1040,7 @@
             <span class="tab-directory-badge">Current Tab</span>
           </a>
         </div>
-      </nav>
+      </div>
     </section>
 
     <!-- =========================================================
@@ -1159,7 +1170,7 @@
       </div>
 
       <!-- Tab Directory Footer -->
-      <nav class="dash-tab-directory" aria-label="Dashboard Directory">
+      <div class="dash-tab-directory" aria-label="Dashboard Directory">
         <div class="dest-label">Dashboard Directory</div>
         <h3 class="tab-directory-title">Dashboard Sections</h3>
         <p class="tab-directory-subtitle">Explore other sections of your Alfaaz dashboard.</p>
@@ -1201,7 +1212,7 @@
             <span class="tab-directory-badge">Current Tab</span>
           </a>
         </div>
-      </nav>
+      </div>
     </section>
 
     <!-- =========================================================
@@ -1280,7 +1291,7 @@
       </div>
 
       <!-- Tab Directory Footer -->
-      <nav class="dash-tab-directory" aria-label="Dashboard Directory">
+      <div class="dash-tab-directory" aria-label="Dashboard Directory">
         <div class="dest-label">Dashboard Directory</div>
         <h3 class="tab-directory-title">Dashboard Sections</h3>
         <p class="tab-directory-subtitle">Explore other sections of your Alfaaz dashboard.</p>
@@ -1322,7 +1333,7 @@
             <span class="tab-directory-badge">Current Tab</span>
           </a>
         </div>
-      </nav>
+      </div>
     </section>
 
   </main>
