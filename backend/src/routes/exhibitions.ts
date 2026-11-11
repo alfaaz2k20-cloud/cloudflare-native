@@ -29,6 +29,53 @@ exhibitionsRouter.get('/config', async (c) => {
   });
 });
 
+exhibitionsRouter.post('/upload-portfolio', requireAuth, rateLimiter({ limit: 10, windowMs: 60000 }), async (c) => {
+  const user = c.get('user');
+  const contentType = c.req.header('content-type') || '';
+  if (!contentType.includes('multipart/form-data')) {
+    return c.json({ error: 'Multipart form data with file is required' }, 400);
+  }
+
+  const formData = await c.req.formData();
+  const file = formData.get('file');
+  if (!file || typeof file !== 'object' || !('arrayBuffer' in file)) {
+    return c.json({ error: 'A valid PDF file is required' }, 400);
+  }
+
+  const fileObj = file as File;
+  const fileNameLower = (fileObj.name || '').toLowerCase();
+  const isPdf = fileObj.type === 'application/pdf' || fileNameLower.endsWith('.pdf');
+  if (!isPdf) {
+    return c.json({ error: 'Only PDF documents (.pdf) are permitted' }, 400);
+  }
+
+  if (fileObj.size > 15 * 1024 * 1024) {
+    return c.json({ error: 'Portfolio file exceeds 15MB limit' }, 400);
+  }
+
+  if (!c.env.VAULT_BUCKET) {
+    return c.json({ error: 'Direct storage bucket not configured in this environment.', detail: 'STORAGE_UNCONFIGURED' }, 503);
+  }
+
+  const sanitized = fileObj.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const emailHashBuf = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${user.email.toLowerCase()}:${c.env.JWT_SECRET || 'alfaaz-vault-salt'}`)
+  );
+  const userHash = Array.from(new Uint8Array(emailHashBuf))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 16);
+  const key = `portfolios/${userHash}-${Date.now()}-${sanitized}`;
+  const buffer = await fileObj.arrayBuffer();
+  await c.env.VAULT_BUCKET.put(key, buffer, {
+    httpMetadata: { contentType: 'application/pdf' }
+  });
+
+  const file_url = `/vault/file/${encodeURIComponent(key)}`;
+  return c.json({ status: 'SUCCESS', secure_url: file_url, url: file_url });
+});
+
 exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs: 60000 }), async (c) => {
   const user = c.get('user');
   const body = await c.req.json().catch(() => ({}));

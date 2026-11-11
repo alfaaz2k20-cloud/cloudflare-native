@@ -62,12 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 250);
   }
 
-  // ── Cloudinary PDF Upload ──────────────────────────────────────────
-  const cloudinaryConfig = window.ALFAAZ_CLOUDINARY || {
-    cloudName: 'dmqwjpmjk',
-    uploadPreset: 'alfaaz_vault'
-  };
-  const { cloudName: CLOUD_NAME, uploadPreset: UPLOAD_PRESET } = cloudinaryConfig;
+  // ── Portfolio PDF Upload (Cloudinary with Edge R2 Fallback) ───────
+  const getCloudinaryConfig = () => ({
+    cloudName: (window.ALFAAZ_CLOUDINARY && window.ALFAAZ_CLOUDINARY.cloudName) || 'dmqwjpmjk',
+    uploadPreset: (window.ALFAAZ_CLOUDINARY && window.ALFAAZ_CLOUDINARY.uploadPreset) || 'alfaaz_vault'
+  });
   let uploadedPdfUrl = null;
 
   document.getElementById('portfolioFile')?.addEventListener('change', async (e) => {
@@ -100,31 +99,85 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const sizeFormatted = file.size > 1024 * 1024
+      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+      : `${(file.size / 1024).toFixed(0)} KB`;
+
     status.style.color = 'var(--accent-gold-text)';
-    status.textContent = `Uploading "${file.name}" to Storage...`;
+    status.textContent = `Uploading "${file.name}" (${sizeFormatted}) to Storage...`;
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Uploading Portfolio PDF...';
     }
 
+    const { cloudName, uploadPreset } = getCloudinaryConfig();
+    let finalUrl = null;
+
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', UPLOAD_PRESET);
+      // 1. Primary: Cloudinary raw upload (stores PDF document without GhostScript rasterization)
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', uploadPreset);
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json().catch(() => ({}));
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data && data.secure_url) {
+          finalUrl = data.secure_url;
+        }
+      } catch (rawErr) {
+        console.warn('[Exhibition Cloudinary raw upload warning]:', rawErr);
+      }
 
-      if (data.secure_url) {
-        uploadedPdfUrl = data.secure_url;
+      // 2. Secondary fallback: Cloudinary auto upload
+      if (!finalUrl) {
+        try {
+          const autoFormData = new FormData();
+          autoFormData.append('file', file);
+          autoFormData.append('upload_preset', uploadPreset);
+
+          const autoRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+            method: 'POST',
+            body: autoFormData
+          });
+          const autoData = await autoRes.json().catch(() => ({}));
+          if (autoData && autoData.secure_url) {
+            finalUrl = autoData.secure_url;
+          }
+        } catch (autoErr) {
+          console.warn('[Exhibition Cloudinary auto upload warning]:', autoErr);
+        }
+      }
+
+      // 3. Sovereign Edge Fallback: Cloudflare Edge R2 (/exhibitions/upload-portfolio)
+      if (!finalUrl) {
+        try {
+          const edgeFormData = new FormData();
+          edgeFormData.append('file', file);
+          const edgeRes = await window.globalApiFetch('/exhibitions/upload-portfolio', {
+            method: 'POST',
+            body: edgeFormData
+          });
+          if (edgeRes && edgeRes.ok) {
+            const edgeData = await edgeRes.json().catch(() => ({}));
+            if (edgeData && (edgeData.secure_url || edgeData.url)) {
+              finalUrl = edgeData.secure_url || edgeData.url;
+            }
+          }
+        } catch (edgeErr) {
+          console.warn('[Exhibition Edge R2 upload warning]:', edgeErr);
+        }
+      }
+
+      if (finalUrl) {
+        uploadedPdfUrl = finalUrl;
         status.style.color = 'var(--accent-green-text)';
-        status.innerHTML = `✓ Upload complete: <strong>${window.escapeHtml(file.name)}</strong>`;
+        status.innerHTML = `✓ Upload complete: <strong>${window.escapeHtml(file.name)}</strong> (${sizeFormatted})`;
       } else {
-        const detail = data.error?.message ? `: ${data.error.message}` : '';
-        throw new Error(`Upload failed${detail}`);
+        throw new Error('Upload could not be completed. Please check your connection and retry.');
       }
     } catch (uploadErr) {
       status.style.color = 'var(--accent-red-text)';

@@ -115,19 +115,42 @@ vaultRouter.get('/file/:key{.*}', requireAuth, async (c) => {
   }
 
   if (user.status !== 'ADMIN') {
-    const owned = await c.env.DB.prepare(
-      'SELECT file_url FROM submissions WHERE LOWER(author_email) = LOWER(?)'
-    ).bind(user.email).all<{ file_url: string }>();
+    const emailHashBuf = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(`${user.email.toLowerCase()}:${c.env.JWT_SECRET || 'alfaaz-vault-salt'}`)
+    );
+    const userHash = Array.from(new Uint8Array(emailHashBuf))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+      .slice(0, 16);
+    const isUserOwnedKey = key.startsWith(`portfolios/${userHash}-`);
 
-    const encodedPath = `/vault/file/${encodeURIComponent(key)}`;
-    const decodedPath = `/vault/file/${key}`;
-    const isOwner = (owned.results || []).some(row => {
-      const stored = row.file_url || '';
-      return stored === encodedPath || stored === decodedPath || decodeURIComponent(stored) === decodedPath;
-    });
+    if (!isUserOwnedKey) {
+      const [ownedSubmissions, ownedExhibitions] = await Promise.all([
+        c.env.DB.prepare(
+          'SELECT file_url FROM submissions WHERE LOWER(author_email) = LOWER(?)'
+        ).bind(user.email).all<{ file_url: string }>(),
+        c.env.DB.prepare(
+          'SELECT portfolio_url, payment_proof_url FROM exhibition_applications WHERE LOWER(user_email) = LOWER(?)'
+        ).bind(user.email).all<{ portfolio_url?: string; payment_proof_url?: string }>()
+      ]);
 
-    if (!isOwner) {
-      return c.text('File not found in storage vault.', 404);
+      const encodedPath = `/vault/file/${encodeURIComponent(key)}`;
+      const decodedPath = `/vault/file/${key}`;
+      const allUrls = [
+        ...(ownedSubmissions.results || []).map(r => r.file_url),
+        ...(ownedExhibitions.results || []).map(r => r.portfolio_url),
+        ...(ownedExhibitions.results || []).map(r => r.payment_proof_url)
+      ].filter(Boolean);
+
+      const isOwner = allUrls.some(stored => {
+        const s = stored || '';
+        return s === encodedPath || s === decodedPath || decodeURIComponent(s) === decodedPath;
+      });
+
+      if (!isOwner) {
+        return c.text('File not found in storage vault.', 404);
+      }
     }
   }
 

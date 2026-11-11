@@ -2,10 +2,10 @@
 // Clean, honest data hydration across Home, Explore, My Activity, and Profile
 
 document.addEventListener('DOMContentLoaded', () => {
-  const cloudinaryConfig = window.ALFAAZ_CLOUDINARY || {
-    cloudName: 'dmqwjpmjk',
-    uploadPreset: 'alfaaz_vault'
-  };
+  const getCloudinaryConfig = () => ({
+    cloudName: (window.ALFAAZ_CLOUDINARY && window.ALFAAZ_CLOUDINARY.cloudName) || 'dmqwjpmjk',
+    uploadPreset: (window.ALFAAZ_CLOUDINARY && window.ALFAAZ_CLOUDINARY.uploadPreset) || 'alfaaz_vault'
+  });
 
   // 1. Toast Notification System
   function showToast(message, type = 'info', duration = 3500) {
@@ -819,11 +819,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
+      const { cloudName, uploadPreset } = getCloudinaryConfig();
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
-      formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+      formData.append('upload_preset', uploadPreset);
 
-      const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/upload`, {
+      const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
         method: 'POST',
         body: formData
       });

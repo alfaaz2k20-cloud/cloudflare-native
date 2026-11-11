@@ -739,6 +739,56 @@ describe('Real Route-Level D1 SQLite & R2 Integration Test Suite', () => {
       expect(appRow.status).toBe('PENDING');
     });
 
+    it('POST /exhibitions/upload-portfolio accepts valid PDF and allows retrieval', async () => {
+      const token = await createToken('portfolio_artist@alfaaz.local', 'PARTICIPANT', jwtSecret);
+      const otherToken = await createToken('other_user@alfaaz.local', 'PARTICIPANT', jwtSecret);
+
+      // 1. Rejects unauthenticated request
+      const unauthRes = await app.request('/exhibitions/upload-portfolio', {
+        method: 'POST'
+      }, getTestEnv());
+      expect(unauthRes.status).toBe(401);
+
+      // 2. Rejects non-PDF file
+      const invalidForm = new FormData();
+      const txtFile = new File(['just some text'], 'notes.txt', { type: 'text/plain' });
+      invalidForm.append('file', txtFile);
+      const badFileRes = await app.request('/exhibitions/upload-portfolio', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: invalidForm
+      }, getTestEnv());
+      expect(badFileRes.status).toBe(400);
+
+      // 3. Accepts valid PDF file
+      const validForm = new FormData();
+      const pdfFile = new File(['%PDF-1.4 simulated binary portfolio content'], 'portfolio.pdf', { type: 'application/pdf' });
+      validForm.append('file', pdfFile);
+      const uploadRes = await app.request('/exhibitions/upload-portfolio', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: validForm
+      }, getTestEnv());
+      expect(uploadRes.status).toBe(200);
+      const uploadData: any = await uploadRes.json();
+      expect(uploadData.status).toBe('SUCCESS');
+      expect(uploadData.secure_url).toContain('/vault/file/');
+
+      // 4. Owner can access their uploaded portfolio
+      const getRes = await app.request(uploadData.secure_url, {
+        headers: { Authorization: `Bearer ${token}` }
+      }, getTestEnv());
+      expect(getRes.status).toBe(200);
+      const fileText = await getRes.text();
+      expect(fileText).toBe('%PDF-1.4 simulated binary portfolio content');
+
+      // 5. Unauthorized non-admin user cannot access other user\'s portfolio
+      const forbiddenRes = await app.request(uploadData.secure_url, {
+        headers: { Authorization: `Bearer ${otherToken}` }
+      }, getTestEnv());
+      expect(forbiddenRes.status).toBe(404);
+    });
+
     it('GET /api/notices returns live notice feed matching schema { events, exhibition, latest_blog }', async () => {
       // Seed a test blog
       await mockDb.prepare('INSERT INTO blogs (title, excerpt, content, is_published) VALUES (?, ?, ?, 1)')
