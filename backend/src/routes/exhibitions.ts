@@ -211,11 +211,13 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
   }
 
   try {
+    const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+    const recipientName = String(body.full_name || '').trim() || 'Artist';
     await sendSystemEmail(
       c.env,
       user.email,
-      'ALFAAZ — Application Received',
-      `Greetings ${body.full_name},\n\nYour portfolio has successfully entered our Storage. This secure space is used to safely hold your work and protect your assets while they are under review by the Curator for the upcoming exhibition.\n\nYou will receive an update regarding your status soon.\n\n— The Alfaaz Collective`
+      `Alfaaz Collective — Artwork Received: ${activeCycle.title}`,
+      `Hello ${recipientName},\n\nThank you for sharing your artwork with us for ${activeCycle.title}!\n\nWe have received your submission safely. Our curatorial team will review every piece of art with care, fairness, and respect.\n\nWhat happens next:\n1. Our curatorial team will review your submitted artwork.\n2. Once the review is complete, your status will update on your dashboard.\n3. You can check your progress anytime by visiting:\n${appUrl}/dashboard.html\n\nThank you for sharing your creativity with our collective community!\n\nWarm regards,\nAlfaaz Collective`
     );
   } catch (err) {
     console.warn('[EXHIBITIONS] Application email notice:', err);
@@ -367,11 +369,12 @@ async function handleCompleteRegistration(c: Context<{ Bindings: Env; Variables:
     .run();
 
   try {
+    const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
     await sendSystemEmail(
       c.env,
       user.email,
-      'ALFAAZ — Registration Submitted',
-      `Greetings ${app.full_name},\n\nYour registration form and payment proof have been received. The Curator will verify your payment and confirm your spot shortly.\n\n— The Alfaaz Collective`
+      `Alfaaz Collective — Registration Received: ${app.exhibition_cycle}`,
+      `Hello ${app.full_name},\n\nThank you for submitting your exhibition registration and payment proof for ${app.exhibition_cycle}!\n\nOur team is verifying the details and will confirm your gallery spot shortly. You can check your confirmation status anytime on your dashboard:\n${appUrl}/dashboard.html\n\nThank you for your cooperation and excitement!\n\nWarm regards,\nAlfaaz Collective`
     );
   } catch (err) {
     console.warn('[EXHIBITIONS] Registration submission email notice:', err);

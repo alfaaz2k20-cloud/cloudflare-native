@@ -244,11 +244,12 @@ authRouter.post('/register', async (c) => {
 
   try {
     const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+    const recipientName = fullName || 'Friend';
     await sendSystemEmail(
       c.env,
       email,
-      'Welcome to Alfaaz Collective',
-      `Greetings ${fullName},\n\nYour account at Alfaaz Collective has been registered successfully.\n\nYou can access your portfolio, events, and collective circles at:\n${appUrl}/dashboard.html\n\n— Alfaaz Collective`
+      'Alfaaz Collective — Welcome to the Collective',
+      `Hello ${recipientName},\n\nWelcome to Alfaaz Collective! We are happy to have you join our creative community.\n\nYou can now explore exhibitions, join creative circles, and register for community events from your dashboard:\n${appUrl}/dashboard.html\n\nIf you ever need help or have questions, feel free to reach out to us.\n\nWarm regards,\nAlfaaz Collective`
     );
   } catch (emailErr) {
     console.warn('[EMAIL WARNING] Welcome email dispatch failed:', emailErr);
@@ -337,8 +338,8 @@ authRouter.post('/forgot-password', async (c) => {
     await sendSystemEmail(
       c.env,
       user.email,
-      'ALFAAZ — Password Reset',
-      `Greetings,\n\nA password reset was requested for your account: ${user.email}.\nThis link expires in 15 minutes.\n\n${resetLink}\n\nIf you did not request this, please ignore this message.\n\n— The Curator`,
+      'Alfaaz Collective — Password Reset Request',
+      `Hello,\n\nWe received a request to reset the password for your Alfaaz Collective account (${user.email}).\n\nYou can set a new password by clicking the link below:\n${resetLink}\n\nThis link is valid for 15 minutes. If you did not ask to reset your password, you can safely disregard this email—your account remains secure.\n\nWarm regards,\nAlfaaz Collective`,
       false
     );
   } catch (err) {
@@ -418,8 +419,8 @@ authRouter.post('/reset-password', async (c) => {
       await sendSystemEmail(
         c.env,
         payload.sub,
-        'ALFAAZ — Security Alert: Password Updated',
-        `Greetings,\n\nYour password for Alfaaz Collective was successfully updated.\n\nIf you initiated this change, no further action is required.\nIf you did not make this change, please contact us immediately at curator@alfaazcollective.org.\n\n— Alfaaz Security`
+        'Alfaaz Collective — Your Password Has Been Updated',
+        `Hello,\n\nThis is a quick confirmation that the password for your Alfaaz Collective account was successfully updated.\n\nIf you made this change, no further action is needed.\n\nIf you did not make this change, please contact us right away at curator@alfaazcollective.org so we can help protect your account.\n\nWarm regards,\nAlfaaz Collective`
       );
     } catch (emailErr) {
       console.warn('[EMAIL WARNING] Password reset security alert failed:', emailErr);

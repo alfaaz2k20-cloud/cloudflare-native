@@ -18,6 +18,7 @@ export interface Env {
 
   // Email Configuration
   EMAIL_PROVIDER?: 'dev' | 'webhook' | 'cloudflare';
+  EMAIL_FROM?: string;
   MAKE_WEBHOOK_URL?: string;
   CF_EMAIL_ROUTING?: string;
   CLOUDFLARE_EMAIL_TOKEN?: string;

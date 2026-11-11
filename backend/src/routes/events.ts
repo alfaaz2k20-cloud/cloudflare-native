@@ -127,12 +127,18 @@ eventsRouter.post('/register', requireAuth, rateLimiter({ limit: 10, windowMs: 6
   }
 
   try {
+    const userRow = await c.env.DB
+      .prepare('SELECT full_name FROM users WHERE email = ?')
+      .bind(user.email)
+      .first<{ full_name: string | null }>();
+    const recipientName = userRow?.full_name?.trim() || 'Friend';
     const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+
     await sendSystemEmail(
       c.env,
       user.email,
-      `ALFAAZ — RSVP Confirmed: ${event.name}`,
-      `Greetings,\n\nYour registration for the following Alfaaz Collective event is confirmed:\n\nEvent: ${event.name}\nDate: ${event.event_date || 'TBD'}\n\nYou can view your active RSVPs anytime on your dashboard:\n${appUrl}/dashboard.html\n\n— Alfaaz Events`
+      `Alfaaz Collective — Your Seat is Confirmed: ${event.name}`,
+      `Hello ${recipientName},\n\nWe are delighted to confirm your registration for our upcoming community event:\n\nEvent: ${event.name}\nDate: ${event.event_date || 'To be announced'}\n\nYour seat is reserved. Please arrive a few minutes early so you can get settled comfortably. You can view your active RSVPs anytime on your dashboard:\n${appUrl}/dashboard.html\n\nWe look forward to seeing you there!\n\nWarm regards,\nAlfaaz Collective`
     );
   } catch (emailErr) {
     console.warn('[EMAIL WARNING] Event registration email failed:', emailErr);

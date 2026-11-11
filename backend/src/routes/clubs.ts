@@ -43,12 +43,18 @@ clubsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs: 60000
       .run();
 
     try {
+      const userRow = await c.env.DB
+        .prepare('SELECT full_name FROM users WHERE email = ?')
+        .bind(user.email)
+        .first<{ full_name: string | null }>();
+      const recipientName = userRow?.full_name?.trim() || 'Friend';
       const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+
       await sendSystemEmail(
         c.env,
         user.email,
-        `ALFAAZ — Circle Application Received: ${clubName}`,
-        `Greetings,\n\nWe have received your application to join the ${clubName} circle at Alfaaz Collective.\n\nOur curators review collective circle applications on a rolling cycle. You can check your application status on your dashboard at:\n${appUrl}/dashboard.html\n\n— Alfaaz Collective`
+        `Alfaaz Collective — Application Received: ${clubName} Circle`,
+        `Hello ${recipientName},\n\nThank you for applying to join the ${clubName} creative circle at Alfaaz Collective.\n\nOur team reviews applications on a rolling basis. We take time to read every note and make sure our circles remain welcoming, inclusive, and collaborative spaces for everyone.\n\nYou can check your application status anytime on your dashboard:\n${appUrl}/dashboard.html\n\nWarm regards,\nAlfaaz Collective`
       );
     } catch (emailErr) {
       console.warn('[EMAIL WARNING] Club application email failed:', emailErr);
@@ -79,12 +85,18 @@ clubsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs: 60000
   }
 
   try {
+    const userRow = await c.env.DB
+      .prepare('SELECT full_name FROM users WHERE email = ?')
+      .bind(user.email)
+      .first<{ full_name: string | null }>();
+    const recipientName = userRow?.full_name?.trim() || 'Friend';
     const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+
     await sendSystemEmail(
       c.env,
       user.email,
-      `ALFAAZ — Circle Application Received: ${clubName}`,
-      `Greetings,\n\nWe have received your application to join the ${clubName} circle at Alfaaz Collective.\n\nOur curators review collective circle applications on a rolling cycle. You can check your application status on your dashboard at:\n${appUrl}/dashboard.html\n\n— Alfaaz Collective`
+      `Alfaaz Collective — Application Received: ${clubName} Circle`,
+      `Hello ${recipientName},\n\nThank you for applying to join the ${clubName} creative circle at Alfaaz Collective.\n\nOur team reviews applications on a rolling basis. We take time to read every note and make sure our circles remain welcoming, inclusive, and collaborative spaces for everyone.\n\nYou can check your application status anytime on your dashboard:\n${appUrl}/dashboard.html\n\nWarm regards,\nAlfaaz Collective`
     );
   } catch (emailErr) {
     console.warn('[EMAIL WARNING] Club application email failed:', emailErr);

@@ -59,6 +59,7 @@
 	"vars": {
 		"ENV": "production",
 		"FRONTEND_URL": "https://alfaazcollective.org",
-		"EMAIL_PROVIDER": "webhook"
+		"EMAIL_PROVIDER": "webhook",
+		"EMAIL_FROM": "curator@alfaazcollective.org"
 	}
 }

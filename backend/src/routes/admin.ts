@@ -152,7 +152,9 @@ adminRouter.post('/club-applications/review', async (c) => {
     return c.json({ error: 'Valid application_id and status are required' }, 400);
   }
 
-  const app = await c.env.DB.prepare('SELECT id FROM club_applications WHERE id = ?').bind(applicationId).first();
+  const app = await c.env.DB.prepare('SELECT id, user_email, club_name FROM club_applications WHERE id = ?').bind(applicationId).first<{
+    id: number; user_email: string; club_name: string;
+  }>();
   if (!app) return c.json({ error: 'Application not found.' }, 404);
 
   await c.env.DB.prepare(`
@@ -162,6 +164,35 @@ adminRouter.post('/club-applications/review', async (c) => {
   `).bind(status, adminNote, applicationId).run();
 
   await logAudit(c.env.DB, admin.email, 'REVIEW_CLUB_APP', 'club_app', String(applicationId), `Status: ${status}`);
+
+  if (status === 'APPROVED' || status === 'REJECTED') {
+    try {
+      const userRow = await c.env.DB
+        .prepare('SELECT full_name FROM users WHERE email = ?')
+        .bind(app.user_email)
+        .first<{ full_name: string | null }>();
+      const recipientName = userRow?.full_name?.trim() || 'Friend';
+      const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+      const emailProvider = getEmailProvider(c.env);
+
+      if (status === 'APPROVED') {
+        await emailProvider.sendEmail(
+          app.user_email,
+          `Alfaaz Collective — Welcome to the ${app.club_name} Circle!`,
+          `Hello ${recipientName},\n\nWe are happy to welcome you to the ${app.club_name} circle at Alfaaz Collective!\n\nYour application has been accepted. You can now access circle discussions, meetups, and member activities directly through your dashboard:\n${appUrl}/dashboard.html\n\nWe look forward to creating, learning, and sharing together.\n\nWarmest welcome,\nAlfaaz Collective`
+        );
+      } else if (status === 'REJECTED') {
+        await emailProvider.sendEmail(
+          app.user_email,
+          `Alfaaz Collective — Update on ${app.club_name} Circle`,
+          `Hello ${recipientName},\n\nThank you for your interest in joining the ${app.club_name} circle at Alfaaz Collective.\n\nFor this cycle, we are unable to offer you a spot in this circle as spots are limited to keep group sessions interactive and focused.\n\nPlease know that we deeply appreciate your interest. You are always welcome to apply again in future cycles or join other open community sessions.\n\nYou can explore other circles and events on your dashboard:\n${appUrl}/dashboard.html\n\nWith gratitude,\nAlfaaz Collective`
+        );
+      }
+    } catch (emailErr) {
+      console.warn('[EMAIL WARNING] Club review notification failed:', emailErr);
+    }
+  }
+
   return c.json({ status: 'SUCCESS' });
 });
 
@@ -404,17 +435,20 @@ adminRouter.post('/exhibitions/review', async (c) => {
   await logAudit(c.env.DB, admin.email, 'REVIEW_EXHIBITION', 'exhibition_app', String(applicationId), `Status: ${status}`);
 
   const emailProvider = getEmailProvider(c.env);
+  const recipientName = app.full_name?.trim() || 'Artist';
+  const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+
   if (status === 'APPROVED') {
     await emailProvider.sendEmail(
       app.user_email,
-      'ALFAAZ — Exhibition Clearance Granted',
-      `Greetings ${app.full_name},\n\nYour artwork has cleared the screening process for ${app.exhibition_cycle}.\n\nPlease log into your Alfaaz dashboard to review the Terms & Conditions and finalize your spot.\n\n— The Curator`
+      `Alfaaz Collective — Good News! Your Artwork is Selected for ${app.exhibition_cycle}`,
+      `Hello ${recipientName},\n\nWe are delighted to share that your artwork has been selected for our upcoming exhibition: ${app.exhibition_cycle}!\n\nTo review the simple exhibition guidelines and complete your spot registration, please visit your dashboard:\n${appUrl}/dashboard.html\n\nWe are looking forward to showcasing your work.\n\nWarm congratulations,\nAlfaaz Collective`
     );
   } else if (status === 'REJECTED') {
     await emailProvider.sendEmail(
       app.user_email,
-      'ALFAAZ — Exhibition Update',
-      `Greetings ${app.full_name},\n\nWe appreciate you sharing your portfolio with us. Unfortunately, we cannot accommodate your submission for ${app.exhibition_cycle}.\n\n— The Curator`
+      `Alfaaz Collective — Update on ${app.exhibition_cycle}`,
+      `Hello ${recipientName},\n\nThank you so much for submitting your artwork for ${app.exhibition_cycle}.\n\nFor this specific exhibition, your piece was not selected. Because gallery display space is limited, we are unable to include every submission.\n\nPlease know that we genuinely value your creative voice. Your portfolio details remain safely in our community records, and we warmly invite you to apply for upcoming exhibitions and workshops.\n\nYou can keep track of new opportunities on your dashboard:\n${appUrl}/dashboard.html\n\nWith heartfelt thanks,\nAlfaaz Collective`
     );
   }
 
@@ -445,10 +479,13 @@ adminRouter.patch('/exhibitions/:id/confirm-payment', async (c) => {
   await logAudit(c.env.DB, admin.email, 'CONFIRM_PAYMENT', 'exhibition_app', String(id), `Confirmed payment for ${app.user_email}`);
 
   const emailProvider = getEmailProvider(c.env);
+  const recipientName = app.full_name?.trim() || 'Artist';
+  const appUrl = c.env.FRONTEND_URL || 'https://alfaazcollective.org';
+
   await emailProvider.sendEmail(
     app.user_email,
-    'ALFAAZ — Your Spot is Confirmed!',
-    `Greetings ${app.full_name},\n\nYour payment for ${app.exhibition_cycle} has been verified and your exhibition spot is officially confirmed.\n\nWelcome to the collective.\n\n— The Curator`
+    `Alfaaz Collective — You are Confirmed for ${app.exhibition_cycle}!`,
+    `Hello ${recipientName},\n\nGreat news! Your payment details have been verified, and your spot in the exhibition is now officially confirmed.\n\nExhibition: ${app.exhibition_cycle}\n\nWe are looking forward to having your artwork displayed. You can view your confirmation and schedule details anytime on your dashboard:\n${appUrl}/dashboard.html\n\nIf you ever have any questions or need guidance, feel free to reach out.\n\nWarmest regards,\nAlfaaz Collective`
   );
 
   return c.json({ status: 'CONFIRMED' });
@@ -1281,8 +1318,8 @@ adminRouter.post('/email/test', async (c) => {
   const emailProvider = getEmailProvider(c.env);
   const sent = await emailProvider.sendEmail(
     admin.email,
-    'ALFAAZ — Email Test',
-    'This is a test email from the Alfaaz Cloudflare-native backend.'
+    'Alfaaz Collective — System Email Diagnostic Test',
+    'This is an automated test message confirming that the Alfaaz Collective email delivery system is functioning properly.'
   );
   return c.json({ status: sent ? 'SENT' : 'FAILED' });
 });

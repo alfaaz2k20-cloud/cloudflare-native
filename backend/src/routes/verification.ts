@@ -108,7 +108,7 @@ verificationRouter.post('/email/send', requireAuth, async (c) => {
     c.env,
     targetEmail,
     'Alfaaz Collective — Verification Code',
-    `Greetings,\n\nYour Alfaaz email verification code is: ${code}\n\nThis code will expire in 10 minutes.\n\n— Alfaaz Collective Curators`,
+    `Hello,\n\nYour Alfaaz verification code is:\n\n${code}\n\nThis code will expire in 10 minutes. Please enter it on your verification screen to confirm your email address.\n\nIf you did not request this code, you can safely ignore this email.\n\nWarm regards,\nAlfaaz Collective`,
     false
   );
 
