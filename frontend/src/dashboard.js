@@ -117,9 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userActiveExhibition.status === 'APPROVED' && (userActiveExhibition.registration_status === 'CONFIRMED' || userActiveExhibition.registration_status === 'SUBMITTED')) {
           subEl.textContent = 'Registration Confirmed';
         } else if (userActiveExhibition.status === 'APPROVED') {
-          subEl.textContent = 'Selected for Showcase — Registration Pending';
+          subEl.textContent = 'Selected for Show! — Registration Pending';
         } else if (userActiveExhibition.status === 'PENDING') {
-          subEl.textContent = 'Application Under Curatorial Review';
+          subEl.textContent = 'We are Reviewing Your Art';
+        } else if (userActiveExhibition.status === 'REJECTED') {
+          subEl.textContent = 'Not Selected for this Show';
         } else {
           subEl.textContent = 'Submission Completed';
         }
@@ -502,6 +504,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (input) {
       input.value = (existingPhone && existingPhone !== 'Not provided') ? existingPhone : '';
     }
+    const check = document.getElementById('rsvpAgreeCheck');
+    if (check) check.checked = false;
     const modal = document.getElementById('rsvpModal');
     if (modal) {
       modal.style.display = 'flex';
@@ -517,6 +521,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.submitRsvp = async function() {
     const wa = (document.getElementById('rsvpWhatsapp')?.value || '').trim();
+    const agreed = Boolean(document.getElementById('rsvpAgreeCheck')?.checked);
+
+    if (!agreed) {
+      showToast('Please acknowledge the Salon Participation Protocol to proceed.', 'error');
+      return;
+    }
     if (!wa) {
       showToast('WhatsApp contact number is required.', 'error');
       return;
@@ -728,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
           rejEl.style.display = 'block';
           const rejNote = document.getElementById('exhibRejectedNote');
           if (rejNote && data.curator_note) {
-            rejNote.textContent = `Curator Note: ${data.curator_note}`;
+            rejNote.textContent = `Note from our team: "${data.curator_note}"`;
           }
         }
       } else if (data.status === 'APPROVED' && (data.registration_status === 'SUBMITTED' || data.registration_status === 'CONFIRMED')) {

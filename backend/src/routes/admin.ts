@@ -282,6 +282,22 @@ adminRouter.patch('/exhibitions/:id/activate', async (c) => {
   return c.json({ status: 'SUCCESS', title: target.title });
 });
 
+adminRouter.patch('/exhibitions/:id/toggle-active', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid exhibition ID' }, 400);
+
+  const target = await c.env.DB.prepare('SELECT id, title, is_active FROM exhibitions_list WHERE id = ?').bind(id).first<{ id: number; title: string; is_active: number }>();
+  if (!target) return c.json({ error: 'Exhibition not found' }, 404);
+
+  const nextActive = target.is_active ? 0 : 1;
+  await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = ? WHERE id = ?').bind(nextActive, id).run();
+
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
+  await logAudit(c.env.DB, admin.email, 'TOGGLE_EXHIBITION_ACTIVE', 'exhibition', String(id), `${nextActive ? 'Activated' : 'Deactivated'} cycle ${target.title}`);
+  return c.json({ status: 'SUCCESS', id: target.id, title: target.title, is_active: Boolean(nextActive) });
+});
+
 adminRouter.patch('/exhibitions/deactivate-all', async (c) => {
   const admin = c.get('user');
   await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0').run();

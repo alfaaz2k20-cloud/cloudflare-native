@@ -533,18 +533,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (btn.dataset.action === 'activate-exhibition') {
           window.activateExhibition(id, btn.dataset.title || 'this exhibition');
+        } else if (btn.dataset.action === 'toggle-active-exhibition') {
+          window.toggleExhibitionActive(id, btn);
         } else if (btn.dataset.action === 'toggle-age-req') {
           window.toggleExhibitionAge(id, btn);
         }
       });
     }
 
-    const liveEx = exhibitions.find(e => e.is_active);
-    if (liveEx) {
-      const ageLabel = liveEx.require_over_18 ? '18+ Adult Cycle' : 'Youth / Open Cycle';
-      if (statusText) statusText.innerHTML = `Currently Live: <strong style="color: var(--accent-green-text);">${window.escapeHtml(liveEx.title)}</strong> <span class="badge ${liveEx.require_over_18 ? 'badge-approved' : 'badge-pending'}" style="margin-left:8px; font-size:9px;">${ageLabel}</span>`;
+    const activeExs = exhibitions.filter(e => e.is_active);
+    if (activeExs.length > 0) {
+      const titles = activeExs.map(e => `${window.escapeHtml(e.title)} (${e.require_over_18 ? '18+' : 'Below 18'})`).join(', ');
+      if (statusText) statusText.innerHTML = `Active Cycles (${activeExs.length}): <strong style="color: var(--accent-green-text);">${titles}</strong>`;
     } else {
-      if (statusText) statusText.innerHTML = `<strong style="color: var(--accent-red-text);">CLOSED</strong> (No active exhibition)`;
+      if (statusText) statusText.innerHTML = `<strong style="color: var(--accent-red-text);">CLOSED</strong> (No active exhibitions)`;
     }
 
     if (exhibitions.length === 0) {
@@ -561,14 +563,14 @@ document.addEventListener('DOMContentLoaded', () => {
         : `<span style="font-size: 9px; padding: 3px 8px; border: 1px solid var(--grid-border); color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase;">Inactive</span>`;
 
       const ageBadge = ex.require_over_18
-        ? `<span class="badge badge-approved" style="font-size:9px;">18+ Required</span>`
-        : `<span class="badge badge-pending" style="font-size:9px;">Youth / Open Cycle</span>`;
+        ? `<span class="badge badge-approved" style="font-size:9px;">18+ (Adults)</span>`
+        : `<span class="badge badge-pending" style="font-size:9px;">Below 18 (Youth)</span>`;
 
       const safeTitle = window.escapeHtml(ex.title);
       const safeDateText = window.escapeHtml(ex.date_text);
-      const actionBtn = ex.is_active
-        ? `<button disabled style="font-family: var(--font-body); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 0.5rem 1rem; background: transparent; border: 1px solid var(--grid-border); color: var(--text-secondary); cursor: not-allowed;">Currently Active</button>`
-        : `<button data-action="activate-exhibition" data-id="${ex.id}" data-title="${safeTitle}" class="action-btn gold" style="padding: 0.5rem 1rem; font-size: 10px;">Set as Live</button>`;
+      const toggleActiveBtn = ex.is_active
+        ? `<button data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; border-color: var(--accent-red); color: var(--accent-red-text);">Deactivate Cycle</button>`
+        : `<button data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn gold" style="padding: 0.5rem 0.8rem; font-size: 9px;">Make Active (Concurrent)</button>`;
 
       card.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -582,12 +584,34 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-top: 1rem; border-top: 1px dashed var(--grid-border); padding-top: 0.8rem;">
-          ${actionBtn}
-          <button data-action="toggle-age-req" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">${ex.require_over_18 ? 'Switch to Youth (Under 18)' : 'Switch to 18+ Only'}</button>
+          <div style="display: flex; gap: 0.5rem;">
+            ${toggleActiveBtn}
+            ${!ex.is_active ? `<button data-action="activate-exhibition" data-id="${ex.id}" data-title="${safeTitle}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Set as Sole Live</button>` : ''}
+          </div>
+          <button data-action="toggle-age-req" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">${ex.require_over_18 ? 'Switch to Below 18 (Youth)' : 'Switch to 18+ (Adults)'}</button>
         </div>
       `;
       container.appendChild(card);
     });
+  };
+
+  window.toggleExhibitionActive = async function(id, btn) {
+    const original = btn.textContent;
+    btn.textContent = '...';
+    btn.disabled = true;
+    try {
+      const res = await adminFetch(`/admin/exhibitions/${id}/toggle-active`, { method: 'PATCH' });
+      if (res && res.ok) {
+        await window.loadExhibitionManager();
+      } else {
+        alert('Could not toggle exhibition cycle state.');
+      }
+    } catch (err) {
+      alert('Error updating exhibition cycle.');
+    } finally {
+      btn.textContent = original;
+      btn.disabled = false;
+    }
   };
 
   window.toggleExhibitionAge = async function(id, btn) {
@@ -744,7 +768,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const hasPaymentSubmission = (a) => a.registration_status === 'SUBMITTED' || a.registration_status === 'CONFIRMED' || Boolean(a.payment_proof_url);
-  const getExhibitionLabel = (a) => a.registration_status === 'CONFIRMED' ? 'CONFIRMED' : hasPaymentSubmission(a) ? 'PAYMENT SUBMITTED' : a.status;
+  const getExhibitionLabel = (a) => {
+    if (a.registration_status === 'CONFIRMED') return 'CONFIRMED';
+    if (hasPaymentSubmission(a)) return 'PAYMENT SUBMITTED';
+    if (a.status === 'REJECTED') return 'SAVED FOR NEXT TIME';
+    if (a.status === 'APPROVED') return 'SELECTED';
+    return a.status;
+  };
 
   window.filterExhibitions = function(f) {
     activeCycleFilter = f;
@@ -771,19 +801,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'data-card exhib-card';
       const displayStatus = getExhibitionLabel(a);
-      const badge = a.status === 'PENDING' ? 'badge-pending' : a.status === 'APPROVED' ? 'badge-approved' : 'badge-rejected';
+      const badge = a.status === 'PENDING' ? 'badge-pending' : a.status === 'APPROVED' ? 'badge-approved' : 'badge-gold';
 
       const safePortfolio = window.safeHttpUrl ? window.safeHttpUrl(a.portfolio_url) : null;
       let actionBtns = safePortfolio
-        ? `<a href="${window.escapeHtml(safePortfolio)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; text-align:center;">View Portfolio Document ↗</a>`
+        ? `<a href="${window.escapeHtml(safePortfolio)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; text-align:center;">View Art PDF ↗</a>`
         : `<span class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; text-align:center; opacity:0.4; cursor:not-allowed;">No Portfolio Link</span>`;
 
       if (a.status === 'PENDING') {
         actionBtns += `
-          <button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="review-exhib" data-id="${Number(a.id)}" data-decision="APPROVED">Approve</button>
-          <button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-red); color:var(--accent-red-text);" data-action="review-exhib" data-id="${Number(a.id)}" data-decision="REJECTED">Reject</button>`;
+          <button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="review-exhib" data-id="${Number(a.id)}" data-decision="APPROVED">Select for Show</button>
+          <button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-gold); color:var(--accent-gold-text);" data-action="review-exhib" data-id="${Number(a.id)}" data-decision="REJECTED">Not Selected</button>`;
       } else if (a.status === 'REJECTED') {
-        actionBtns += `<button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="revert-exhib" data-id="${Number(a.id)}">Undo Rejection</button>`;
+        actionBtns += `<button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="revert-exhib" data-id="${Number(a.id)}">Reopen Application</button>`;
       }
       
       if (a.payment_proof_url) {
@@ -893,9 +923,9 @@ document.addEventListener('DOMContentLoaded', () => {
   window.reviewExhibition = async function(id, status, btn) {
     const isApproved = status === 'APPROVED';
     const note = await window.showCuratorPrompt(
-      `${isApproved ? 'Approve' : 'Reject'} Portfolio`,
-      `Add an optional curator note to the artist for this ${status} decision:`,
-      'Curator Note to Artist'
+      `${isApproved ? 'Select for Show' : 'Not Selected for Show'}`,
+      `Add an optional note for the artist:`,
+      'Note to Artist'
     );
     if (note === null) return;
 
@@ -916,14 +946,14 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       alert('Could not reach the server.');
     } finally {
-      if (btn) { btn.textContent = status === 'APPROVED' ? 'Approve' : 'Reject'; btn.disabled = false; }
+      if (btn) { btn.textContent = status === 'APPROVED' ? 'Select for Show' : 'Not Selected'; btn.disabled = false; }
     }
   };
 
   window.revertExhibition = async function(id, btn) {
     const confirmed = await window.showCuratorConfirm(
-      'Revert Portfolio Review',
-      'Undo the previous rejection and return this portfolio to Pending review?'
+      'Reopen Application',
+      'Return this application to Pending status?'
     );
     if (!confirmed) return;
 
@@ -935,12 +965,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.filterExhibitions(activeCycleFilter);
         if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
-        alert('Could not revert portfolio status.');
+        alert('Could not reopen application.');
       }
     } catch (err) {
       alert('Could not reach server.');
     } finally {
-      if (btn) { btn.textContent = 'Undo Rejection'; btn.disabled = false; }
+      if (btn) { btn.textContent = 'Reopen Application'; btn.disabled = false; }
     }
   };
 

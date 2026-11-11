@@ -7,25 +7,54 @@ import { sendSystemEmail } from '../notifications/email';
 export const exhibitionsRouter = new Hono<{ Bindings: Env; Variables: { user: JwtUserPayload } }>();
 
 exhibitionsRouter.get('/config', async (c) => {
-  const config = await c.env.DB
-    .prepare('SELECT * FROM exhibitions_list WHERE is_active = 1 LIMIT 1')
-    .first<any>();
+  const cycleParam = c.req.query('cycle');
+  const idParam = c.req.query('id');
 
-  if (!config) {
-    return c.json({ is_open: false, title: '', date_text: '', about_text: '', require_over_18: true });
+  let activeCycles: any[] = [];
+  try {
+    const query = await c.env.DB
+      .prepare('SELECT * FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC')
+      .all<any>();
+    activeCycles = query.results || [];
+  } catch {
+    activeCycles = [];
+  }
+
+  if (activeCycles.length === 0) {
+    return c.json({ is_open: false, active_cycles: [], title: '', date_text: '', about_text: '', require_over_18: true });
+  }
+
+  let selected = activeCycles[0];
+  if (idParam) {
+    const found = activeCycles.find(ac => String(ac.id) === String(idParam));
+    if (found) selected = found;
+  } else if (cycleParam) {
+    const found = activeCycles.find(ac => ac.title.toLowerCase() === cycleParam.toLowerCase());
+    if (found) selected = found;
   }
 
   return c.json({
     is_open: true,
-    title: config.title,
-    date_text: config.date_text,
-    about_text: config.about_text,
-    venue: config.venue,
-    tnc_pdf_url: config.tnc_pdf_url,
-    registration_fee: config.registration_fee || '',
-    payment_instructions: config.payment_instructions || '',
-    payment_qr_url: config.payment_qr_url,
-    require_over_18: config.require_over_18 === undefined || config.require_over_18 === null ? true : Boolean(config.require_over_18)
+    total_active: activeCycles.length,
+    active_cycles: activeCycles.map(ac => ({
+      id: ac.id,
+      title: ac.title,
+      date_text: ac.date_text,
+      about_text: ac.about_text,
+      venue: ac.venue,
+      registration_fee: ac.registration_fee || '',
+      require_over_18: ac.require_over_18 === undefined || ac.require_over_18 === null ? true : Boolean(ac.require_over_18)
+    })),
+    id: selected.id,
+    title: selected.title,
+    date_text: selected.date_text,
+    about_text: selected.about_text,
+    venue: selected.venue,
+    tnc_pdf_url: selected.tnc_pdf_url,
+    registration_fee: selected.registration_fee || '',
+    payment_instructions: selected.payment_instructions || '',
+    payment_qr_url: selected.payment_qr_url,
+    require_over_18: selected.require_over_18 === undefined || selected.require_over_18 === null ? true : Boolean(selected.require_over_18)
   });
 });
 
@@ -96,15 +125,32 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     return c.json({ detail: 'A valid age is required.' }, 400);
   }
 
+  const requestedCycle = (body.exhibition_cycle || '').trim();
+  const requestedId = body.exhibition_id ? Number(body.exhibition_id) : null;
+
   let activeCycle: any = null;
-  try {
+  if (requestedId) {
     activeCycle = await c.env.DB
-      .prepare('SELECT title, require_over_18 FROM exhibitions_list WHERE is_active = 1 LIMIT 1')
+      .prepare('SELECT id, title, require_over_18 FROM exhibitions_list WHERE is_active = 1 AND id = ? LIMIT 1')
+      .bind(requestedId)
       .first<any>();
-  } catch {
+  } else if (requestedCycle) {
     activeCycle = await c.env.DB
-      .prepare('SELECT title FROM exhibitions_list WHERE is_active = 1 LIMIT 1')
+      .prepare('SELECT id, title, require_over_18 FROM exhibitions_list WHERE is_active = 1 AND LOWER(title) = LOWER(?) LIMIT 1')
+      .bind(requestedCycle)
       .first<any>();
+  }
+
+  if (!activeCycle) {
+    try {
+      activeCycle = await c.env.DB
+        .prepare('SELECT id, title, require_over_18 FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC LIMIT 1')
+        .first<any>();
+    } catch {
+      activeCycle = await c.env.DB
+        .prepare('SELECT id, title FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC LIMIT 1')
+        .first<any>();
+    }
   }
 
   if (!activeCycle) {
@@ -123,6 +169,10 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     }
     if (!isConfirmedOver18) {
       return c.json({ detail: 'You must confirm that you are 18 years of age or older to participate in this exhibition cycle.' }, 400);
+    }
+  } else {
+    if (age >= 18) {
+      return c.json({ detail: 'This exhibition is specifically for children and youth under 18 years of age.' }, 400);
     }
   }
 
@@ -176,28 +226,83 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
 
 exhibitionsRouter.get('/my-status', requireAuth, async (c) => {
   const user = c.get('user');
+  const cycleParam = (c.req.query('cycle') || '').trim();
+  const idParam = c.req.query('id');
+
+  // Fetch all user applications across cycles to construct full status map
+  const userApps = await c.env.DB
+    .prepare('SELECT * FROM exhibition_applications WHERE user_email = ? ORDER BY created_at DESC')
+    .bind(user.email)
+    .all<any>();
+
+  const statusesByCycle: Record<string, any> = {};
+  for (const a of (userApps.results || [])) {
+    statusesByCycle[a.exhibition_cycle] = {
+      status: a.status,
+      curator_note: a.curator_note,
+      application_id: a.id,
+      registration_status: a.registration_status || 'NONE'
+    };
+  }
+
+  // Determine target cycle title if specifically queried
+  let targetTitle: string | null = null;
+  if (idParam) {
+    const ex = await c.env.DB.prepare('SELECT title FROM exhibitions_list WHERE id = ?').bind(idParam).first<{ title: string }>();
+    if (ex) targetTitle = ex.title;
+  } else if (cycleParam) {
+    targetTitle = cycleParam;
+  }
+
+  if (targetTitle) {
+    const app = (userApps.results || []).find((a: any) => a.exhibition_cycle?.toLowerCase() === targetTitle?.toLowerCase());
+    if (!app) {
+      return c.json({ status: 'NONE', exhibition_cycle: targetTitle, statuses_by_cycle: statusesByCycle });
+    }
+
+    const base: any = {
+      status: app.status,
+      curator_note: app.curator_note,
+      application_id: app.id,
+      exhibition_cycle: app.exhibition_cycle,
+      statuses_by_cycle: statusesByCycle
+    };
+
+    if (app.status === 'APPROVED') {
+      base.full_name = app.full_name;
+      base.age = app.age;
+      base.address = app.address;
+      base.whatsapp = app.whatsapp;
+      base.genre = app.genre;
+      base.medium = app.medium;
+      base.portfolio_url = app.portfolio_url;
+      base.registration_status = app.registration_status || 'NONE';
+      base.payment_confirmed_at = app.payment_confirmed_at;
+    }
+    return c.json(base);
+  }
+
+  // Otherwise, default to the first active cycle
   const activeEx = await c.env.DB
-    .prepare('SELECT title FROM exhibitions_list WHERE is_active = 1 LIMIT 1')
+    .prepare('SELECT title FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC LIMIT 1')
     .first<{ title: string }>();
 
   if (!activeEx) {
-    return c.json({ status: 'NONE' });
+    return c.json({ status: 'NONE', statuses_by_cycle: statusesByCycle });
   }
 
-  const app = await c.env.DB
-    .prepare('SELECT * FROM exhibition_applications WHERE user_email = ? AND exhibition_cycle = ?')
-    .bind(user.email, activeEx.title)
-    .first<any>();
+  const app = (userApps.results || []).find((a: any) => a.exhibition_cycle === activeEx.title) || (userApps.results?.[0] || null);
 
   if (!app) {
-    return c.json({ status: 'NONE' });
+    return c.json({ status: 'NONE', exhibition_cycle: activeEx.title, statuses_by_cycle: statusesByCycle });
   }
 
   const base: any = {
     status: app.status,
     curator_note: app.curator_note,
     application_id: app.id,
-    exhibition_cycle: app.exhibition_cycle
+    exhibition_cycle: app.exhibition_cycle,
+    statuses_by_cycle: statusesByCycle
   };
 
   if (app.status === 'APPROVED') {

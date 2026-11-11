@@ -879,10 +879,19 @@
               <p style="font-size: 13px; color: var(--text-secondary); margin: 0.5rem 0 0; line-height: 1.6;">Your artwork submission is currently being evaluated by the curatorial team.</p>
             </div>
 
-            <!-- Not Selected -->
-            <div id="exhibRejectedView" style="display: none; background: #ffffff; border: 1px solid var(--accent-red); padding: 1.75rem;">
-              <span class="badge badge-red" style="margin-bottom: 0.5rem;">Not Selected</span>
-              <p id="exhibRejectedNote" style="font-size: 13px; color: var(--text-secondary); margin: 0.5rem 0 0; line-height: 1.5;"></p>
+            <!-- Not Selected for this Show -->
+            <div id="exhibRejectedView" style="display: none; background: #ffffff; border: 1px solid var(--accent-gold); padding: 1.75rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <span class="badge badge-gold">Not Selected for this Show // اس نمائش کے لیے انتخاب نہیں ہوا</span>
+              </div>
+              <div style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); margin-bottom: 0.4rem;">Not Selected for this Show</div>
+              <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 0.8rem; line-height: 1.6;">
+                Thank you so much for sharing your artwork with us! Although your artwork was not selected for this show, we have kept your work safely in our collection. You are always welcome to apply for another show anytime — keep creating!
+              </p>
+              <div id="exhibRejectedNote" style="font-size: 12px; color: var(--accent-gold-text); margin: 0.5rem 0 1rem; line-height: 1.5; font-style: italic;"></div>
+              <div style="border-top: 1px dashed var(--grid-border); padding-top: 0.8rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <a href="exhibition.html" class="action-btn-primary" style="font-size: 11px; padding: 0.4rem 0.8rem; text-decoration: none;">See Other Exhibitions &rarr;</a>
+              </div>
             </div>
 
             <!-- Approved / Payment Step -->
@@ -1012,17 +1021,34 @@
   
   <!-- RSVP MODAL -->
   <div class="modal-overlay" id="rsvpModal" style="display: none; position: fixed; inset: 0; background: rgba(244, 241, 234, 0.94); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div style="max-width: 440px; width: 90%; padding: 2.5rem 2rem; background: #ffffff; border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); position: relative;">
+    <div style="max-width: 480px; width: 92%; padding: 2.25rem 2rem; background: #ffffff; border: 1px solid var(--grid-border); box-shadow: var(--shadow-float); position: relative; max-height: 90vh; overflow-y: auto;">
        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
-         <h3 style="font-family: var(--font-heading); font-size: 1.85rem; color: var(--text-primary); margin: 0; font-weight: 400;">Reserve Your Pass</h3>
+         <h3 style="font-family: var(--font-heading); font-size: 1.7rem; color: var(--text-primary); margin: 0; font-weight: 400;">Reserve Your Seat // نشست محفوظ کریں</h3>
          <button onclick="closeRsvpModal()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.6rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center;" aria-label="Close modal">&times;</button>
        </div>
-       <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">Confirm your WhatsApp contact number for pass delivery.</p>
-       <label class="field-label" for="rsvpWhatsapp">WhatsApp Number</label>
-       <input type="tel" id="rsvpWhatsapp" placeholder="+919876543210" required>
-       <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem;">
-          <button onclick="closeRsvpModal()" class="action-btn-secondary" style="padding: 0.5rem 1rem;">Cancel</button>
-          <button id="confirmRsvpBtn" onclick="submitRsvp()" class="action-btn-primary" style="padding: 0.5rem 1.25rem;">Confirm Pass</button>
+       
+       <div style="background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 1.1rem; margin-bottom: 1.25rem; font-size: 12.5px; line-height: 1.6; color: var(--text-secondary);">
+         <div style="font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-gold-text); margin-bottom: 0.4rem; font-size: 11px;">A Few Friendly Reminders // ضروری معلومات</div>
+         <p style="margin: 0 0 0.4rem;"><strong>1. One Seat for You:</strong> Each pass saves one seat just for you.</p>
+         <p style="margin: 0 0 0.4rem;"><strong>2. Please Come on Time:</strong> Arrive a few minutes early so we can start together.</p>
+         <p style="margin: 0;"><strong>3. Let Us Know:</strong> If you cannot come, please cancel so a friend can take your place.</p>
+       </div>
+
+       <div style="margin-bottom: 1rem;">
+         <label class="field-label" for="rsvpWhatsapp" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-primary); display: block; margin-bottom: 0.3rem;">WhatsApp Number *</label>
+         <input type="tel" id="rsvpWhatsapp" placeholder="+919876543210" required style="width: 100%; border: 1px solid var(--grid-border); padding: 0.6rem 0.8rem; font-size: 13px; background: var(--bg-primary); border-radius: 0;">
+       </div>
+
+       <div style="margin-bottom: 1.25rem;">
+         <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer;">
+           <input type="checkbox" id="rsvpAgreeCheck" style="margin-top: 3px; flex-shrink: 0;">
+           <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">I understand and I'm happy to attend // میں سمجھ گیا اور حاضر ہوں گا</span>
+         </label>
+       </div>
+
+       <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+          <button onclick="closeRsvpModal()" class="action-btn-secondary" style="padding: 0.5rem 1rem; font-size: 11px;">Cancel</button>
+          <button id="confirmRsvpBtn" onclick="submitRsvp()" class="action-btn-primary" style="padding: 0.5rem 1.25rem; font-size: 11px;">Confirm My Seat</button>
        </div>
     </div>
   </div>
