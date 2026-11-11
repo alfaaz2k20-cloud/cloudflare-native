@@ -256,10 +256,27 @@ nav.hidden {
   opacity: 0;
   pointer-events: none;
   white-space: nowrap;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  font-feature-settings: "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
   transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
   backface-visibility: hidden;
   direction: rtl;
+}
+
+/* Urdu Typography Protection: Prevent CSS letter-spacing from breaking Arabic/Urdu cursive ligatures */
+.ur-text,
+.urdu-text,
+.curator-ur-title,
+[data-ur]::before,
+[lang="ur"],
+[dir="rtl"] {
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  font-feature-settings: "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
 }
 
 /* Trigger: hover, keyboard focus, or JS-toggled class */

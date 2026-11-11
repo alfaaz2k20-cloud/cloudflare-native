@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (onboardingView) {
       onboardingView.style.display = 'block';
       if (returnMode && btnProceedToCycles) {
-        btnProceedToCycles.textContent = 'Back to Shows // واپسی';
+        btnProceedToCycles.textContent = 'Back to Shows';
         btnProceedToCycles.disabled = false;
         btnProceedToCycles.style.opacity = '1';
         btnProceedToCycles.style.cursor = 'pointer';
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Send My Application // بھیجیں';
+        submitBtn.textContent = 'Send My Application';
       }
     }
   });
@@ -307,8 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const streamBadge = cycle.require_over_18 === false
-        ? '<span class="badge badge-pending" style="font-size: 9px;">Below 18 (Children & Youth) // 18 سال سے کم</span>'
-        : '<span class="badge badge-approved" style="font-size: 9px;">18 and Above (Adults) // 18 سال اور زائد</span>';
+        ? '<span class="badge badge-pending" style="font-size: 9px;">Below 18 (Children &amp; Youth)</span>'
+        : '<span class="badge badge-approved" style="font-size: 9px;">18 and Above (Adults)</span>';
 
       const safeTitle = window.escapeHtml(cycle.title);
       const safeDates = window.escapeHtml(cycle.date_text || 'Dates TBA');
@@ -442,22 +442,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let iconName = 'clock';
     let iconColor = 'var(--accent-gold)';
-    let statusHeading = 'We are Reviewing Your Art // زیرِ جائزہ';
-    let statusBadge = '<span class="badge badge-pending" style="font-size:11px;">Being Reviewed // زیرِ جائزہ</span>';
-    let statusDesc = `Thank you for sending your artwork for <strong>${window.escapeHtml(cycle?.title || 'the exhibition')}</strong>! Our team is looking at every entry with care and love.`;
+    let statusHeading = 'We are Reviewing Your Art';
+    let statusBadge = '<span class="badge badge-pending" style="font-size:11px;">Being Reviewed</span>';
+    let statusDesc = `Thank you for sending your artwork for <strong>${window.escapeHtml(cycle?.title || 'the exhibition')}</strong>! Our team is looking at every entry with care and respect.`;
     let actionBtnHtml = '<a href="dashboard.html" class="action-btn gold" style="display: inline-block;">Check Status in Dashboard</a>';
 
     if (statusData.status === 'APPROVED') {
       iconName = 'check-circle';
       iconColor = 'var(--accent-green)';
-      statusBadge = '<span class="badge badge-approved" style="font-size:11px;">Selected for Show! // منتخب شدہ</span>';
+      statusBadge = '<span class="badge badge-approved" style="font-size:11px;">Selected for Show!</span>';
       statusHeading = 'Great News! Your Art is Selected!';
       statusDesc = `Congratulations! Your artwork has been chosen for <strong>${window.escapeHtml(cycle?.title || 'the exhibition')}</strong>. Please open your dashboard to view the details.`;
       actionBtnHtml = '<a href="dashboard.html" class="action-btn gold" style="display: inline-block;">Go to My Dashboard &rarr;</a>';
     } else if (statusData.status === 'REJECTED') {
       iconName = 'info';
       iconColor = 'var(--accent-gold)';
-      statusBadge = '<span class="badge" style="border: 1px solid var(--accent-gold); color: var(--accent-gold-text); font-size:11px;">Not Selected for this Show // اس نمائش کے لیے انتخاب نہیں ہوا</span>';
+      statusBadge = '<span class="badge" style="border: 1px solid var(--accent-gold); color: var(--accent-gold-text); font-size:11px;">Not Selected for this Show</span>';
       statusHeading = 'Not Selected for this Show';
       statusDesc = `Thank you so much for sharing your art with us for <strong>${window.escapeHtml(cycle?.title || 'this show')}</strong>! Your artwork was not selected for this show, but we have kept your work safely in our collection. You are always welcome to apply for another show anytime — keep creating!`;
 
@@ -641,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const restoreBtn = () => {
       if (btn) {
-        btn.textContent = 'Send My Application // بھیجیں';
+        btn.textContent = 'Send My Application';
         btn.disabled = false;
       }
     };
@@ -658,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
           msg.textContent = '✓ Your artwork has been received! Opening your dashboard...';
         }
         if (btn) {
-          btn.textContent = 'Sent Successfully! // مبارک ہو';
+          btn.textContent = 'Sent Successfully!';
           btn.style.background = 'var(--accent-gold)';
           btn.style.borderColor = 'var(--accent-gold)';
         }

@@ -52,6 +52,66 @@ window.safeHttpUrl = function(url) {
     return null;
 };
 
+// Safe UTC Date Parser & Formatter for SQLite CURRENT_TIMESTAMP
+window.parseUtcDate = function(str) {
+    if (!str) return null;
+    if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
+    const s = String(str).trim();
+    if (!s) return null;
+    // Pure numeric epoch (ms or s)
+    if (/^\d+$/.test(s)) {
+        const num = Number(s);
+        const d = new Date(s.length === 10 ? num * 1000 : num);
+        return isNaN(d.getTime()) ? null : d;
+    }
+    // SQLite CURRENT_TIMESTAMP: "YYYY-MM-DD HH:MM:SS" -> treat as UTC
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(s)) {
+        const d = new Date(s.replace(' ', 'T') + 'Z');
+        return isNaN(d.getTime()) ? null : d;
+    }
+    // ISO format without trailing Z and without timezone offset (+/-HH:MM): treat as UTC
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) {
+        const d = new Date(s + 'Z');
+        return isNaN(d.getTime()) ? null : d;
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+};
+
+window.formatDateTime = function(str, options) {
+    const d = window.parseUtcDate(str);
+    if (!d) return '—';
+    const defaultOpts = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    return d.toLocaleString(undefined, options || defaultOpts);
+};
+
+window.formatDate = function(str, options) {
+    const d = window.parseUtcDate(str);
+    if (!d) return '—';
+    const defaultOpts = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    };
+    return d.toLocaleDateString(undefined, options || defaultOpts);
+};
+
+window.formatTime = function(str, options) {
+    const d = window.parseUtcDate(str);
+    if (!d) return '—';
+    const defaultOpts = {
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    return d.toLocaleTimeString(undefined, options || defaultOpts);
+};
+
 // 2. Global Fetch Wrapper (Cloudflare Edge Native — Zero Cold-Start)
 window.globalApiFetch = async function(endpoint, options = {}) {
     const token = localStorage.getItem('alfaaz_token');

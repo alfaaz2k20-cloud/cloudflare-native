@@ -1106,13 +1106,16 @@ adminRouter.get('/diagnostics/system', async (c) => {
 
   let activeCycleTitle: string | null = null;
   let activeCycleOver18: number | null = null;
+  let activeCyclesCount = 0;
 
   if (d1Connected) {
     try {
-      const activeExhib = await c.env.DB.prepare('SELECT title, require_over_18 FROM exhibitions_list WHERE is_active = 1 LIMIT 1').first<any>();
-      if (activeExhib) {
-        activeCycleTitle = activeExhib.title || null;
-        activeCycleOver18 = activeExhib.require_over_18 === undefined || activeExhib.require_over_18 === null ? 1 : Number(activeExhib.require_over_18);
+      const activeExhibs = await c.env.DB.prepare('SELECT id, title, require_over_18 FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC').all<any>();
+      const rows = activeExhibs.results || [];
+      activeCyclesCount = rows.length;
+      if (rows.length > 0) {
+        activeCycleTitle = rows[0].title || null;
+        activeCycleOver18 = rows[0].require_over_18 === undefined || rows[0].require_over_18 === null ? 1 : Number(rows[0].require_over_18);
       }
     } catch {
       try {
@@ -1120,6 +1123,7 @@ adminRouter.get('/diagnostics/system', async (c) => {
         if (fallback) {
           activeCycleTitle = fallback.title || null;
           activeCycleOver18 = 1;
+          activeCyclesCount = 1;
         }
       } catch {}
     }
@@ -1187,6 +1191,7 @@ adminRouter.get('/diagnostics/system', async (c) => {
       exhibitions_total: exhibitionsCount,
       active_cycle: activeCycleTitle,
       active_cycle_over_18: activeCycleOver18,
+      active_cycles_count: activeCyclesCount,
       exhibition_apps_total: exhibApplications,
       exhibition_apps_pending: pendingExhibApplications,
       club_apps_total: clubApplications,

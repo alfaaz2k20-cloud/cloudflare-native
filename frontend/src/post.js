@@ -173,7 +173,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res || !res.ok) throw new Error(`HTTP ${res?.status || 404}`);
 
       const article = await res.json();
-      const dateStr = new Date(article.created_at).toLocaleDateString('en-US', {
+      const dateStr = window.formatDate ? window.formatDate(article.created_at, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }) : new Date(article.created_at).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'

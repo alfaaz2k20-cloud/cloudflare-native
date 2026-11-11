@@ -1070,19 +1070,26 @@
     const cards = [];
     const isLoggedIn = !!localStorage.getItem('alfaaz_token');
 
-    // 1. Exhibition Check with Null-Safety
-    if (data && data.exhibition && data.exhibition.is_open === true) {
-        const ex = data.exhibition;
+    // 1. Exhibition Check (Support Multiple Concurrent Open Cycles)
+    const rawExhibitions = (data && Array.isArray(data.exhibitions) && data.exhibitions.length > 0)
+        ? data.exhibitions
+        : (data && data.exhibition && data.exhibition.is_open ? [data.exhibition] : []);
+
+    rawExhibitions.forEach(ex => {
+        const isYouth = ex.require_over_18 === 0;
+        const tagLabel = isYouth ? 'EXHIBITION (YOUTH)' : 'EXHIBITION';
+        const ageLabel = isYouth ? 'Below 18' : 'Age 18+';
+        const queryParam = ex.id ? `?cycle=${encodeURIComponent(ex.id)}` : '';
         cards.push({
-            tag: 'EXHIBITION',
+            tag: tagLabel,
             tagColor: 'var(--accent-green)',
             date: ex.date_text || 'TBD',
-            title: ex.title || 'Upcoming Cycle',
-            body: ex.about_text ? (ex.about_text.substring(0, 140) + '...') : 'Applications opening soon.',
-            link: isLoggedIn ? 'exhibition.html' : 'login.html?redirect=exhibition.html',
-            linkLabel: isLoggedIn ? 'Apply Now →' : 'Login to Apply →'
+            title: ex.title || 'Curatorial Open Call',
+            body: (ex.about_text ? (ex.about_text.substring(0, 140) + '...') : 'Applications open.') + ` [${ageLabel}]`,
+            link: isLoggedIn ? `exhibition.html${queryParam}` : `login.html?redirect=${encodeURIComponent('exhibition.html' + queryParam)}`,
+            linkLabel: isLoggedIn ? `Apply (${ageLabel}) →` : 'Login to Apply →'
         });
-    }
+    });
 
     // 2. Standard Events
     if (data && data.events && Array.isArray(data.events)) {
@@ -1106,8 +1113,8 @@
         const b = data.latest_blog;
         let formattedDate = 'Recently';
         if (b.created_at) {
-            const dateObj = new Date(b.created_at);
-            if (!isNaN(dateObj.getTime())) {
+            const dateObj = window.parseUtcDate ? window.parseUtcDate(b.created_at) : new Date(b.created_at);
+            if (dateObj && !isNaN(dateObj.getTime())) {
                 formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             }
         }

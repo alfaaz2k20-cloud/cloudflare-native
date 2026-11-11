@@ -38,7 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     container.innerHTML = blogsToRender.map(blog => {
-      const dateFormatted = new Date(blog.created_at).toLocaleDateString('en-US', {
+      const dateFormatted = window.formatDate ? window.formatDate(blog.created_at, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }) : new Date(blog.created_at).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'

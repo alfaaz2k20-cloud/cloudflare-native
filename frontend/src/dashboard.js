@@ -50,17 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Set formatted current date on Home
+  // Set formatted current date and time on Home
   const dateDisplay = document.getElementById('homeDateDisplay');
   if (dateDisplay) {
     try {
       const now = new Date();
-      dateDisplay.textContent = now.toLocaleDateString('en-US', {
+      const dateStr = now.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
+      const timeStr = now.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      dateDisplay.textContent = `${dateStr} · ${timeStr}`;
     } catch (_) {}
   }
 
@@ -695,20 +700,67 @@ document.addEventListener('DOMContentLoaded', () => {
       userActiveExhibition = data;
       updateHomeActivityState();
 
-      // Explore view: Singular current exhibition open call representation
+      // Explore view: Exhibition open call representation (support multiple concurrent active cycles)
+      const exhibConfigContainer = document.getElementById('exhibConfigContainer');
       const openView = document.getElementById('exhibOpenView');
       const closedView = document.getElementById('exhibClosedView');
       const titleEl = document.getElementById('exhibTitleDisplay');
       const datesEl = document.getElementById('exhibDatesDisplay');
       const aboutEl = document.getElementById('exhibAboutDisplay');
 
-      if (cfg.is_open) {
+      const activeCycles = Array.isArray(cfg.active_cycles) && cfg.active_cycles.length > 0
+        ? cfg.active_cycles
+        : (cfg.is_open ? [{ id: cfg.id || 1, title: cfg.title, date_text: cfg.date_text, about_text: cfg.about_text, require_over_18: cfg.require_over_18 }] : []);
+
+      if (activeCycles.length > 1 && exhibConfigContainer) {
+        if (openView) openView.style.display = 'none';
+        if (closedView) closedView.style.display = 'none';
+
+        let multiCyclesView = document.getElementById('exhibMultiCyclesView');
+        if (!multiCyclesView) {
+          multiCyclesView = document.createElement('div');
+          multiCyclesView.id = 'exhibMultiCyclesView';
+          multiCyclesView.style.display = 'grid';
+          multiCyclesView.style.gridTemplateColumns = 'repeat(auto-fit, minmax(260px, 1fr))';
+          multiCyclesView.style.gap = '1.25rem';
+          exhibConfigContainer.appendChild(multiCyclesView);
+        } else {
+          multiCyclesView.style.display = 'grid';
+        }
+
+        multiCyclesView.innerHTML = activeCycles.map(c => {
+          const isYouth = c.require_over_18 === 0 || c.require_over_18 === false;
+          const ageBadge = isYouth
+            ? '<span class="badge badge-pending" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Below 18 (Youth Showcase)</span>'
+            : '<span class="badge badge-approved" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Age 18+ (Adult Showcase)</span>';
+          return `
+            <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                ${ageBadge}
+                <div style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); margin-bottom: 0.25rem;">${window.escapeHtml(c.title)}</div>
+                <div style="font-size: 11px; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.6rem;">Dates: ${window.escapeHtml(c.date_text || 'Active')}</div>
+                <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">${window.escapeHtml(c.about_text || 'Submit artwork for our gallery showcase.')}</p>
+              </div>
+              <a href="exhibition.html?cycle=${encodeURIComponent(c.id)}" class="action-btn-primary" style="font-size: 11px; padding: 0.5rem 1rem; text-align: center; text-decoration: none;">Submit Artwork &rarr;</a>
+            </div>
+          `;
+        }).join('');
+      } else if (activeCycles.length === 1) {
+        const multiCyclesView = document.getElementById('exhibMultiCyclesView');
+        if (multiCyclesView) multiCyclesView.style.display = 'none';
+        const single = activeCycles[0];
         if (openView) openView.style.display = 'block';
         if (closedView) closedView.style.display = 'none';
-        if (titleEl) titleEl.textContent = cfg.title || 'Curatorial Open Call';
-        if (datesEl) datesEl.textContent = cfg.date_text ? `Dates: ${cfg.date_text}` : 'Open Call Active';
-        if (aboutEl) aboutEl.textContent = cfg.about_text || 'Submit your artwork and portfolio for our upcoming exhibition showcase.';
+        if (titleEl) titleEl.textContent = single.title || cfg.title || 'Curatorial Open Call';
+        if (datesEl) datesEl.textContent = single.date_text ? `Dates: ${single.date_text}` : (cfg.date_text ? `Dates: ${cfg.date_text}` : 'Open Call Active');
+        if (aboutEl) aboutEl.textContent = single.about_text || cfg.about_text || 'Submit your artwork and portfolio for our upcoming exhibition showcase.';
+        const linkBtn = openView ? openView.querySelector('a.action-btn-primary') : null;
+        if (linkBtn && single.id) {
+          linkBtn.href = `exhibition.html?cycle=${encodeURIComponent(single.id)}`;
+        }
       } else {
+        const multiCyclesView = document.getElementById('exhibMultiCyclesView');
+        if (multiCyclesView) multiCyclesView.style.display = 'none';
         if (openView) openView.style.display = 'none';
         if (closedView) closedView.style.display = 'block';
       }

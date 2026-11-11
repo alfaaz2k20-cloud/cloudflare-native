@@ -36,20 +36,43 @@ async function handleNotices(c: Context<{ Bindings: Env; Variables: Variables }>
     };
   });
 
-  // Query active exhibition
-  const exhRow = await c.env.DB.prepare(`
-    SELECT title, date_text, about_text
-    FROM exhibitions_list
-    WHERE is_active = 1
-    LIMIT 1
-  `).first<{ title: string; date_text: string; about_text: string }>();
+  // Query active exhibitions (support single or multiple concurrent cycles)
+  let exhibitions: any[] = [];
+  try {
+    const exhRows = await c.env.DB.prepare(`
+      SELECT id, title, date_text, about_text, require_over_18
+      FROM exhibitions_list
+      WHERE is_active = 1
+      ORDER BY id ASC
+    `).all<any>();
+    exhibitions = (exhRows.results || []).map((row: any) => ({
+      id: row.id,
+      is_open: true,
+      title: row.title,
+      date_text: row.date_text,
+      about_text: row.about_text,
+      require_over_18: row.require_over_18 === undefined || row.require_over_18 === null ? 1 : Number(row.require_over_18)
+    }));
+  } catch {
+    try {
+      const exhRows = await c.env.DB.prepare(`
+        SELECT id, title, date_text, about_text
+        FROM exhibitions_list
+        WHERE is_active = 1
+        ORDER BY id ASC
+      `).all<any>();
+      exhibitions = (exhRows.results || []).map((row: any) => ({
+        id: row.id,
+        is_open: true,
+        title: row.title,
+        date_text: row.date_text,
+        about_text: row.about_text,
+        require_over_18: 1
+      }));
+    } catch {}
+  }
 
-  const exhibition = exhRow ? {
-    is_open: true,
-    title: exhRow.title,
-    date_text: exhRow.date_text,
-    about_text: exhRow.about_text
-  } : null;
+  const exhibition = exhibitions.length > 0 ? exhibitions[0] : null;
 
   // Query latest published blog matching cdn.py behavior
   const blogRow = await c.env.DB.prepare(`
@@ -68,7 +91,7 @@ async function handleNotices(c: Context<{ Bindings: Env; Variables: Variables }>
   } : null;
 
   c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
-  const responseData = { events, exhibition, latest_blog };
+  const responseData = { events, exhibition, exhibitions, latest_blog };
   if (c.env.CACHE_KV) {
     try {
       await c.env.CACHE_KV.put('notices_feed', JSON.stringify(responseData), { expirationTtl: 60 });

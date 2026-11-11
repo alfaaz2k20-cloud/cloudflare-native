@@ -30,6 +30,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Date & Time UTC-safe helpers
+  const parseUtcDate = window.parseUtcDate || function(str) {
+    if (!str) return null;
+    const s = String(str).trim();
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(s)) return new Date(s.replace(' ', 'T') + 'Z');
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) return new Date(s + 'Z');
+    return new Date(s);
+  };
+  const formatDateTime = window.formatDateTime || function(str, opts) {
+    const d = parseUtcDate(str);
+    return d && !isNaN(d.getTime()) ? d.toLocaleString(undefined, opts || { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Date TBD';
+  };
+  const formatDate = window.formatDate || function(str, opts) {
+    const d = parseUtcDate(str);
+    return d && !isNaN(d.getTime()) ? d.toLocaleDateString(undefined, opts || { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+  };
+  const formatTime = window.formatTime || function(str, opts) {
+    const d = parseUtcDate(str);
+    return d && !isNaN(d.getTime()) ? d.toLocaleTimeString(undefined, opts || { hour: '2-digit', minute: '2-digit' }) : '—';
+  };
+
   // ==========================================
   // CURATOR DIALOG MODAL (Brutalist Replacements for confirm() & prompt())
   // ==========================================
@@ -201,8 +222,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Pulse chips
       const cycleTitleEl = document.getElementById('pulseCycleTitle');
       if (cycleTitleEl) {
-        if (m.active_cycle) {
-          const ageLabel = m.active_cycle_over_18 === 0 ? 'All Ages' : '18+';
+        if (m.active_cycles_count && m.active_cycles_count > 1) {
+          cycleTitleEl.textContent = `${m.active_cycles_count} Active Cycles`;
+        } else if (m.active_cycle) {
+          const ageLabel = m.active_cycle_over_18 === 0 ? 'Youth' : '18+';
           cycleTitleEl.textContent = `${m.active_cycle} (${ageLabel})`;
         } else {
           cycleTitleEl.textContent = 'None (Portal Closed)';
@@ -486,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const waLink = cleanWa
           ? `<a href="https://wa.me/${cleanWa.replace('+', '')}" target="_blank" rel="noopener noreferrer" style="color:var(--accent-green-text); text-decoration:underline; font-weight:600;">WA: ${window.escapeHtml(r.whatsapp)} ↗</a>`
           : `<span style="color:var(--text-secondary);">${window.escapeHtml(r.whatsapp || 'No WA')}</span>`;
-        const safeTime = r.registered_at ? new Date(r.registered_at).toLocaleString() : 'Date TBD';
+        const safeTime = r.registered_at ? formatDateTime(r.registered_at) : 'Date TBD';
         html += `
           <div style="padding:1rem 0; border-bottom:1px solid var(--grid-border); font-size:13px; display:flex; justify-content:space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <div>
@@ -841,7 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const safeApplicantNote = window.escapeHtml(a.applicant_note || 'No statement provided by artist.');
       const safeCuratorNote = window.escapeHtml(a.curator_note || '—');
       const safeRegNote = window.escapeHtml(a.participant_note_reg || '—');
-      const safeDate = a.created_at ? new Date(a.created_at).toLocaleString() : 'Date TBD';
+      const safeDate = a.created_at ? formatDateTime(a.created_at) : 'Date TBD';
       const ageCategory = a.over_19 ? '18+ Verified' : 'Youth / Under 18 Entry';
 
       card.innerHTML = `
@@ -1040,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const safeClub = window.escapeHtml(a.club_name);
       const safeNote = window.escapeHtml(a.note || 'No statement provided by applicant.');
       const safeAdminNote = window.escapeHtml(a.admin_note || '');
-      const safeDate = a.created_at ? new Date(a.created_at).toLocaleString() : 'Date TBD';
+      const safeDate = a.created_at ? formatDateTime(a.created_at) : 'Date TBD';
 
       card.innerHTML = `
         <div>
@@ -1258,9 +1281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timelineHtml = u.timeline.map((step) => {
           const safeTitle = window.escapeHtml(step.title);
           const safeDetails = window.escapeHtml(step.details || '');
-          const safeTime = step.timestamp ? new Date(step.timestamp).toLocaleString(undefined, {
-            month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
-          }) : 'Date TBD';
+          const safeTime = step.timestamp ? formatDateTime(step.timestamp) : 'Date TBD';
           const safeStepLink = window.safeHttpUrl ? window.safeHttpUrl(step.link) : null;
           const linkBtn = safeStepLink
             ? `<a href="${window.escapeHtml(safeStepLink)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:2px 8px; font-size:9px; text-decoration:none;">View ↗</a>`
@@ -1293,7 +1314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${c.admin_note ? `<div style="font-size:10px; color:var(--accent-gold-text); margin-top:2px;">Curator: "${window.escapeHtml(c.admin_note)}"</div>` : ''}
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
               <span class="badge badge-${(c.status || '').toLowerCase()}">${window.escapeHtml(c.status)}</span>
-              <span style="font-size:10px; color:var(--text-secondary);">${window.escapeHtml(c.created_at ? c.created_at.slice(0, 10) : '')}</span>
+              <span style="font-size:10px; color:var(--text-secondary);">${window.escapeHtml(c.created_at ? formatDate(c.created_at) : '')}</span>
             </div>
           </div>
         `).join('');
@@ -1306,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="font-weight: 500;">${window.escapeHtml(e.event_name)}</div>
             <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Date: ${window.escapeHtml(e.event_date || 'TBD')}</div>
             ${e.whatsapp_number ? `<div style="font-size:10px; color:var(--text-secondary);">WA: ${window.escapeHtml(e.whatsapp_number)}</div>` : ''}
-            <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">RSVP: ${window.escapeHtml(e.created_at ? e.created_at.slice(0, 10) : '')}</div>
+            <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">RSVP: ${window.escapeHtml(e.created_at ? formatDate(e.created_at) : '')}</div>
           </div>
         `).join('');
       }
@@ -1367,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
               <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Type: <span class="badge badge-closed">${window.escapeHtml(s.submission_type || 'work')}</span></div>
               ${s.note ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">"${window.escapeHtml(s.note)}"</div>` : ''}
-              <div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">Uploaded: ${window.escapeHtml(s.created_at ? s.created_at.slice(0, 10) : '')}</div>
+              <div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">Uploaded: ${window.escapeHtml(s.created_at ? formatDate(s.created_at) : '')}</div>
             </div>
           `;
         }).join('');
@@ -1553,7 +1574,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const safeAuthor = window.escapeHtml(s.author_email || 'Anonymous');
         const authorHtml = s.author_email ? `<a href="mailto:${safeAuthor}" style="color:var(--text-primary); text-decoration:underline;">${safeAuthor}</a>` : safeAuthor;
         const safeNote = window.escapeHtml(s.note || '');
-        const safeDate = s.created_at ? new Date(s.created_at).toLocaleDateString() : '';
+        const safeDate = s.created_at ? formatDate(s.created_at) : '';
         const safeUrl = window.safeHttpUrl ? window.safeHttpUrl(s.file_url) : null;
         const linkHtml = safeUrl
           ? `<a href="${window.escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:0.6rem 1.2rem; font-size:10px; min-height:40px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">View / Download File ↗</a>`
@@ -1607,7 +1628,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isPublished = Boolean(b.is_published);
         const safeTitle = window.escapeHtml(b.title);
         const safeExcerpt = window.escapeHtml(b.excerpt || '—');
-        const safeDate = b.created_at ? new Date(b.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+        const safeDate = b.created_at ? formatDate(b.created_at, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 
         card.innerHTML = `
           <div>
@@ -1819,8 +1840,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const safeAction = window.escapeHtml(log.action || 'ACTION');
       const safeTarget = window.escapeHtml(`${log.target_type || 'system'} ${log.target_id ? '#' + log.target_id : ''}`);
       const safeDetails = window.escapeHtml(log.details || '—');
-      const timeStr = log.created_at ? new Date(log.created_at).toLocaleString(undefined, {
-        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      const timeStr = log.created_at ? formatDateTime(log.created_at, {
+        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
       }) : '—';
 
       let actionBadgeClass = 'badge-closed';
@@ -1940,7 +1961,7 @@ document.addEventListener('DOMContentLoaded', () => {
         overallStatusEl.style.color = data.overall_status === 'HEALTHY' ? 'var(--accent-green-text)' : 'var(--accent-red-text)';
       }
       if (overallDetailEl) {
-        overallDetailEl.textContent = `Completed synthetic probe sweep at ${new Date(data.timestamp).toLocaleTimeString()}. See investigation log below.`;
+        overallDetailEl.textContent = `Completed synthetic probe sweep at ${formatTime(data.timestamp)}. See investigation log below.`;
       }
 
       let logHtml = '';
