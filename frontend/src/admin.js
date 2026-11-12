@@ -185,10 +185,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Safe Admin API Fetch Wrapper with 403 handling
+  // Safe Admin API Fetch Wrapper with 403 handling & Cache-Busting
   async function adminFetch(endpoint, options = {}) {
     try {
-      const res = await window.globalApiFetch(endpoint, options);
+      const isMutation = options.method && options.method.toUpperCase() !== 'GET';
+      const sep = endpoint.includes('?') ? '&' : '?';
+      const fetchUrl = isMutation ? endpoint : `${endpoint}${sep}_t=${Date.now()}`;
+      const res = await window.globalApiFetch(fetchUrl, {
+        cache: 'no-store',
+        ...options,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          ...(options.headers || {})
+        }
+      });
       if (res && res.status === 403) {
         alert('Access denied: Administrative privileges required.');
         window.location.href = 'dashboard.html';
@@ -565,7 +576,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 2. EXHIBITIONS LOGIC (FULL PIPELINE DOSSIER & AGE REQUIREMENT TOGGLE)
   // ==========================================
-  let allExhibs = [];
+  let allExhibitionCycles = [];
+  let allExhibs = []; // Applicants applications archive
   let activeCycleFilter = 'ALL';
   let currentCycleView = 'ALL';
 
@@ -574,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!res || !res.ok) return;
 
     const exhibitions = await res.json();
-    allExhibs = exhibitions;
+    allExhibitionCycles = exhibitions;
     const container = document.getElementById('exhibitionListContainer');
     const statusText = document.getElementById('portalLiveStatus');
     if (!container) return;
@@ -605,7 +617,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const activeExs = exhibitions.filter(e => e.is_active);
     if (activeExs.length > 0) {
-      const titles = activeExs.map(e => `${window.escapeHtml(e.title)} (${e.require_over_18 ? 'General Exhibition for Adults' : 'Youth Exhibition'})`).join(', ');
+      const titles = activeExs.map(e => {
+        const isAdult = Boolean(e.require_over_18 === 1 || e.require_over_18 === true || String(e.require_over_18) === '1');
+        return `${window.escapeHtml(e.title)} (${isAdult ? 'General Exhibition for Adults' : 'Youth Exhibition'})`;
+      }).join(', ');
       if (statusText) statusText.innerHTML = `Active Cycles (${activeExs.length}): <strong style="color: var(--accent-green-text);">${titles}</strong>`;
     } else {
       if (statusText) statusText.innerHTML = `<strong style="color: var(--accent-red-text);">CLOSED</strong> (No active exhibitions)`;
@@ -617,6 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     exhibitions.forEach(ex => {
+      const isAdultCohort = Boolean(ex.require_over_18 === 1 || ex.require_over_18 === true || String(ex.require_over_18) === '1');
       const card = document.createElement('div');
       card.style.cssText = `border: 1px solid ${ex.is_active ? 'var(--accent-gold)' : 'var(--grid-border)'}; padding: 1.5rem; background: ${ex.is_active ? 'var(--bg-primary)' : 'transparent'}; transition: all 0.3s;`;
 
@@ -624,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<span style="font-size: 9px; padding: 3px 8px; background: var(--accent-gold); color: #fff; letter-spacing: 1px; text-transform: uppercase;">Live Now</span>`
         : `<span style="font-size: 9px; padding: 3px 8px; border: 1px solid var(--grid-border); color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase;">Inactive</span>`;
 
-      const ageBadge = ex.require_over_18
+      const ageBadge = isAdultCohort
         ? `<span class="badge badge-approved" style="font-size:9px;">General Exhibition for Adults</span>`
         : `<span class="badge badge-pending" style="font-size:9px;">Youth Exhibition</span>`;
 
@@ -650,9 +666,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ${toggleActiveBtn}
             ${!ex.is_active ? `<button data-action="activate-exhibition" data-id="${ex.id}" data-title="${safeTitle}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Set as Sole Live</button>` : ''}
             <button data-action="edit-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Edit in Builder</button>
-            ${!ex.require_over_18 ? `<button data-action="toggle-recent-works" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; ${ex.allow_recent_works_youth ? 'border-color:var(--accent-green); color:var(--accent-green-text);' : ''}">${ex.allow_recent_works_youth ? 'Recent Works: ON' : 'Recent Works: OFF'}</button>` : ''}
+            ${!isAdultCohort ? `<button data-action="toggle-recent-works" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; ${ex.allow_recent_works_youth ? 'border-color:var(--accent-green); color:var(--accent-green-text);' : ''}">${ex.allow_recent_works_youth ? 'Recent Works: ON' : 'Recent Works: OFF'}</button>` : ''}
           </div>
-          <button data-action="toggle-age-req" data-id="${ex.id}" data-current="${ex.require_over_18 ? '1' : '0'}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">${ex.require_over_18 ? 'Switch to Youth Exhibition' : 'Switch to General Exhibition for Adults'}</button>
+          <button data-action="toggle-age-req" data-id="${ex.id}" data-current="${isAdultCohort ? '1' : '0'}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">${isAdultCohort ? 'Switch to Youth Exhibition' : 'Switch to General Exhibition for Adults'}</button>
         </div>
       `;
       container.appendChild(card);
@@ -660,7 +676,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.openExhibitionBuilderById = function(id) {
-    const ex = allExhibs.find(e => e.id === id);
+    const ex = allExhibitionCycles.find(e => Number(e.id) === Number(id));
     if (ex) window.openExhibitionBuilder(ex);
   };
 
@@ -697,10 +713,11 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.disabled = true;
     }
     try {
-      const exObj = allExhibs.find(e => e.id === id);
+      const exObj = allExhibitionCycles.find(e => Number(e.id) === Number(id));
+      const isCurrentlyAdult = exObj ? Boolean(exObj.require_over_18 === 1 || exObj.require_over_18 === true || String(exObj.require_over_18) === '1') : false;
       const nextReqOver18 = typeof targetVal === 'boolean'
         ? targetVal
-        : (exObj ? !exObj.require_over_18 : false);
+        : !isCurrentlyAdult;
 
       const res = await adminFetch(`/admin/exhibitions/${id}/toggle-age`, {
         method: 'PATCH',
@@ -1362,6 +1379,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<a href="${window.escapeHtml(safePortfolio)}" target="_blank" rel="noopener noreferrer" class="action-btn gold" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; text-align:center;">View Art PDF ↗</a>`
         : `<span class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; text-align:center; opacity:0.4; cursor:not-allowed;">No Portfolio Link</span>`;
 
+      const isMinorApplicant = (a.age !== null && a.age !== undefined && Number(a.age) < 18) || Boolean(a.guardian_name) || !a.over_18 || Boolean(a.is_minor);
+      const isYouthSubmission = Boolean(isMinorApplicant || a.guardian_name || a.guardian_contact || a.guardian_consent_granted || a.participant_assent_granted);
+      const ageCategory = isMinorApplicant ? 'Youth Exhibition' : 'General Exhibition for Adults';
+
       if (a.status === 'PENDING') {
         actionBtns += `
           <button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="review-exhib" data-id="${Number(a.id)}" data-decision="APPROVED">Select for Show</button>
@@ -1382,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
           actionBtns += `<a href="${window.escapeHtml(safeRecent)}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-gold); color:var(--accent-gold-text); text-align:center;">View Youth Works ↗</a>`;
         }
       }
-      if ((a.age < 18 || a.guardian_name)) {
+      if (isYouthSubmission) {
         if (a.guardian_verification_status !== 'VERIFIED') {
           actionBtns += `<button class="action-btn gold" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="verify-guardian" data-id="${Number(a.id)}">Verify Guardian Consent</button>`;
         }
@@ -1410,8 +1431,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const safeCuratorNote = window.escapeHtml(a.curator_note || '—');
       const safeRegNote = window.escapeHtml(a.participant_note_reg || '—');
       const safeDate = a.created_at ? formatDateTime(a.created_at) : 'Date TBD';
-      const isMinorApplicant = (a.age !== null && a.age !== undefined && Number(a.age) < 18) || Boolean(a.guardian_name) || !a.over_18 || Boolean(a.is_minor);
-      const ageCategory = isMinorApplicant ? 'Youth Exhibition' : 'General Exhibition for Adults';
 
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; border-bottom:1px solid var(--grid-border); padding-bottom:1rem;">
@@ -1459,7 +1478,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
-        ${(a.age < 18 || a.guardian_name) ? `
+        ${isYouthSubmission ? `
           <div style="background: rgba(189, 111, 93, 0.05); border: 1px solid var(--accent-gold); padding: 1rem; margin-top: 0.75rem;">
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
               <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-gold-text);">🛡️ Youth Safeguarding Dossier</span>

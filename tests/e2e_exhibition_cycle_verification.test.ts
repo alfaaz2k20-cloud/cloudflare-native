@@ -272,4 +272,94 @@ describe('End-to-End Exhibition Lifecycle & Guidance Verification Suite', () => 
     const adultStatusData: any = await adultStatusRes.json();
     expect(adultStatusData.status).toBe('PENDING');
   });
+
+  it('5. Admin Immediate Invalidation, Cache-Control & Guardian Dossier Pipeline Integrity', async () => {
+    const adminHeaders = await makeHeaders('admin@alfaaz.com', 'ADMIN');
+
+    // 5a. Create Youth Cycle (require_over_18 = 0) and General Adult Cycle (require_over_18 = 1)
+    const youthRes = await app.request('/admin/exhibitions/create', {
+      method: 'POST',
+      headers: adminHeaders,
+      body: JSON.stringify({
+        title: 'SHEHJAR TEST YOUTH',
+        require_over_18: 0,
+        is_active: 1,
+        status: 'PUBLISHED'
+      })
+    }, getTestEnv());
+    expect(youthRes.status).toBe(200);
+
+    const adultRes = await app.request('/admin/exhibitions/create', {
+      method: 'POST',
+      headers: adminHeaders,
+      body: JSON.stringify({
+        title: 'HARUD TEST GENERAL',
+        require_over_18: 1,
+        is_active: 1,
+        status: 'PUBLISHED'
+      })
+    }, getTestEnv());
+    expect(adultRes.status).toBe(200);
+
+    // 5b. Submit minor application with guardian details
+    const minorHeaders = await makeHeaders('minor_test@alfaaz.local', 'PARTICIPANT');
+    const applyRes = await app.request('/exhibitions/apply', {
+      method: 'POST',
+      headers: minorHeaders,
+      body: JSON.stringify({
+        exhibition_cycle: 'SHEHJAR TEST YOUTH',
+        full_name: 'Zaira Jan Test',
+        age: 15,
+        address: 'Downtown Srinagar',
+        whatsapp: '+919419111222',
+        genre: 'Watercolor',
+        medium: 'Paper',
+        recent_works_url: 'https://alfaazcollective.org/vault/file/recent-works/sample.jpg',
+        guardian_name: 'Farooq Ahmad Jan',
+        guardian_relationship: 'Father',
+        guardian_contact: '+919419333444',
+        guardian_consent: 1,
+        participant_assent: 1,
+        agreed_to_screening: true
+      })
+    }, getTestEnv());
+    expect(applyRes.status).toBe(200);
+
+    // 5c. Verify Cache-Control headers and cohort integrity on /admin/exhibitions/list
+    const listRes = await app.request('/admin/exhibitions/list', {
+      method: 'GET',
+      headers: adminHeaders
+    }, getTestEnv());
+    expect(listRes.status).toBe(200);
+    const cacheHeader = listRes.headers.get('Cache-Control');
+    expect(cacheHeader).toContain('no-store');
+    expect(cacheHeader).toContain('no-cache');
+
+    const cycles = (await listRes.json()) as any[];
+    const youthCycle = cycles.find(c => c.title === 'SHEHJAR TEST YOUTH');
+    const adultCycle = cycles.find(c => c.title === 'HARUD TEST GENERAL');
+    expect(youthCycle).toBeDefined();
+    expect(youthCycle.require_over_18).toBe(0);
+    expect(adultCycle).toBeDefined();
+    expect(adultCycle.require_over_18).toBe(1);
+
+    // 5d. Verify /admin/exhibitions returns full guardian dossier for youth applicant
+    const appsRes = await app.request('/admin/exhibitions?cycle=ALL', {
+      method: 'GET',
+      headers: adminHeaders
+    }, getTestEnv());
+    expect(appsRes.status).toBe(200);
+    const appsCacheHeader = appsRes.headers.get('Cache-Control');
+    expect(appsCacheHeader).toContain('no-store');
+
+    const apps = (await appsRes.json()) as any[];
+    const youthApp = apps.find(a => a.full_name === 'Zaira Jan Test');
+    expect(youthApp).toBeDefined();
+    expect(youthApp.guardian_name).toBe('Farooq Ahmad Jan');
+    expect(youthApp.guardian_relationship).toBe('Father');
+    expect(youthApp.guardian_contact).toBe('+919419333444');
+    expect(youthApp.guardian_consent_granted).toBe(true);
+    expect(youthApp.participant_assent_granted).toBe(true);
+    expect(youthApp.guardian_verification_status).toBe('PENDING');
+  });
 });

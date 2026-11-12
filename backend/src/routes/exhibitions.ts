@@ -553,7 +553,7 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     if (msg.includes('unique') || msg.includes('constraint')) {
       return c.json({ detail: 'You have already submitted an application for this exhibition cycle.' }, 400);
     }
-    // Schema fallback if newer migration columns are absent in local or remote D1
+    // Schema fallback if recent_works_url or other non-guardian columns caused an issue
     if (msg.includes('no column named') || msg.includes('has no column')) {
       try {
         await c.env.DB
@@ -561,26 +561,56 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
             INSERT INTO exhibition_applications (
               user_email, exhibition_cycle, full_name, age, address, whatsapp,
               genre, medium, portfolio_url, over_19, agreed_to_screening, applicant_note,
+              guardian_name, guardian_relationship, guardian_contact,
+              guardian_consent_granted, guardian_consent_version, guardian_consent_timestamp,
+              participant_assent_granted, guardian_verification_status,
               status, registration_status, agreed_to_tnc
             ) VALUES (
               ?, ?, ?, ?, ?, ?,
               ?, ?, ?, ?, 1, ?,
+              ?, ?, ?,
+              ?, ?, ?,
+              ?, ?,
               'PENDING', 'NONE', 0
             )
           `)
           .bind(
             user.email, activeCycle.title, fullName,
             age, address, whatsapp || guardianContact || '—',
-            genre, medium, portfolioUrl, over19Val, applicantNote
+            genre, medium, portfolioUrl, over19Val, applicantNote,
+            guardianName, guardianRelationship, guardianContact,
+            guardianConsentGranted, guardianConsentVersion, guardianConsentTimestamp,
+            participantAssentGranted, guardianVerificationStatus
           )
           .run();
-      } catch (fallbackErr: any) {
-        const fallbackMsg = String(fallbackErr?.message || '').toLowerCase();
-        if (fallbackMsg.includes('unique') || fallbackMsg.includes('constraint')) {
-          return c.json({ detail: 'You have already submitted an application for this exhibition cycle.' }, 400);
+      } catch (innerErr: any) {
+        try {
+          await c.env.DB
+            .prepare(`
+              INSERT INTO exhibition_applications (
+                user_email, exhibition_cycle, full_name, age, address, whatsapp,
+                genre, medium, portfolio_url, over_19, agreed_to_screening, applicant_note,
+                status, registration_status, agreed_to_tnc
+              ) VALUES (
+                ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, 1, ?,
+                'PENDING', 'NONE', 0
+              )
+            `)
+            .bind(
+              user.email, activeCycle.title, fullName,
+              age, address, whatsapp || guardianContact || '—',
+              genre, medium, portfolioUrl, over19Val, applicantNote
+            )
+            .run();
+        } catch (fallbackErr: any) {
+          const fallbackMsg = String(fallbackErr?.message || '').toLowerCase();
+          if (fallbackMsg.includes('unique') || fallbackMsg.includes('constraint')) {
+            return c.json({ detail: 'You have already submitted an application for this exhibition cycle.' }, 400);
+          }
+          console.error('[EXHIBITIONS APPLY FALLBACK ERROR]', fallbackErr);
+          return c.json({ detail: 'Failed to record application: ' + (fallbackErr.message || 'Please check your information and try again.') }, 400);
         }
-        console.error('[EXHIBITIONS APPLY FALLBACK ERROR]', fallbackErr);
-        return c.json({ detail: 'Failed to record application: ' + (fallbackErr.message || 'Please check your information and try again.') }, 400);
       }
     } else {
       console.error('[EXHIBITIONS APPLY ERROR]', err);

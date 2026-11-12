@@ -8,6 +8,14 @@ const adminRouter = new Hono<{ Bindings: Env; Variables: Variables }>();
 // All admin routes require admin role
 adminRouter.use('*', requireAdmin);
 
+// Invalidate intermediate and browser caches so administrative mutations and live registries update immediately
+adminRouter.use('*', async (c, next) => {
+  await next();
+  c.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  c.header('Pragma', 'no-cache');
+  c.header('Expires', '0');
+});
+
 async function logAudit(
   db: D1Database,
   adminEmail: string,
@@ -342,7 +350,7 @@ adminRouter.patch('/exhibitions/:id/edit', async (c) => {
   if (body.is_active !== undefined) {
     if (body.is_active) {
       await c.env.DB.batch([
-        c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0'),
+        c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0 WHERE require_over_18 = ?').bind(require_over_18),
         c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 1 WHERE id = ?').bind(id)
       ]);
     } else {
@@ -426,18 +434,27 @@ adminRouter.get('/exhibitions/list', async (c) => {
       status: e.status || 'PUBLISHED'
     })));
   } catch {
-    const fallbackList = await c.env.DB.prepare(`
-      SELECT id, title, date_text, is_active
-      FROM exhibitions_list
-      ORDER BY created_at DESC
-    `).all();
+    let fallbackList: any;
+    try {
+      fallbackList = await c.env.DB.prepare(`
+        SELECT id, title, date_text, is_active, require_over_18
+        FROM exhibitions_list
+        ORDER BY created_at DESC
+      `).all();
+    } catch {
+      fallbackList = await c.env.DB.prepare(`
+        SELECT id, title, date_text, is_active
+        FROM exhibitions_list
+        ORDER BY created_at DESC
+      `).all();
+    }
 
     return c.json((fallbackList.results || []).map((e: any) => ({
       id: e.id,
       title: e.title,
       date_text: e.date_text,
       is_active: Boolean(e.is_active),
-      require_over_18: 1,
+      require_over_18: e.require_over_18 === undefined || e.require_over_18 === null ? 1 : Number(e.require_over_18),
       allow_recent_works_youth: false,
       cover_image: null,
       status: 'PUBLISHED'
@@ -656,11 +673,15 @@ adminRouter.get('/exhibitions', async (c) => {
   try {
     apps = await stmt.all();
   } catch (err: any) {
+    // If guardian_rejection_reason is absent, try selecting with migration 0007 guardian fields
     try {
-      const fallbackStmt = targetCycle
+      const stmt0007 = targetCycle
         ? c.env.DB.prepare(`
             SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
-                   portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+                   portfolio_url, recent_works_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+                   guardian_name, guardian_relationship, guardian_contact, guardian_consent_granted,
+                   guardian_consent_version, guardian_consent_timestamp, participant_assent_granted, guardian_verification_status,
+                   guardian_verified_at, guardian_verified_by,
                    registration_status, payment_proof_url, participant_note_reg, created_at
             FROM exhibition_applications
             WHERE exhibition_cycle = ?
@@ -668,15 +689,38 @@ adminRouter.get('/exhibitions', async (c) => {
           `).bind(targetCycle)
         : c.env.DB.prepare(`
             SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
-                   portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+                   portfolio_url, recent_works_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+                   guardian_name, guardian_relationship, guardian_contact, guardian_consent_granted,
+                   guardian_consent_version, guardian_consent_timestamp, participant_assent_granted, guardian_verification_status,
+                   guardian_verified_at, guardian_verified_by,
                    registration_status, payment_proof_url, participant_note_reg, created_at
             FROM exhibition_applications
             ORDER BY created_at DESC
           `);
-      apps = await fallbackStmt.all();
+      apps = await stmt0007.all();
     } catch (fallbackErr: any) {
-      console.error('[Admin Exhibitions Query Fallback Error]:', fallbackErr);
-      return c.json([]);
+      try {
+        const legacyStmt = targetCycle
+          ? c.env.DB.prepare(`
+              SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
+                     portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+                     registration_status, payment_proof_url, participant_note_reg, created_at
+              FROM exhibition_applications
+              WHERE exhibition_cycle = ?
+              ORDER BY created_at DESC
+            `).bind(targetCycle)
+          : c.env.DB.prepare(`
+              SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
+                     portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+                     registration_status, payment_proof_url, participant_note_reg, created_at
+              FROM exhibition_applications
+              ORDER BY created_at DESC
+            `);
+        apps = await legacyStmt.all();
+      } catch (legacyErr: any) {
+        console.error('[Admin Exhibitions Query Error]:', legacyErr);
+        return c.json([]);
+      }
     }
   }
   return c.json((apps.results || []).map((a: any) => {

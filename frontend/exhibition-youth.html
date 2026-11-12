@@ -104,6 +104,49 @@
       width: 100%;
     }
 
+    /* Accessible, Touch-Friendly Checkboxes (22px target, min 48px row) */
+    .checkbox-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      cursor: pointer;
+      padding: 0.9rem 1.1rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--grid-border);
+      margin-bottom: 0.85rem;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+      min-height: 48px;
+      border-radius: 2px;
+      box-sizing: border-box;
+    }
+    .checkbox-card:hover {
+      border-color: var(--accent-gold);
+      background: rgba(140, 109, 59, 0.03);
+    }
+    .checkbox-card:focus-within {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 2px rgba(140, 109, 59, 0.15);
+    }
+    .form-checkbox,
+    .checkbox-card input[type="checkbox"],
+    input[type="checkbox"].form-checkbox {
+      width: 22px !important;
+      height: 22px !important;
+      min-width: 22px !important;
+      min-height: 22px !important;
+      accent-color: var(--accent-gold);
+      cursor: pointer;
+      margin: 1px 0 0 0 !important;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+    .checkbox-card span {
+      font-size: 13.5px;
+      color: var(--text-primary);
+      line-height: 1.55;
+      user-select: none;
+    }
+
     @media (max-width: 768px) {
       .page-header { padding-top: 5rem; min-height: 32vh; }
       .instructions-panel { padding: 1.25rem 1rem; }
@@ -215,15 +258,15 @@
           </div>
 
           <div class="field-group full-width" style="margin-top: 0.5rem;">
-            <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 13px; color: var(--text-primary); line-height: 1.5;">
-              <input type="checkbox" id="guardianConsent" required style="width: auto; margin-top: 3px;">
-              <span><strong>Parent / Guardian Consent:</strong> As parent or legal guardian, I grant explicit permission for this young artist to participate in this Alfaaz exhibition cycle and consent to curatorial communication.</span>
+            <label class="checkbox-card" for="guardianConsent">
+              <input type="checkbox" id="guardianConsent" class="form-checkbox" required>
+              <span><strong>Parent / Legal Guardian Consent:</strong> As parent or legal guardian, I grant explicit permission for this young artist to participate in this Alfaaz exhibition cycle and consent to curatorial communication.</span>
             </label>
           </div>
 
           <div class="field-group full-width">
-            <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 13px; color: var(--text-primary); line-height: 1.5;">
-              <input type="checkbox" id="participantAssent" required style="width: auto; margin-top: 3px;">
+            <label class="checkbox-card" for="participantAssent">
+              <input type="checkbox" id="participantAssent" class="form-checkbox" required>
               <span><strong>Young Participant Assent:</strong> I (the young artist) confirm that I want to take part in this exhibition cycle and that this submitted work is my own original creation.</span>
             </label>
           </div>
@@ -265,8 +308,8 @@
         <!-- Curatorial Screening Terms & Bot Defense -->
         <h3 class="section-title-sub">Curatorial Terms &amp; Submission</h3>
         <div style="margin-bottom: 1.5rem;">
-          <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 13px; color: var(--text-primary); line-height: 1.5;">
-            <input type="checkbox" id="agreedToScreening" required style="width: auto; margin-top: 3px;">
+          <label class="checkbox-card" for="agreedToScreening">
+            <input type="checkbox" id="agreedToScreening" class="form-checkbox" required>
             <span>I agree to the curatorial screening terms and certify that all submitted artwork is the original creation of the young artist.</span>
           </label>
         </div>
