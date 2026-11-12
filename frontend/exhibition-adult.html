@@ -12,8 +12,8 @@
   <meta name="apple-mobile-web-app-title" content="Alfaaz">
   <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
-  <meta name="description" content="Dedicated adult exhibition application intake for artists 18 years of age and older at Alfaaz Collective." />
-  <title>Adult Exhibition Application (18+) — ALFAAZ</title>
+  <meta name="description" content="Dedicated exhibition application intake for artists and cultural practitioners at Alfaaz Collective." />
+  <title>General Exhibition Application — ALFAAZ</title>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css?v=alfaaz-adult">
@@ -115,8 +115,8 @@
       </a>
     </div>
     <div class="nav-actions" style="display: flex; gap: 1.5rem; align-items: center;">
-      <a href="exhibition-youth.html" style="font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
-        Youth Exhibition (&lt;18)
+      <a href="exhibition.html" style="font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
+        Guidelines
       </a>
       <a href="dashboard.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
         Dashboard
@@ -131,8 +131,8 @@
       </video>
       <div class="video-overlay"></div>
       <div style="max-width: 800px; padding: 0 1rem;">
-        <span class="page-subtitle">Exhibition Open Call · General / 18+</span>
-        <h1 class="page-title">Exhibition Application</h1>
+        <span class="page-subtitle">Exhibition Open Call · General Exhibition for Adults</span>
+        <h1 class="page-title">General Exhibition Application</h1>
         <p class="curatorial-lead">
           For independent cultural practitioners, visual artists, and writers. Submit your recent works and artist statement for open curatorial review in Srinagar.
         </p>
@@ -144,14 +144,9 @@
       <!-- Active Cycle Reference Banner -->
       <div class="cycle-banner" id="cycleBanner">
         <div>
-          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-gold-text); font-weight: 600;">Exhibition Cycle</span>
+          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-gold-text); font-weight: 600;">General Exhibition Cycle</span>
           <h2 id="cycleTitle" style="font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); margin: 0.2rem 0;">Loading cycle...</h2>
           <div id="cycleMeta" style="font-size: 12px; color: var(--text-secondary);">—</div>
-        </div>
-        <div>
-          <a href="exhibition-youth.html" class="action-btn" style="font-size: 10px; padding: 0.5rem 1rem; text-decoration: none;">
-            Youth Exhibition (&lt;18) &rarr;
-          </a>
         </div>
       </div>
 
@@ -170,29 +165,25 @@
         <div class="form-grid">
           <div class="field-group">
             <label class="input-label" for="fname">Artist Full Name *</label>
-            <span class="field-hint">Your full legal name or creative pseudonym</span>
-            <input type="text" id="fname" class="form-input" required placeholder="e.g. Asiya Begum">
+            <input type="text" id="fname" class="form-input" required placeholder="e.g. Asiya Begum (Legal name or creative pseudonym)">
           </div>
 
           <div class="field-group">
-            <label class="input-label" for="age">Age (18 &amp; Above) *</label>
-            <span class="field-hint">Must be 18 years of age or older</span>
-            <input type="number" id="age" class="form-input" required min="18" max="120" placeholder="e.g. 26">
+            <label class="input-label" for="age">Artist Age *</label>
+            <input type="number" id="age" class="form-input" required min="18" max="120" placeholder="e.g. 26 (Must be 18 or older)">
             <div id="ageWarning" class="age-warning-banner">
-              <strong>Notice:</strong> You entered an age under 18. If you are a young artist, please use our <a href="exhibition-youth.html" id="linkToYouth">Youth Exhibition Portal (Under 18)</a>.
+              <strong>Notice:</strong> This intake is designated for adult practitioners (18 years and older). Young artists may participate through our <a href="exhibition-youth.html" id="linkToYouth">Youth Exhibition</a>.
             </div>
           </div>
 
           <div class="field-group full-width">
             <label class="input-label" for="address">Where are you based in Kashmir? *</label>
-            <span class="field-hint">Town, district, or city (e.g. Srinagar, Baramulla, Anantnag)</span>
-            <input type="text" id="address" class="form-input" required placeholder="e.g. Rajbagh, Srinagar">
+            <input type="text" id="address" class="form-input" required placeholder="e.g. Rajbagh, Srinagar or District">
           </div>
 
           <div class="field-group full-width">
             <label class="input-label" for="whatsapp">WhatsApp / Contact Phone Number *</label>
-            <span class="field-hint">Primary number for curatorial announcements and selection notices</span>
-            <input type="tel" id="whatsapp" class="form-input" required placeholder="+91 94190 00000">
+            <input type="tel" id="whatsapp" class="form-input" required placeholder="+91 94190 00000 (For curatorial announcements and selection notices)">
           </div>
 
           <div class="field-group full-width" style="margin-top: 0.5rem;">
@@ -208,14 +199,12 @@
         <div class="form-grid">
           <div class="field-group">
             <label class="input-label" for="genre">Artistic Discipline *</label>
-            <span class="field-hint">e.g. Oil Painting, Calligraphy, Photography, Sculpture, Woodcraft</span>
-            <input type="text" id="genre" class="form-input" required placeholder="e.g. Painting">
+            <input type="text" id="genre" class="form-input" required placeholder="e.g. Oil Painting, Calligraphy, Photography, Sculpture">
           </div>
 
           <div class="field-group">
             <label class="input-label" for="medium">Medium &amp; Dimensions *</label>
-            <span class="field-hint">e.g. Oil on Canvas (24x36 in), Walnut wood, Silver gelatin print</span>
-            <input type="text" id="medium" class="form-input" required placeholder="e.g. Oil on Canvas (24x36 in)">
+            <input type="text" id="medium" class="form-input" required placeholder="e.g. Oil on Canvas (24x36 in), Walnut wood, Mixed media">
           </div>
 
           <!-- Primary Recent Works Upload (PDF or Image) -->
@@ -233,8 +222,7 @@
 
           <div class="field-group full-width">
             <label class="input-label" for="note">Artist Statement / Concept Note (Optional)</label>
-            <span class="field-hint">Brief explanation of the theme, philosophy, or process behind your work (max 1000 characters)</span>
-            <textarea id="note" class="form-input" rows="3" placeholder="Tell our curators about the theme, materials, or concept behind your work..."></textarea>
+            <textarea id="note" class="form-input" rows="3" placeholder="Brief explanation of the theme, philosophy, or process behind your work (max 1000 characters)..."></textarea>
           </div>
         </div>
 

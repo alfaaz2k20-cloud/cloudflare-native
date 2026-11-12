@@ -53,34 +53,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cycleIdParam = urlParams.get('id') || urlParams.get('cycle');
 
   try {
-    const endpoint = cycleIdParam
-      ? `/exhibitions/config?id=${encodeURIComponent(cycleIdParam)}`
-      : '/exhibitions/config';
-
-    const res = await window.globalApiFetch(endpoint);
+    const res = await window.globalApiFetch('/exhibitions/config');
     if (!res || !res.ok) {
-      if (cycleTitle) cycleTitle.textContent = 'Exhibition Cycle Not Found';
-      if (cycleMeta) cycleMeta.textContent = 'Please return to the exhibition hub to select an active show.';
+      if (cycleTitle) cycleTitle.textContent = 'Youth Exhibition Portal Closed';
+      if (cycleMeta) cycleMeta.textContent = 'There are no active youth exhibitions currently accepting applications. Please monitor our official announcements.';
       if (youthForm) youthForm.style.display = 'none';
       return;
     }
 
     const data = await res.json();
-    const activeCycles = Array.isArray(data.active_cycles) ? data.active_cycles : [];
-    // Prioritize youth cycle if multiple active and no specific id requested
-    const youthCycle = (!cycleIdParam && activeCycles.length > 0)
-      ? (activeCycles.find(c => c.require_over_18 === false || c.require_over_18 === 0) || data)
-      : data;
+    const activeCycles = Array.isArray(data.active_cycles) ? data.active_cycles : (data.title ? [data] : []);
+    const youthCycles = activeCycles.filter(c => c.require_over_18 === false || c.require_over_18 === 0);
+
+    let youthCycle = null;
+    if (cycleIdParam) {
+      youthCycle = youthCycles.find(c => String(c.id) === String(cycleIdParam) || c.title.toLowerCase() === cycleIdParam.toLowerCase());
+    }
+    if (!youthCycle && youthCycles.length > 0) {
+      youthCycle = youthCycles[0];
+    }
+
+    if (!youthCycle) {
+      if (cycleTitle) cycleTitle.textContent = 'Youth Exhibition Portal Closed';
+      if (cycleMeta) cycleMeta.textContent = 'There are no active youth exhibitions currently accepting applications. Please monitor our official announcements.';
+      if (youthForm) youthForm.style.display = 'none';
+      return;
+    }
+
     selectedCycle = youthCycle;
 
-    if (cycleTitle) cycleTitle.textContent = selectedCycle.title || 'Youth Curatorial Exhibition';
+    if (cycleTitle) cycleTitle.textContent = selectedCycle.title || 'Youth Exhibition';
     if (cycleMeta) {
       cycleMeta.textContent = `${selectedCycle.date_text || 'Dates Announced Soon'} — ${selectedCycle.venue || 'Alfaaz Gallery, Srinagar'}`;
     }
 
-    // Link to adult portal with same cycle id
-    if (linkToAdult && selectedCycle.id) {
-      linkToAdult.href = `exhibition-adult.html?id=${encodeURIComponent(selectedCycle.id)}`;
+    if (linkToAdult) {
+      linkToAdult.href = 'exhibition-adult.html';
     }
 
   } catch (err) {

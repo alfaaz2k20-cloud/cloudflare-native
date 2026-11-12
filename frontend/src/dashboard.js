@@ -731,8 +731,8 @@ document.addEventListener('DOMContentLoaded', () => {
         multiCyclesView.innerHTML = activeCycles.map(c => {
           const isYouth = c.require_over_18 === 0 || c.require_over_18 === false;
           const ageBadge = isYouth
-            ? '<span class="badge badge-pending" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Below 18 (Youth Showcase)</span>'
-            : '<span class="badge badge-approved" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Age 18+ (Adult Showcase)</span>';
+            ? '<span class="badge badge-pending" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Youth Exhibition</span>'
+            : '<span class="badge badge-approved" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">General Exhibition for Adults</span>';
             const targetParam = isYouth ? 'youth' : 'adult';
             const portalUrl = `exhibition.html?target=${targetParam}&id=${encodeURIComponent(c.id)}`;
             return `

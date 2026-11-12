@@ -12,8 +12,8 @@
   <meta name="apple-mobile-web-app-title" content="Alfaaz">
   <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
-  <meta name="description" content="Dedicated youth exhibition application intake for artists under 18 years of age with parent/guardian safeguarding at Alfaaz Collective." />
-  <title>Youth Exhibition Application (Under 18) — ALFAAZ</title>
+  <meta name="description" content="Dedicated youth exhibition application intake for young artists and emerging creators at Alfaaz Collective." />
+  <title>Youth Exhibition Intake — ALFAAZ</title>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css?v=alfaaz-youth">
@@ -124,8 +124,8 @@
       </a>
     </div>
     <div class="nav-actions" style="display: flex; gap: 1.5rem; align-items: center;">
-      <a href="exhibition-adult.html" style="font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
-        Adult Portal (18+)
+      <a href="exhibition.html" style="font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
+        Guidelines
       </a>
       <a href="dashboard.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
         Dashboard
@@ -140,7 +140,7 @@
       </video>
       <div class="video-overlay"></div>
       <div style="max-width: 800px; padding: 0 1rem;">
-        <span class="page-subtitle">Youth Open Call (Below 18 Years)</span>
+        <span class="page-subtitle">Youth Open Call</span>
         <h1 class="page-title">Youth Exhibition Intake</h1>
         <p class="curatorial-lead">
           For school students, young creators, and emerging artistic voices in Kashmir. Dedicated safeguarding, parental consent, and curatorial support.
@@ -153,14 +153,9 @@
       <!-- Active Cycle Reference Banner -->
       <div class="cycle-banner" id="cycleBanner">
         <div>
-          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-gold-text); font-weight: 600;">Exhibition Cycle</span>
+          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-gold-text); font-weight: 600;">Youth Exhibition Cycle</span>
           <h2 id="cycleTitle" style="font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); margin: 0.2rem 0;">Loading cycle...</h2>
           <div id="cycleMeta" style="font-size: 12px; color: var(--text-secondary);">—</div>
-        </div>
-        <div>
-          <a href="exhibition-adult.html" class="action-btn" style="font-size: 10px; padding: 0.5rem 1rem; text-decoration: none;">
-            Exhibition (18+) &rarr;
-          </a>
         </div>
       </div>
 
@@ -179,29 +174,25 @@
         <div class="form-grid">
           <div class="field-group">
             <label class="input-label" for="fname">Artist Full Name *</label>
-            <span class="field-hint">Young creator's full name or pseudonym</span>
-            <input type="text" id="fname" class="form-input" required placeholder="e.g. Zaira Mir">
+            <input type="text" id="fname" class="form-input" required placeholder="e.g. Zaira Mir (Full name or creative pseudonym)">
           </div>
 
           <div class="field-group">
-            <label class="input-label" for="age">Age (Under 18) *</label>
-            <span class="field-hint">Must be between 1 and 17 years old</span>
-            <input type="number" id="age" class="form-input" required min="1" max="17" placeholder="e.g. 15">
+            <label class="input-label" for="age">Young Artist Age *</label>
+            <input type="number" id="age" class="form-input" required min="1" max="17" placeholder="e.g. 15 (Must be between 1 and 17)">
             <div id="ageWarning" class="age-warning-banner">
-              <strong>Notice:</strong> You entered an age of 18 or older. If you are an adult artist, please use our <a href="exhibition-adult.html" id="linkToAdult">Adult Exhibition Portal (18+)</a>.
+              <strong>Notice:</strong> This intake is designated for young artists under 18. Adult artists may apply through our <a href="exhibition-adult.html" id="linkToAdult">General Exhibition for Adults</a>.
             </div>
           </div>
 
           <div class="field-group full-width">
             <label class="input-label" for="address">Where are you from in Kashmir? *</label>
-            <span class="field-hint">Town, district, or city (e.g. Srinagar, Baramulla, Anantnag)</span>
-            <input type="text" id="address" class="form-input" required placeholder="e.g. Rainawari, Srinagar">
+            <input type="text" id="address" class="form-input" required placeholder="e.g. Rainawari, Srinagar or District">
           </div>
 
           <div class="field-group full-width">
             <label class="input-label" for="phone">Personal Phone / WhatsApp Number *</label>
-            <span class="field-hint">Mandatory contact for collective notices and pass updates</span>
-            <input type="tel" id="phone" class="form-input" required placeholder="+91 94190 00000">
+            <input type="tel" id="phone" class="form-input" required placeholder="+91 94190 00000 (Mandatory contact for collective notices)">
           </div>
         </div>
 
@@ -210,19 +201,16 @@
         <div class="form-grid">
           <div class="field-group">
             <label class="input-label" for="guardianName">Parent / Legal Guardian Full Name *</label>
-            <span class="field-hint">Legal name of mother, father, or legal guardian</span>
             <input type="text" id="guardianName" class="form-input" required placeholder="e.g. Farooq Ahmad Mir">
           </div>
 
           <div class="field-group">
             <label class="input-label" for="guardianRelationship">Relationship to Artist *</label>
-            <span class="field-hint">e.g. Mother, Father, Legal Guardian</span>
-            <input type="text" id="guardianRelationship" class="form-input" required placeholder="e.g. Father">
+            <input type="text" id="guardianRelationship" class="form-input" required placeholder="e.g. Mother, Father, Legal Guardian">
           </div>
 
           <div class="field-group full-width">
             <label class="input-label" for="guardianContact">Parent / Guardian Contact Phone or Email *</label>
-            <span class="field-hint">Primary number or email for curatorial notices and consent verification</span>
             <input type="text" id="guardianContact" class="form-input" required placeholder="+91 99060 00000 or parent@email.com">
           </div>
 
@@ -246,20 +234,18 @@
         <div class="form-grid">
           <div class="field-group">
             <label class="input-label" for="genre">Artistic Discipline *</label>
-            <span class="field-hint">e.g. Painting, Drawing, Calligraphy, Photography, Sculpture</span>
-            <input type="text" id="genre" class="form-input" required placeholder="e.g. Painting">
+            <input type="text" id="genre" class="form-input" required placeholder="e.g. Painting, Drawing, Calligraphy, Photography, Sculpture">
           </div>
 
           <div class="field-group">
             <label class="input-label" for="medium">Medium &amp; Dimensions *</label>
-            <span class="field-hint">e.g. Watercolour on Paper, Acrylic on Canvas (12x18 in)</span>
-            <input type="text" id="medium" class="form-input" required placeholder="e.g. Watercolour on Paper (14x20 in)">
+            <input type="text" id="medium" class="form-input" required placeholder="e.g. Watercolour on Paper (14x20 in), Pencil sketch, Mixed media">
           </div>
 
           <!-- Earlier Sketches or Recent Works Upload (PDF or Image, max 15MB) -->
           <div class="field-group full-width">
             <label class="input-label" for="recentWorksFile">Earlier Sketches or Recent Works *</label>
-            <span class="field-hint">Share your creations, sketchbook pages, practice pieces, or drafts (PDF or Image — JPEG/PNG/WebP, max 15MB)</span>
+            <span class="field-hint">Share your creations, sketchbook pages, practice pieces, or drafts (PDF or Image — JPEG, PNG, or WebP up to 15MB)</span>
             <div style="margin-top: 0.5rem;">
               <input type="file" id="recentWorksFile" accept="application/pdf,image/jpeg,image/png,image/webp" required style="padding: 0.5rem 0;">
             </div>

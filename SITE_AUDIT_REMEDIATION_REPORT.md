@@ -734,6 +734,44 @@ The administration interface (`frontend/admin.html` and `src/admin.js`) was veri
      5. Multi-cycle status reflection on Member Dashboard.
    - **Results**: 20/20 test suites passing (276/276 tests green), 0 type errors, 0 hardening failures, clean production build, and 60/60 mobile viewport audits passing with 0px horizontal overflow.
 
+---
+
+### 9.12 Exhibition Terminology Transformation, Idempotent Admin Controls & Intake Isolation (2026-11-12)
+
+1. **Curatorial Terminology Transformation (Complete Decommissioning of "18+" / "Below 18")**:
+   - Replaced clinical, adult-site sounding terms across the platform with dignified, cultural arts terminology:
+     - "18+" / "Above 18" replaced with **"General Exhibition for Adults"** (or "General Exhibition" in concise tags and badges).
+     - "Below 18" / "Under 18" replaced with **"Youth Exhibition"** (or "Youth & Emerging Artists").
+     - Age numbers are now strictly restricted to confirmation logic (e.g. `min="18"`, `max="17"`, and explicit legal checkboxes).
+   - Updated UI text across `admin.html`, `admin.js`, `dashboard.html`, `dashboard.js`, `index.html`, `exhibition.html`, `exhibition-adult.html`, and `exhibition-youth.html`.
+
+2. **Strict Intake Isolation & Cross-Pollution Elimination**:
+   - **Youth Intake (`exhibition-youth.html` & `src/exhibition-youth.js`)**:
+     - Removed the intrusive button (`Exhibition (18+) →`) and top navigation link.
+     - Configuration loader strictly filters to active Youth cycles (`require_over_18 === false || require_over_18 === 0`).
+     - If no Youth cycle is active, cleanly displays a closed notice and hides the form without displaying adult cycles.
+   - **General Exhibition Intake (`exhibition-adult.html` & `src/exhibition-adult.js`)**:
+     - Removed youth cross-links and buttons from cycle banner and top navigation.
+     - Configuration loader strictly filters to active General Exhibition cycles (`require_over_18 !== false && require_over_18 !== 0`).
+     - Eliminates any possibility of displaying a youth exhibition cycle title on the adult application page.
+
+3. **Form Hint Redundancy Elimination**:
+   - Resolved awkward double-hinting on both adult and youth intake forms:
+     - Removed redundant `<span class="field-hint">` subtitle tags that duplicated example values right above input fields.
+     - Kept clear, high-contrast labels and informative placeholders for Artistic Discipline (`genre`), Medium & Dimensions (`medium`), Artist Statement (`note`), and contact inputs.
+
+4. **Idempotent Admin Cohort Toggle**:
+   - Fixed the toggle button in `admin.js`:
+     - Removed duplicate inline `onclick` handler that conflicted with the delegated `container` click event listener, which previously caused simultaneous double execution and immediate revert.
+     - Enhanced `window.toggleExhibitionAge(id, targetVal, btn)` to send explicit target boolean values (`{ require_over_18: targetVal }`), making cohort updates fully idempotent.
+
+5. **Empirical Verification & Test Status**:
+   - `npm test`: 20/20 test files, 276/276 tests passing (including explicit toggle-age idempotency assertions in `tests/e2e_exhibition_cycle_verification.test.ts`).
+   - `npm run typecheck`: 0 errors.
+   - `npm run test:hardening`: 0 failures (6 D1 constraints + 16,384 SJT profiles passing).
+   - `npm run build:frontend`: Clean production compilation in `frontend/dist/`.
+
+
 
 
 

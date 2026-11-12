@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (cycleCohortBadge) {
         const isYouthCycle = resolvedCycle.require_over_18 === 0 || resolvedCycle.require_over_18 === false;
-        cycleCohortBadge.textContent = isYouthCycle ? 'Youth Exhibition (Below 18)' : 'Exhibition (General / 18+)';
+        cycleCohortBadge.textContent = isYouthCycle ? 'Youth Exhibition' : 'General Exhibition for Adults';
       }
     } else if (activeCycles.length > 1) {
       if (currentShowTitle) currentShowTitle.textContent = 'Active Curatorial Cycles';
@@ -95,26 +95,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (singleActionWrap) singleActionWrap.style.display = 'block';
       if (dualChoiceWrap) dualChoiceWrap.style.display = 'none';
 
-      const cycleQuery = resolvedCycle?.id ? `?id=${encodeURIComponent(resolvedCycle.id)}` : (cycleParam ? `?id=${encodeURIComponent(cycleParam)}` : '');
-
       if (determinedTarget === 'youth') {
-        if (actionPrompt) actionPrompt.textContent = 'Youth Exhibition (Under 18 Years)';
+        const youthCycle = (resolvedCycle && (resolvedCycle.require_over_18 === 0 || resolvedCycle.require_over_18 === false))
+          ? resolvedCycle
+          : activeCycles.find(c => c.require_over_18 === 0 || c.require_over_18 === false);
+        const cycleQuery = youthCycle?.id ? `?id=${encodeURIComponent(youthCycle.id)}` : '';
+
+        if (actionPrompt) actionPrompt.textContent = 'Youth Exhibition';
         if (actionTitle) actionTitle.textContent = 'I Understand & Agree — Continue to Youth Exhibition';
         if (actionDesc) {
-          actionDesc.textContent = 'You will be taken directly to our youth exhibition intake portal for young artists and students below 18 years.';
+          actionDesc.textContent = 'You will be taken directly to our youth exhibition intake portal for young creators and emerging artists.';
         }
         if (btnContinueTarget) {
           btnContinueTarget.textContent = 'I Agree & Continue to Youth Exhibition →';
           btnContinueTarget.href = `exhibition-youth.html${cycleQuery}`;
         }
       } else {
-        if (actionPrompt) actionPrompt.textContent = 'Exhibition Application (General / 18+)';
-        if (actionTitle) actionTitle.textContent = 'I Understand & Agree — Continue to Exhibition';
+        const adultCycle = (resolvedCycle && resolvedCycle.require_over_18 !== 0 && resolvedCycle.require_over_18 !== false)
+          ? resolvedCycle
+          : activeCycles.find(c => c.require_over_18 !== 0 && c.require_over_18 !== false);
+        const cycleQuery = adultCycle?.id ? `?id=${encodeURIComponent(adultCycle.id)}` : '';
+
+        if (actionPrompt) actionPrompt.textContent = 'General Exhibition for Adults';
+        if (actionTitle) actionTitle.textContent = 'I Understand & Agree — Continue to General Exhibition';
         if (actionDesc) {
-          actionDesc.textContent = 'You will be taken directly to our exhibition application portal for artists and cultural practitioners aged 18 and older.';
+          actionDesc.textContent = 'You will be taken directly to our exhibition application portal for independent artists and cultural practitioners.';
         }
         if (btnContinueTarget) {
-          btnContinueTarget.textContent = 'I Agree & Continue to Exhibition →';
+          btnContinueTarget.textContent = 'I Agree & Continue to General Exhibition →';
           btnContinueTarget.href = `exhibition-adult.html${cycleQuery}`;
         }
       }
@@ -129,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (actionPrompt) actionPrompt.textContent = 'Select Application Portal';
       if (actionTitle) actionTitle.textContent = 'Choose Your Exhibition Portal';
       if (actionDesc) {
-        actionDesc.textContent = 'Please choose the portal matching your age category to enter the application form:';
+        actionDesc.textContent = 'Please choose the portal matching your artistic showcase to enter the application form:';
       }
 
       if (btnDualYouth && youthCycle) {

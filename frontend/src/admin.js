@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (m.active_cycles_count && m.active_cycles_count > 1) {
           cycleTitleEl.textContent = `${m.active_cycles_count} Active Cycles`;
         } else if (m.active_cycle) {
-          const ageLabel = m.active_cycle_over_18 === 0 ? 'Youth' : '18+';
+          const ageLabel = m.active_cycle_over_18 === 0 ? 'Youth' : 'General (Adults)';
           cycleTitleEl.textContent = `${m.active_cycle} (${ageLabel})`;
         } else {
           cycleTitleEl.textContent = 'None (Portal Closed)';
@@ -593,7 +593,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (btn.dataset.action === 'toggle-active-exhibition') {
           window.toggleExhibitionActive(id, btn);
         } else if (btn.dataset.action === 'toggle-age-req') {
-          window.toggleExhibitionAge(id, btn);
+          const currentVal = btn.dataset.current === '1';
+          window.toggleExhibitionAge(id, !currentVal, btn);
         } else if (btn.dataset.action === 'toggle-recent-works') {
           window.toggleExhibitionRecentWorks(id, btn);
         } else if (btn.dataset.action === 'edit-exhibition') {
@@ -604,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const activeExs = exhibitions.filter(e => e.is_active);
     if (activeExs.length > 0) {
-      const titles = activeExs.map(e => `${window.escapeHtml(e.title)} (${e.require_over_18 ? '18+' : 'Below 18'})`).join(', ');
+      const titles = activeExs.map(e => `${window.escapeHtml(e.title)} (${e.require_over_18 ? 'General Exhibition for Adults' : 'Youth Exhibition'})`).join(', ');
       if (statusText) statusText.innerHTML = `Active Cycles (${activeExs.length}): <strong style="color: var(--accent-green-text);">${titles}</strong>`;
     } else {
       if (statusText) statusText.innerHTML = `<strong style="color: var(--accent-red-text);">CLOSED</strong> (No active exhibitions)`;
@@ -624,14 +625,14 @@ document.addEventListener('DOMContentLoaded', () => {
         : `<span style="font-size: 9px; padding: 3px 8px; border: 1px solid var(--grid-border); color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase;">Inactive</span>`;
 
       const ageBadge = ex.require_over_18
-        ? `<span class="badge badge-approved" style="font-size:9px;">18+ (Adults)</span>`
-        : `<span class="badge badge-pending" style="font-size:9px;">Below 18 (Youth)</span>`;
+        ? `<span class="badge badge-approved" style="font-size:9px;">General Exhibition for Adults</span>`
+        : `<span class="badge badge-pending" style="font-size:9px;">Youth Exhibition</span>`;
 
       const safeTitle = window.escapeHtml(ex.title);
       const safeDateText = window.escapeHtml(ex.date_text);
       const toggleActiveBtn = ex.is_active
-        ? `<button onclick="window.toggleExhibitionActive(${ex.id}, this)" data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; border-color: var(--accent-red); color: var(--accent-red-text);">Deactivate Cycle</button>`
-        : `<button onclick="window.toggleExhibitionActive(${ex.id}, this)" data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn gold" style="padding: 0.5rem 0.8rem; font-size: 9px;">Make Active (Concurrent)</button>`;
+        ? `<button data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; border-color: var(--accent-red); color: var(--accent-red-text);">Deactivate Cycle</button>`
+        : `<button data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn gold" style="padding: 0.5rem 0.8rem; font-size: 9px;">Make Active (Concurrent)</button>`;
 
       card.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -647,11 +648,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-top: 1rem; border-top: 1px dashed var(--grid-border); padding-top: 0.8rem;">
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             ${toggleActiveBtn}
-            ${!ex.is_active ? `<button onclick="window.activateExhibition(${ex.id}, '${safeTitle}')" data-action="activate-exhibition" data-id="${ex.id}" data-title="${safeTitle}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Set as Sole Live</button>` : ''}
-            <button onclick="window.openExhibitionBuilderById(${ex.id})" data-action="edit-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Edit in Builder</button>
-            ${!ex.require_over_18 ? `<button onclick="window.toggleExhibitionRecentWorks(${ex.id}, this)" data-action="toggle-recent-works" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; ${ex.allow_recent_works_youth ? 'border-color:var(--accent-green); color:var(--accent-green-text);' : ''}">${ex.allow_recent_works_youth ? 'Recent Works: ON' : 'Recent Works: OFF'}</button>` : ''}
+            ${!ex.is_active ? `<button data-action="activate-exhibition" data-id="${ex.id}" data-title="${safeTitle}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Set as Sole Live</button>` : ''}
+            <button data-action="edit-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Edit in Builder</button>
+            ${!ex.require_over_18 ? `<button data-action="toggle-recent-works" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; ${ex.allow_recent_works_youth ? 'border-color:var(--accent-green); color:var(--accent-green-text);' : ''}">${ex.allow_recent_works_youth ? 'Recent Works: ON' : 'Recent Works: OFF'}</button>` : ''}
           </div>
-          <button onclick="window.toggleExhibitionAge(${ex.id}, this)" data-action="toggle-age-req" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">${ex.require_over_18 ? 'Switch to Below 18 (Youth)' : 'Switch to 18+ (Adults)'}</button>
+          <button data-action="toggle-age-req" data-id="${ex.id}" data-current="${ex.require_over_18 ? '1' : '0'}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">${ex.require_over_18 ? 'Switch to Youth Exhibition' : 'Switch to General Exhibition for Adults'}</button>
         </div>
       `;
       container.appendChild(card);
@@ -688,29 +689,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  window.toggleExhibitionAge = async function(id, btn) {
+  window.toggleExhibitionAge = async function(id, targetVal, btn) {
+    if (btn && btn.disabled) return;
     const original = btn ? btn.textContent : '';
     if (btn) {
       btn.textContent = '...';
       btn.disabled = true;
     }
     try {
+      const exObj = allExhibs.find(e => e.id === id);
+      const nextReqOver18 = typeof targetVal === 'boolean'
+        ? targetVal
+        : (exObj ? !exObj.require_over_18 : false);
+
       const res = await adminFetch(`/admin/exhibitions/${id}/toggle-age`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        body: JSON.stringify({ require_over_18: nextReqOver18 })
       });
       if (res && res.ok) {
         const data = await res.json().catch(() => ({}));
-        const newLabel = data.require_over_18 ? '18+ (Adult Showcase)' : 'Below 18 (Youth Showcase)';
-        showToast(`Age requirement switched to: ${newLabel}`, 'success');
+        const isAdult = Boolean(data.require_over_18);
+        const newLabel = isAdult ? 'General Exhibition for Adults' : 'Youth Exhibition';
+        showToast(`Exhibition category switched to: ${newLabel}`, 'success');
         await window.loadExhibitionManager();
         if (typeof window.loadExhibitionsData === 'function') {
           await window.loadExhibitionsData(currentCycleView || 'ALL');
         }
       } else {
         const errJson = res ? await res.json().catch(() => ({})) : {};
-        showToast(errJson.error || 'Could not toggle age requirement.', 'error');
+        showToast(errJson.error || 'Could not toggle exhibition category.', 'error');
       }
     } catch (err) {
       showToast(err.message || 'Error updating exhibition.', 'error');
@@ -991,14 +999,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (sTitle) sTitle.textContent = titleVal;
       if (sDatesVenue) sDatesVenue.textContent = `${datesVal} — ${venueVal}`;
-      if (sCohort) sCohort.textContent = isOver18 ? 'Adults (18+)' : 'Youth (Under 18 with Parental Consent)';
+      if (sCohort) sCohort.textContent = isOver18 ? 'General Exhibition for Adults' : 'Youth Exhibition (Parental Consent)';
       if (sRecent) sRecent.textContent = allowRecent ? 'Enabled (Optional Upload)' : 'Disabled';
       if (sFee) sFee.textContent = feeVal;
 
       if (previewCard) {
         const ageBadge = isOver18
-          ? '<span class="badge badge-approved" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Age 18+ (Adult Showcase)</span>'
-          : '<span class="badge badge-pending" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Below 18 (Youth Showcase)</span>';
+          ? '<span class="badge badge-approved" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">General Exhibition for Adults</span>'
+          : '<span class="badge badge-pending" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Youth Exhibition</span>';
 
         previewCard.innerHTML = `
           <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem;">
@@ -1403,7 +1411,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const safeRegNote = window.escapeHtml(a.participant_note_reg || '—');
       const safeDate = a.created_at ? formatDateTime(a.created_at) : 'Date TBD';
       const isMinorApplicant = (a.age !== null && a.age !== undefined && Number(a.age) < 18) || Boolean(a.guardian_name) || !a.over_18 || Boolean(a.is_minor);
-      const ageCategory = isMinorApplicant ? 'Below 18 (Youth)' : '18+ (Adult)';
+      const ageCategory = isMinorApplicant ? 'Youth Exhibition' : 'General Exhibition for Adults';
 
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; border-bottom:1px solid var(--grid-border); padding-bottom:1rem;">
@@ -2514,7 +2522,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const setEl = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
       setEl('m-users', `${m.users_total}`);
       setEl('m-events', `${m.events_open} Open / ${m.events_total} Total`);
-      setEl('m-cycle', m.active_cycle ? `${m.active_cycle} (${m.active_cycle_over_18 ? '18+' : 'Youth'})` : 'None (Closed)');
+      setEl('m-cycle', m.active_cycle ? `${m.active_cycle} (${m.active_cycle_over_18 ? 'General (Adults)' : 'Youth'})` : 'None (Closed)');
       setEl('m-exhibs', `${m.exhibition_apps_pending} Pending / ${m.exhibition_apps_total} Total`);
       setEl('m-clubs', `${m.club_apps_pending} Pending / ${m.club_apps_total} Total`);
       setEl('m-vault', `${m.submissions_total} Submissions / ${m.blogs_total} Essays`);

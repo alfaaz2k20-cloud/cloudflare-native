@@ -320,7 +320,7 @@
             <span style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600;">Exhibition Architecture</span>
             <h3 style="font-family: var(--font-heading); font-size: 1.6rem; color: var(--text-primary); margin: 0.35rem 0 1rem;">Create Exhibition Cycle</h3>
             <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
-              Configure a new curatorial cycle with dates, venue, eligibility (Adult 18+ vs. Youth under-18), youth safeguarding protocols, optional recent works upload, terms &amp; conditions guidelines, and registration payment settings.
+              Configure a new curatorial cycle with dates, venue, eligibility (General Exhibition for Adults vs. Youth Exhibition), youth safeguarding protocols, optional recent works upload, terms &amp; conditions guidelines, and registration payment settings.
             </p>
             <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); border-left: 3px solid var(--accent-gold); padding: 1rem 1.25rem; margin-bottom: 1.75rem;">
               <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-primary); margin-bottom: 0.25rem;">Guided 7-Step Architect</div>
@@ -339,7 +339,7 @@
 
         <div class="panel" style="padding: 2.5rem; margin-bottom: 0;">
           <h3 style="font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); margin-bottom: 1.5rem;">Cycle Control Center</h3>
-          <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 1.5rem;">Click "Set as Live" to activate a cycle for public submissions. You can also toggle the 18+ requirement dynamically.</p>
+          <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 1.5rem;">Click "Make Active" to activate a cycle for public submissions. You can also toggle between General Exhibition for Adults and Youth Exhibition dynamically.</p>
           
           <div id="exhibitionListContainer" style="display: flex; flex-direction: column; gap: 1rem; max-height: 600px; overflow-y: auto; padding-right: 10px;">
             <div style="font-size: 12px; color: var(--accent-gold-text);">Loading exhibitions...</div>
@@ -862,12 +862,12 @@
               <div>
                 <label class="data-label">Cohort Designation *</label>
                 <select id="bAgeReq" style="width: 100%; padding: 0.6rem; font-size: 13px;" onchange="updateBuilderYouthNotice()">
-                  <option value="1">18+ Only (Adult Showcase — Strict 18+ Gate)</option>
-                  <option value="0">Below 18 (Youth Showcase — Parental Consent Required)</option>
+                  <option value="1">General Exhibition for Adults</option>
+                  <option value="0">Youth Exhibition (Parent / Guardian Consent Required)</option>
                 </select>
               </div>
               <div id="bYouthSafeguardNotice" style="display: none; background: rgba(189, 111, 93, 0.08); border-left: 3px solid var(--accent-gold); padding: 1rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);">
-                <strong>Youth Safeguarding Activated:</strong> When selected, applicants under 18 must provide parent/guardian full name, contact, verified relationship, affirmative consent, and youth assent.
+                <strong>Youth Safeguarding Activated:</strong> When selected, young applicants must provide parent/guardian full name, contact, verified relationship, affirmative consent, and youth assent.
               </div>
             </div>
           </div>

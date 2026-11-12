@@ -466,7 +466,7 @@ adminRouter.patch('/exhibitions/:id/toggle-age', async (c) => {
 
   await c.env.DB.prepare('UPDATE exhibitions_list SET require_over_18 = ? WHERE id = ?').bind(nextVal, id).run();
   if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
-  await logAudit(c.env.DB, admin.email, 'TOGGLE_EXHIBITION_AGE', 'exhibition', String(id), `Set age requirement to ${nextVal ? '18+ REQUIRED' : 'OPEN/YOUTH'}`);
+  await logAudit(c.env.DB, admin.email, 'TOGGLE_EXHIBITION_AGE', 'exhibition', String(id), `Set age requirement to ${nextVal ? 'General Exhibition for Adults' : 'Youth Exhibition'}`);
 
   return c.json({ status: 'SUCCESS', require_over_18: nextVal });
 });

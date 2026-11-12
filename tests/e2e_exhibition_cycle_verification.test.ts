@@ -122,6 +122,27 @@ describe('End-to-End Exhibition Lifecycle & Guidance Verification Suite', () => 
     const hasAdult = configData.active_cycles.some((c: any) => c.title.includes('Autumn Expressions') && (c.require_over_18 === true || c.require_over_18 === 1));
     expect(hasYouth).toBe(true);
     expect(hasAdult).toBe(true);
+
+    // 2d. Admin toggles cohort with explicit target value (idempotency check)
+    const youthId = (await youthCreateRes.json() as any).id;
+    const toggleRes = await app.request(`/admin/exhibitions/${youthId}/toggle-age`, {
+      method: 'PATCH',
+      headers: adminHeaders,
+      body: JSON.stringify({ require_over_18: 1 })
+    }, getTestEnv());
+    expect(toggleRes.status).toBe(200);
+    const toggleData: any = await toggleRes.json();
+    expect(toggleData.require_over_18).toBe(1);
+
+    // Toggle back to youth
+    const toggleBackRes = await app.request(`/admin/exhibitions/${youthId}/toggle-age`, {
+      method: 'PATCH',
+      headers: adminHeaders,
+      body: JSON.stringify({ require_over_18: 0 })
+    }, getTestEnv());
+    expect(toggleBackRes.status).toBe(200);
+    const toggleBackData: any = await toggleBackRes.json();
+    expect(toggleBackData.require_over_18).toBe(0);
   });
 
   it('3. Notice Generation for Updates Section on Homepage', async () => {

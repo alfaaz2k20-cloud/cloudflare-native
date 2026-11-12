@@ -72,8 +72,8 @@ export const TRANSLATIONS = {
     'field.adult_confirm': 'I confirm that I am 18 years of age or older.',
 
     // Youth Safeguarding
-    'guardian.heading': 'Parent or Guardian Consent (Under 18)',
-    'guardian.notice': 'Because you are under 18, Alfaaz requires explicit parent or guardian permission before we can accept your submission. We keep all youth information safe and private.',
+    'guardian.heading': 'Parent or Guardian Consent (Youth Exhibition)',
+    'guardian.notice': 'Alfaaz requires explicit parent or guardian permission for young participants before we can accept your submission. We keep all youth information safe and private.',
     'guardian.name': 'Parent / Legal Guardian Full Name',
     'guardian.name_hint': 'Full legal name of mother, father, or legal guardian',
     'guardian.relationship': 'Relationship to Participant',
@@ -84,8 +84,8 @@ export const TRANSLATIONS = {
     'guardian.assent_agree': 'I (the young participant) confirm that I want to take part in this exhibition and that this is my original art.',
 
     // Badges & Statuses
-    'badge.youth': 'Below 18 (Youth Showcase)',
-    'badge.adult': '18 & Above (Adult Showcase)',
+    'badge.youth': 'Youth Exhibition',
+    'badge.adult': 'General Exhibition for Adults',
     'badge.optional': 'Optional',
     'badge.required': 'Required',
     'status.pending': 'Application Received — Under Curatorial Review',

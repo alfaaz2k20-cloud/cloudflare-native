@@ -1,4 +1,4 @@
-// exhibition-adult.js — Dedicated Adult (18+) Exhibition Intake (Alfaaz Collective)
+// exhibition-adult.js — General Exhibition for Adults Application (Alfaaz Collective)
 
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('alfaaz_token');
@@ -48,34 +48,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cycleIdParam = urlParams.get('id') || urlParams.get('cycle');
 
   try {
-    const endpoint = cycleIdParam
-      ? `/exhibitions/config?id=${encodeURIComponent(cycleIdParam)}`
-      : '/exhibitions/config';
-
-    const res = await window.globalApiFetch(endpoint);
+    const res = await window.globalApiFetch('/exhibitions/config');
     if (!res || !res.ok) {
-      if (cycleTitle) cycleTitle.textContent = 'Exhibition Cycle Not Found';
-      if (cycleMeta) cycleMeta.textContent = 'Please return to the exhibition hub to select an active show.';
+      if (cycleTitle) cycleTitle.textContent = 'General Exhibition Portal Closed';
+      if (cycleMeta) cycleMeta.textContent = 'There are no active general exhibitions for adults currently accepting applications. Please monitor our official announcements.';
       if (adultForm) adultForm.style.display = 'none';
       return;
     }
 
     const data = await res.json();
-    const activeCycles = Array.isArray(data.active_cycles) ? data.active_cycles : [];
-    // Prioritize adult cycle if multiple active and no specific id requested
-    const adultCycle = (!cycleIdParam && activeCycles.length > 0)
-      ? (activeCycles.find(c => c.require_over_18 !== false && c.require_over_18 !== 0) || data)
-      : data;
+    const activeCycles = Array.isArray(data.active_cycles) ? data.active_cycles : (data.title ? [data] : []);
+    const adultCycles = activeCycles.filter(c => c.require_over_18 !== false && c.require_over_18 !== 0);
+
+    let adultCycle = null;
+    if (cycleIdParam) {
+      adultCycle = adultCycles.find(c => String(c.id) === String(cycleIdParam) || c.title.toLowerCase() === cycleIdParam.toLowerCase());
+    }
+    if (!adultCycle && adultCycles.length > 0) {
+      adultCycle = adultCycles[0];
+    }
+
+    if (!adultCycle) {
+      if (cycleTitle) cycleTitle.textContent = 'General Exhibition Portal Closed';
+      if (cycleMeta) cycleMeta.textContent = 'There are no active general exhibitions for adults currently accepting applications. Please monitor our official announcements.';
+      if (adultForm) adultForm.style.display = 'none';
+      return;
+    }
+
     selectedCycle = adultCycle;
 
-    if (cycleTitle) cycleTitle.textContent = selectedCycle.title || 'Curatorial Exhibition';
+    if (cycleTitle) cycleTitle.textContent = selectedCycle.title || 'General Exhibition for Adults';
     if (cycleMeta) {
       cycleMeta.textContent = `${selectedCycle.date_text || 'Dates Announced Soon'} — ${selectedCycle.venue || 'Alfaaz Gallery, Srinagar'}`;
     }
 
-    // Link to youth portal with same cycle id
-    if (linkToYouth && selectedCycle.id) {
-      linkToYouth.href = `exhibition-youth.html?id=${encodeURIComponent(selectedCycle.id)}`;
+    if (linkToYouth) {
+      linkToYouth.href = 'exhibition-youth.html';
     }
 
   } catch (err) {
