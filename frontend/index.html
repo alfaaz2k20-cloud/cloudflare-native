@@ -508,7 +508,7 @@
         <h1 class="hero-title ur-hover" data-ur= "الفاظ">
           <span class="en-text">ALFAAZ<br>COLLECTIVE</span>
         </h1>
-        <p class="hero-subtitle">Art • Storytelling • Culture</p>
+        <p class="hero-subtitle">Art • Culture • Community </p>
       </div>
       <div class="hero-scroll"><span>Scroll</span><div class="scroll-line"></div></div>
     </section>
@@ -1077,17 +1077,17 @@
 
     rawExhibitions.forEach(ex => {
         const isYouth = ex.require_over_18 === 0;
-        const tagLabel = isYouth ? 'EXHIBITION (YOUTH)' : 'EXHIBITION';
-        const ageLabel = isYouth ? 'Below 18' : 'Age 18+';
-        const queryParam = ex.id ? `?cycle=${encodeURIComponent(ex.id)}` : '';
+        const tagLabel = isYouth ? 'YOUTH EXHIBITION' : 'EXHIBITION';
+        const targetTarget = isYouth ? 'youth' : 'adult';
+        const targetUrl = `exhibition.html?target=${targetTarget}&id=${encodeURIComponent(ex.id)}`;
         cards.push({
             tag: tagLabel,
             tagColor: 'var(--accent-green)',
             date: ex.date_text || 'TBD',
-            title: ex.title || 'Curatorial Open Call',
-            body: (ex.about_text ? (ex.about_text.substring(0, 140) + '...') : 'Applications open.') + ` [${ageLabel}]`,
-            link: isLoggedIn ? `exhibition.html${queryParam}` : `login.html?redirect=${encodeURIComponent('exhibition.html' + queryParam)}`,
-            linkLabel: isLoggedIn ? `Apply (${ageLabel}) →` : 'Login to Apply →'
+            title: ex.title || (isYouth ? 'Youth Exhibition' : 'Curatorial Open Call'),
+            body: (ex.about_text ? (ex.about_text.substring(0, 140) + '...') : 'Applications open.') + ` [${isYouth ? 'Youth · Below 18' : 'General Exhibition'}]`,
+            link: targetUrl,
+            linkLabel: 'Read Guidelines & Apply →'
         });
     });
 

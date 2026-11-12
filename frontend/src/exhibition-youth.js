@@ -66,9 +66,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const data = await res.json();
-    selectedCycle = data;
+    const activeCycles = Array.isArray(data.active_cycles) ? data.active_cycles : [];
+    // Prioritize youth cycle if multiple active and no specific id requested
+    const youthCycle = (!cycleIdParam && activeCycles.length > 0)
+      ? (activeCycles.find(c => c.require_over_18 === false || c.require_over_18 === 0) || data)
+      : data;
+    selectedCycle = youthCycle;
 
-    if (cycleTitle) cycleTitle.textContent = selectedCycle.title || 'Curatorial Exhibition';
+    if (cycleTitle) cycleTitle.textContent = selectedCycle.title || 'Youth Curatorial Exhibition';
     if (cycleMeta) {
       cycleMeta.textContent = `${selectedCycle.date_text || 'Dates Announced Soon'} — ${selectedCycle.venue || 'Alfaaz Gallery, Srinagar'}`;
     }
@@ -402,8 +407,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Submit Youth Application →';
+      formMsg.style.display = 'block';
       formMsg.style.color = 'var(--accent-red-text)';
-      formMsg.textContent = `✗ ${err.message}`;
+      formMsg.textContent = `✗ ${err.message || 'Submission failed. Please check your inputs and try again.'}`;
 
       if (window.turnstile && turnstileWidgetId !== null) {
         window.turnstile.reset(turnstileWidgetId);

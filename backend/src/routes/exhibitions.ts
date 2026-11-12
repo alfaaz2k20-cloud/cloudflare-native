@@ -357,15 +357,25 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
       return c.json({ detail: 'Requested exhibition cycle does not exist or is currently closed.' }, 400);
     }
   } else {
-    // Legacy fallback only if completely omitted
-    try {
-      activeCycle = await c.env.DB
-        .prepare("SELECT id, title, require_over_18, allow_recent_works_youth FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') ORDER BY id ASC LIMIT 1")
-        .first<any>();
-    } catch {
-      activeCycle = await c.env.DB
-        .prepare("SELECT id, title, require_over_18 FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC LIMIT 1")
-        .first<any>();
+    // If minor (<18), prioritize active youth cycle if present
+    if (age < 18) {
+      try {
+        activeCycle = await c.env.DB
+          .prepare("SELECT id, title, require_over_18, allow_recent_works_youth FROM exhibitions_list WHERE is_active = 1 AND require_over_18 = 0 LIMIT 1")
+          .first<any>();
+      } catch {}
+    }
+    if (!activeCycle) {
+      // Legacy fallback only if completely omitted
+      try {
+        activeCycle = await c.env.DB
+          .prepare("SELECT id, title, require_over_18, allow_recent_works_youth FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') ORDER BY id ASC LIMIT 1")
+          .first<any>();
+      } catch {
+        activeCycle = await c.env.DB
+          .prepare("SELECT id, title, require_over_18 FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC LIMIT 1")
+          .first<any>();
+      }
     }
   }
 
@@ -390,8 +400,8 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     : Number(activeCycle.require_over_18);
   const isMinor = age < 18;
 
-  // For youth (<18), earlier sketches / recent works is the primary artwork upload
-  const effectiveArtworkUrl = isMinor ? (rawRecentWorks || rawPortfolio) : rawPortfolio;
+  // Earlier sketches or recent works is the primary artwork upload (PDF or Image)
+  const effectiveArtworkUrl = rawRecentWorks || rawPortfolio;
 
   if (!fullName || fullName.length < 2 || fullName.length > 120) {
     return c.json({ detail: 'Full name must be between 2 and 120 characters.' }, 400);
@@ -431,11 +441,11 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     ));
 
   if (!effectiveArtworkUrl || (!isValidVaultArtwork && !isTrustedStorage)) {
-    return c.json({ detail: isMinor ? 'Please upload your sketches or recent artwork file (PDF or Image).' : 'A valid uploaded portfolio document is required.' }, 400);
+    return c.json({ detail: isMinor ? 'Please upload your sketches or recent artwork file (PDF or Image).' : 'Please upload your recent works file (PDF or Image).' }, 400);
   }
 
   const portfolioUrl = effectiveArtworkUrl;
-  const recentWorksUrl = isMinor ? effectiveArtworkUrl : (rawRecentWorks || null);
+  const recentWorksUrl = effectiveArtworkUrl;
 
   const isConfirmedOver18 = Boolean(body.over_18 ?? body.over_19);
 
@@ -469,8 +479,8 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
       guardianName = String(body.guardian_name || '').trim();
       guardianRelationship = String(body.guardian_relationship || '').trim();
       guardianContact = String(body.guardian_contact || body.whatsapp || '').trim();
-      const consentGiven = Boolean(body.guardian_consent_granted);
-      const assentGiven = Boolean(body.participant_assent_granted ?? true);
+      const consentGiven = Boolean(body.guardian_consent_granted || body.guardian_consent);
+      const assentGiven = Boolean(body.participant_assent_granted ?? body.participant_assent ?? true);
 
       if (!guardianName || guardianName.length < 2 || guardianName.length > 120) {
         return c.json({ detail: 'Parent or legal guardian name is required for youth applications.' }, 400);
@@ -508,8 +518,9 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     return c.json({ detail: 'You have already submitted an application for this exhibition cycle.' }, 400);
   }
 
+  const over19Val = isMinor ? 0 : (isConfirmedOver18 ? 1 : 0);
+
   try {
-    const over19Val = isMinor ? 0 : (isConfirmedOver18 ? 1 : 0);
     await c.env.DB
       .prepare(`
         INSERT INTO exhibition_applications (
@@ -538,10 +549,43 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
       )
       .run();
   } catch (err: any) {
-    if (err?.message && (err.message.includes('UNIQUE') || err.message.includes('constraint'))) {
+    const msg = String(err?.message || '').toLowerCase();
+    if (msg.includes('unique') || msg.includes('constraint')) {
       return c.json({ detail: 'You have already submitted an application for this exhibition cycle.' }, 400);
     }
-    throw err;
+    // Schema fallback if newer migration columns are absent in local or remote D1
+    if (msg.includes('no column named') || msg.includes('has no column')) {
+      try {
+        await c.env.DB
+          .prepare(`
+            INSERT INTO exhibition_applications (
+              user_email, exhibition_cycle, full_name, age, address, whatsapp,
+              genre, medium, portfolio_url, over_19, agreed_to_screening, applicant_note,
+              status, registration_status, agreed_to_tnc
+            ) VALUES (
+              ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, 1, ?,
+              'PENDING', 'NONE', 0
+            )
+          `)
+          .bind(
+            user.email, activeCycle.title, fullName,
+            age, address, whatsapp || guardianContact || '—',
+            genre, medium, portfolioUrl, over19Val, applicantNote
+          )
+          .run();
+      } catch (fallbackErr: any) {
+        const fallbackMsg = String(fallbackErr?.message || '').toLowerCase();
+        if (fallbackMsg.includes('unique') || fallbackMsg.includes('constraint')) {
+          return c.json({ detail: 'You have already submitted an application for this exhibition cycle.' }, 400);
+        }
+        console.error('[EXHIBITIONS APPLY FALLBACK ERROR]', fallbackErr);
+        return c.json({ detail: 'Failed to record application: ' + (fallbackErr.message || 'Please check your information and try again.') }, 400);
+      }
+    } else {
+      console.error('[EXHIBITIONS APPLY ERROR]', err);
+      return c.json({ detail: 'Failed to record application: ' + (err.message || 'Please check your submission and try again.') }, 400);
+    }
   }
 
   try {

@@ -124,8 +124,8 @@
       </a>
     </div>
     <div class="nav-actions" style="display: flex; gap: 1.5rem; align-items: center;">
-      <a href="exhibition.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
-        Exhibition Hub
+      <a href="exhibition-adult.html" style="font-size: 11px; color: var(--accent-gold-text); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
+        Adult Portal (18+)
       </a>
       <a href="dashboard.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
         Dashboard
@@ -158,44 +158,24 @@
           <div id="cycleMeta" style="font-size: 12px; color: var(--text-secondary);">—</div>
         </div>
         <div>
-          <a href="exhibition.html" class="action-btn" style="font-size: 10px; padding: 0.5rem 1rem; text-decoration: none;">
-            Change Show
+          <a href="exhibition-adult.html" class="action-btn" style="font-size: 10px; padding: 0.5rem 1rem; text-decoration: none;">
+            Exhibition (18+) &rarr;
           </a>
         </div>
       </div>
 
-      <!-- Step-by-Step Instructions: How the Youth Exhibition Process Works -->
-      <div class="instructions-panel">
-        <div style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.25rem;">Youth &amp; Emerging Artists (Under 18)</div>
-        <h2 style="font-family: var(--font-heading); font-size: 1.55rem; color: var(--text-primary); margin: 0 0 0.5rem; font-weight: 400;">How the Youth Exhibition Process Works</h2>
-        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0 0 1.25rem;">
-          We believe in nurturing young artistic voices across Kashmir. Our intake is straightforward, encouraging, and respectful of your family’s privacy.
-        </p>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.25rem;">
-          <div style="border-top: 1px solid var(--grid-border); padding-top: 0.75rem;">
-            <div style="font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">Step 1 · Creative Work</div>
-            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">Upload your practice sketches, recent drawings, or finished paintings (PDF or Image, max 15MB). No formal portfolio layout needed.</p>
-          </div>
-          <div style="border-top: 1px solid var(--grid-border); padding-top: 0.75rem;">
-            <div style="font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">Step 2 · Guardian Consent</div>
-            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">Provide your parent or guardian’s name and contact number so our team can confirm their permission.</p>
-          </div>
-          <div style="border-top: 1px solid var(--grid-border); padding-top: 0.75rem;">
-            <div style="font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">Step 3 · Curatorial Review</div>
-            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">Our curators review every youth entry with care. Track your review status directly on your Member Dashboard.</p>
-          </div>
-          <div style="border-top: 1px solid var(--grid-border); padding-top: 0.75rem;">
-            <div style="font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">Step 4 · Srinagar Showcase</div>
-            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">Selected young artists and their guardians will be invited to feature their creations in our physical exhibition.</p>
-          </div>
-        </div>
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <a href="exhibition.html?target=youth" style="font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-gold-text); text-decoration: none;">
+          &larr; Read General Exhibition Guidelines
+        </a>
+        <span style="font-size: 11px; color: var(--text-secondary);">Direct Youth Intake Form</span>
       </div>
 
       <!-- Application Form Panel -->
       <form id="youthForm" class="form-panel" novalidate>
         
-        <!-- 1. Young Artist Details -->
-        <h3 class="section-title-sub">1. Young Artist Information</h3>
+        <!-- Young Artist Details -->
+        <h3 class="section-title-sub">Young Artist Profile</h3>
         <div class="form-grid">
           <div class="field-group">
             <label class="input-label" for="fname">Artist Full Name *</label>
@@ -225,8 +205,8 @@
           </div>
         </div>
 
-        <!-- 2. Parent / Legal Guardian Consent -->
-        <h3 class="section-title-sub">2. Parent or Legal Guardian Consent</h3>
+        <!-- Parent / Legal Guardian Consent -->
+        <h3 class="section-title-sub">Parent or Legal Guardian Consent</h3>
         <div class="form-grid">
           <div class="field-group">
             <label class="input-label" for="guardianName">Parent / Legal Guardian Full Name *</label>
@@ -261,8 +241,8 @@
           </div>
         </div>
 
-        <!-- 3. Artwork Details & Upload -->
-        <h3 class="section-title-sub">3. Artwork Submission</h3>
+        <!-- Artwork Details & Upload -->
+        <h3 class="section-title-sub">Artwork &amp; Recent Works</h3>
         <div class="form-grid">
           <div class="field-group">
             <label class="input-label" for="genre">Artistic Discipline *</label>
@@ -296,8 +276,8 @@
           </div>
         </div>
 
-        <!-- 4. Curatorial Screening Terms & Bot Defense -->
-        <h3 class="section-title-sub">4. Review &amp; Submission</h3>
+        <!-- Curatorial Screening Terms & Bot Defense -->
+        <h3 class="section-title-sub">Curatorial Terms &amp; Submission</h3>
         <div style="margin-bottom: 1.5rem;">
           <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 13px; color: var(--text-primary); line-height: 1.5;">
             <input type="checkbox" id="agreedToScreening" required style="width: auto; margin-top: 3px;">
@@ -313,7 +293,7 @@
         <div id="formMsg" style="margin-bottom: 1.25rem; font-size: 13px; min-height: 1.4em; text-align: center;"></div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--grid-border); padding-top: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-          <a href="exhibition.html" class="action-btn" style="text-decoration: none;">&larr; Return to Exhibition Hub</a>
+          <a href="dashboard.html" class="action-btn" style="text-decoration: none;">&larr; Return to Dashboard</a>
           <button type="submit" class="action-btn gold" id="submitBtn" style="padding: 0.85rem 2.25rem; font-size: 11px;">
             Submit Youth Application &rarr;
           </button>

@@ -733,7 +733,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const ageBadge = isYouth
             ? '<span class="badge badge-pending" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Below 18 (Youth Showcase)</span>'
             : '<span class="badge badge-approved" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Age 18+ (Adult Showcase)</span>';
-          return `
+            const targetParam = isYouth ? 'youth' : 'adult';
+            const portalUrl = `exhibition.html?target=${targetParam}&id=${encodeURIComponent(c.id)}`;
+            return `
             <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
               <div>
                 ${ageBadge}
@@ -741,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="font-size: 11px; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.6rem;">Dates: ${window.escapeHtml(c.date_text || 'Active')}</div>
                 <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">${window.escapeHtml(c.about_text || 'Submit artwork for our gallery showcase.')}</p>
               </div>
-              <a href="exhibition.html?id=${encodeURIComponent(c.id)}" class="action-btn-primary" style="font-size: 11px; padding: 0.5rem 1rem; text-align: center; text-decoration: none;">Submit Artwork &rarr;</a>
+              <a href="${portalUrl}" class="action-btn-primary" style="font-size: 11px; padding: 0.5rem 1rem; text-align: center; text-decoration: none;">View Guidelines & Apply &rarr;</a>
             </div>
           `;
         }).join('');
@@ -756,7 +758,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (aboutEl) aboutEl.textContent = single.about_text || cfg.about_text || 'Submit your artwork and portfolio for our upcoming exhibition showcase.';
         const linkBtn = openView ? openView.querySelector('a.action-btn-primary') : null;
         if (linkBtn && single.id) {
-          linkBtn.href = `exhibition.html?id=${encodeURIComponent(single.id)}`;
+          const singleTarget = (single.require_over_18 === 0 || single.require_over_18 === false) ? 'youth' : 'adult';
+          linkBtn.href = `exhibition.html?target=${singleTarget}&id=${encodeURIComponent(single.id)}`;
+          linkBtn.textContent = 'View Guidelines & Apply →';
         }
       } else {
         const multiCyclesView = document.getElementById('exhibMultiCyclesView');
@@ -798,6 +802,7 @@ document.addEventListener('DOMContentLoaded', () => {
               badgeClass = 'badge-gold';
               badgeText = 'Not Selected';
             }
+            const cycleTarget = (info.is_minor || (info.age !== undefined && info.age < 18) || info.guardian_name) ? 'exhibition-youth.html' : 'exhibition-adult.html';
             return `
               <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                 <div>
@@ -805,7 +810,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   <div style="font-family: var(--font-heading); font-size: 1.2rem; color: var(--text-primary);">${window.escapeHtml(cycleTitle)}</div>
                   ${info.curator_note ? `<div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 0.2rem; font-style: italic;">"${window.escapeHtml(info.curator_note)}"</div>` : ''}
                 </div>
-                <a href="exhibition.html" class="action-btn-secondary" style="font-size: 11px; padding: 0.4rem 0.8rem;">View Open Call &rarr;</a>
+                <a href="${cycleTarget}" class="action-btn-secondary" style="font-size: 11px; padding: 0.4rem 0.8rem;">View Open Call &rarr;</a>
               </div>
             `;
           }).join('')}

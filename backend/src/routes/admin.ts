@@ -242,7 +242,7 @@ adminRouter.post('/exhibitions/create', async (c) => {
   let newId: number | undefined;
   try {
     if (is_active === 1) {
-      await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0').run();
+      await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0 WHERE require_over_18 = ?').bind(require_over_18).run();
     }
     const insertRes = await c.env.DB.prepare(`
       INSERT INTO exhibitions_list (
@@ -259,7 +259,7 @@ adminRouter.post('/exhibitions/create', async (c) => {
   } catch (err: any) {
     try {
       if (is_active === 1) {
-        await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0').run();
+        await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0 WHERE require_over_18 = ?').bind(require_over_18).run();
       }
       const fallbackRes = await c.env.DB.prepare(`
         INSERT INTO exhibitions_list (
@@ -453,10 +453,19 @@ adminRouter.patch('/exhibitions/:id/toggle-age', async (c) => {
   const ex = await c.env.DB.prepare('SELECT id, title, require_over_18 FROM exhibitions_list WHERE id = ?').bind(id).first<any>();
   if (!ex) return c.json({ error: 'Exhibition not found.' }, 404);
 
-  const currentVal = ex.require_over_18 === undefined || ex.require_over_18 === null ? 1 : Number(ex.require_over_18);
-  const nextVal = currentVal ? 0 : 1;
+  const body = await c.req.json().catch(() => ({}));
+  let nextVal: number;
+  if (body && typeof body.require_over_18 === 'boolean') {
+    nextVal = body.require_over_18 ? 1 : 0;
+  } else if (body && (body.require_over_18 === 0 || body.require_over_18 === 1)) {
+    nextVal = Number(body.require_over_18);
+  } else {
+    const currentVal = ex.require_over_18 === undefined || ex.require_over_18 === null ? 1 : Number(ex.require_over_18);
+    nextVal = currentVal ? 0 : 1;
+  }
 
   await c.env.DB.prepare('UPDATE exhibitions_list SET require_over_18 = ? WHERE id = ?').bind(nextVal, id).run();
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
   await logAudit(c.env.DB, admin.email, 'TOGGLE_EXHIBITION_AGE', 'exhibition', String(id), `Set age requirement to ${nextVal ? '18+ REQUIRED' : 'OPEN/YOUTH'}`);
 
   return c.json({ status: 'SUCCESS', require_over_18: nextVal });
@@ -467,11 +476,12 @@ adminRouter.patch('/exhibitions/:id/activate', async (c) => {
   const id = parseInt(c.req.param('id'), 10);
   if (isNaN(id)) return c.json({ error: 'Invalid exhibition ID' }, 400);
 
-  const target = await c.env.DB.prepare('SELECT id, title FROM exhibitions_list WHERE id = ?').bind(id).first<{ id: number; title: string }>();
+  const target = await c.env.DB.prepare('SELECT id, title, require_over_18 FROM exhibitions_list WHERE id = ?').bind(id).first<{ id: number; title: string; require_over_18: number }>();
   if (!target) return c.json({ error: 'Exhibition not found' }, 404);
 
+  const cohortVal = target.require_over_18 !== undefined && target.require_over_18 !== null ? target.require_over_18 : 1;
   await c.env.DB.batch([
-    c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0'),
+    c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0 WHERE require_over_18 = ?').bind(cohortVal),
     c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 1 WHERE id = ?').bind(id)
   ]);
 

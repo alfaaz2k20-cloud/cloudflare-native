@@ -1017,7 +1017,10 @@
               <div style="font-family: var(--font-heading); font-size: 1.55rem; color: var(--text-primary); margin-bottom: 0.35rem;" id="exhibTitleDisplay">—</div>
               <div style="font-size: 12.5px; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.75rem;" id="exhibDatesDisplay">—</div>
               <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.25rem;" id="exhibAboutDisplay">—</p>
-              <a href="exhibition.html" class="action-btn-primary">Submit Artwork to Exhibition &rarr;</a>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+                <a href="exhibition-adult.html" class="action-btn-primary">Submit Artwork (18+) &rarr;</a>
+                <a href="exhibition-youth.html" class="action-btn-secondary" style="font-size: 11px; text-decoration: none;">Youth Portal (&lt;18) &rarr;</a>
+              </div>
             </div>
             <div id="exhibClosedView" style="display: none;">
               <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
@@ -1177,7 +1180,10 @@
             <!-- Not Applied -->
             <div id="exhibApplyView" style="display: none; background: #faf8f5; border: 1px dashed var(--grid-border); padding: 1.5rem;">
               <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 1rem; line-height: 1.5;">You have not submitted artwork for the current exhibition cycle.</p>
-              <a href="exhibition.html" class="action-btn-secondary">Submit Artwork &rarr;</a>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="exhibition.html?target=adult" class="action-btn-primary" style="font-size: 11px;">Exhibition Guidelines & Apply (18+) &rarr;</a>
+                <a href="exhibition.html?target=youth" class="action-btn-secondary" style="font-size: 11px;">Youth Exhibition (&lt;18) &rarr;</a>
+              </div>
             </div>
             
             <!-- In Review -->
@@ -1197,7 +1203,8 @@
               </p>
               <div id="exhibRejectedNote" style="font-size: 12px; color: var(--accent-gold-text); margin: 0.5rem 0 1rem; line-height: 1.5; font-style: italic;"></div>
               <div style="border-top: 1px dashed var(--grid-border); padding-top: 0.8rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <a href="exhibition.html" class="action-btn-primary" style="font-size: 11px; padding: 0.4rem 0.8rem; text-decoration: none;">See Other Exhibitions &rarr;</a>
+                <a href="exhibition.html?target=adult" class="action-btn-primary" style="font-size: 11px; padding: 0.4rem 0.8rem; text-decoration: none;">Exhibition (18+) &rarr;</a>
+                <a href="exhibition.html?target=youth" class="action-btn-secondary" style="font-size: 11px; padding: 0.4rem 0.8rem; text-decoration: none;">Youth Exhibition (&lt;18) &rarr;</a>
               </div>
             </div>
 

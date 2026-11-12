@@ -687,6 +687,55 @@ The administration interface (`frontend/admin.html` and `src/admin.js`) was veri
      - Top Curatorial Hero: Displays current active show title, dates, venue, and theme.
      - Two Sovereign Pathways: Clear Adult Artist (18+) and Youth Artist (Below 18) action cards directing applicants to their respective intake portal with active cycle IDs.
 
+### 9.10 Final Gap Closure: Admin Action Reliability, Resilient Intake & Direct Pagewise Architecture
+
+1. **Admin Exhibition Cohort Toggle ("Switch to Below 18" / "Switch to 18+")**:
+   - Attached explicit `onclick="window.toggleExhibitionAge(${ex.id}, this)"` directly to the action button on each exhibition card.
+   - Enhanced `PATCH /api/admin/exhibitions/:id/toggle-age` in `backend/src/routes/admin.ts` to accept explicit `{ require_over_18: 0 | 1 | boolean }` JSON bodies or toggle automatically if omitted, invalidate the notices cache, and record admin audit logs.
+   - Implemented dynamic `showToast(...)` feedback indicating the updated cohort name, and triggered simultaneous reloads of both `loadExhibitionManager()` and `loadExhibitionsData()`.
+
+2. **Exhibition Form Submission Resiliency ("✗ An unexpected error occurred.")**:
+   - In `backend/src/routes/exhibitions.ts`: Updated active cycle resolution to prioritize active youth cycles (`require_over_18 = 0`) when the applicant is a minor (`isMinor === true`).
+   - Wrapped the D1 `INSERT INTO exhibition_applications` in a schema-resilient handler that catches duplicate submission conflicts, missing column discrepancies, and returns descriptive HTTP 400 messages rather than uncaught 500 exceptions.
+
+### 9.11 Complete Exhibition Lifecycle, Layman Guidelines & Sovereign Intake Harmonization
+
+1. **Clear Login & Registration Warnings**:
+   - When attempting to register with an already-registered email, the UI displays: *"An account with this email is already registered! Switching to Log In—please enter your password."* and automatically transitions to the login tab with the email prefilled.
+   - When login fails with invalid credentials, the UI suggests: *"Invalid email or password. If you have not created an account yet, please click 'Register here' below to join."*
+   - Google GIS login gracefully informs unregistered users and opens the registration tab.
+
+2. **Generic Layman-Friendly Exhibition Guidelines (`exhibition.html`)**:
+   - Replaced fragmented gatekeeper cards with the **General Exhibition Guidelines** page.
+   - Removed artificial "Step 1, 2, 3" numbers. Formatted into 5 warm, inclusive principles accessible to laymen, multilingual participants, and neurodivergent creators:
+     1. *Welcoming All Artistic Disciplines* (paintings, drawings, sketches, calligraphy, sculpture, crafts).
+     2. *Honest Practice & Original Creations* (sketches, drafts, and experiments valued equally with finished works).
+     3. *Curatorial Review Conducted with Care* (fair, empathetic assessment).
+     4. *Inclusive & Encouraging Space* (supportive community across Kashmir).
+     5. *Privacy, Safety & Sovereign Data* (secure R2 storage, no public data sharing without consent).
+   - An intelligent agreement container dynamically presents:
+     - For youth links: `[ I Understand & Agree — Continue to Youth Exhibition → ]`
+     - For general links: `[ I Understand & Agree — Continue to Exhibition → ]`
+     - When unlinked: clear side-by-side choices without trapping users.
+
+3. **Streamlined Pagewise Intake Portals**:
+   - **Youth Exhibition (`exhibition-youth.html`)**: Named "Youth Exhibition" (for creators under 18). Clean sections for Young Artist Profile, Parent/Guardian Consent, and Artwork & Recent Works (uploading sketches or recent works, max 15MB, with mandatory WhatsApp contact).
+   - **Exhibition (`exhibition-adult.html`)**: Named "Exhibition" (for general public / 18+). Clean sections for Artist Profile, Artwork & Recent Works (accepting Recent Works as PDF or Image up to 15MB, rather than formal portfolio PDFs), and Statement.
+
+4. **Multi-Cycle Admin & Concurrent Active Exhibitions**:
+   - Updated `POST /admin/exhibitions/create` and `PATCH /admin/exhibitions/:id/activate` to use cohort-aware deactivation (`WHERE require_over_18 = ?`), enabling an active Youth exhibition and an active General exhibition to run concurrently without mutual deactivation.
+
+5. **Exhaustive Automated Verification Suite**:
+   - Added `tests/e2e_exhibition_cycle_verification.test.ts` to test the full loop:
+     1. Registration duplicate prevention & login guidance.
+     2. Concurrent multi-cycle creation in Admin.
+     3. Homepage notices generation with distinct tags (`YOUTH EXHIBITION` vs `EXHIBITION`).
+     4. Minor submission (guardian consent + recent works) & adult submission (recent works).
+     5. Multi-cycle status reflection on Member Dashboard.
+   - **Results**: 20/20 test suites passing (276/276 tests green), 0 type errors, 0 hardening failures, clean production build, and 60/60 mobile viewport audits passing with 0px horizontal overflow.
+
+
+
 
 
 

@@ -574,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!res || !res.ok) return;
 
     const exhibitions = await res.json();
+    allExhibs = exhibitions;
     const container = document.getElementById('exhibitionListContainer');
     const statusText = document.getElementById('portalLiveStatus');
     if (!container) return;
@@ -596,8 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (btn.dataset.action === 'toggle-recent-works') {
           window.toggleExhibitionRecentWorks(id, btn);
         } else if (btn.dataset.action === 'edit-exhibition') {
-          const ex = exhibitions.find(e => e.id === id);
-          if (ex) window.openExhibitionBuilder(ex);
+          window.openExhibitionBuilderById(id);
         }
       });
     }
@@ -630,8 +630,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const safeTitle = window.escapeHtml(ex.title);
       const safeDateText = window.escapeHtml(ex.date_text);
       const toggleActiveBtn = ex.is_active
-        ? `<button data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; border-color: var(--accent-red); color: var(--accent-red-text);">Deactivate Cycle</button>`
-        : `<button data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn gold" style="padding: 0.5rem 0.8rem; font-size: 9px;">Make Active (Concurrent)</button>`;
+        ? `<button onclick="window.toggleExhibitionActive(${ex.id}, this)" data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; border-color: var(--accent-red); color: var(--accent-red-text);">Deactivate Cycle</button>`
+        : `<button onclick="window.toggleExhibitionActive(${ex.id}, this)" data-action="toggle-active-exhibition" data-id="${ex.id}" class="action-btn gold" style="padding: 0.5rem 0.8rem; font-size: 9px;">Make Active (Concurrent)</button>`;
 
       card.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -647,52 +647,78 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-top: 1rem; border-top: 1px dashed var(--grid-border); padding-top: 0.8rem;">
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             ${toggleActiveBtn}
-            ${!ex.is_active ? `<button data-action="activate-exhibition" data-id="${ex.id}" data-title="${safeTitle}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Set as Sole Live</button>` : ''}
-            <button data-action="edit-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Edit in Builder</button>
-            ${!ex.require_over_18 ? `<button data-action="toggle-recent-works" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; ${ex.allow_recent_works_youth ? 'border-color:var(--accent-green); color:var(--accent-green-text);' : ''}">${ex.allow_recent_works_youth ? 'Recent Works: ON' : 'Recent Works: OFF'}</button>` : ''}
+            ${!ex.is_active ? `<button onclick="window.activateExhibition(${ex.id}, '${safeTitle}')" data-action="activate-exhibition" data-id="${ex.id}" data-title="${safeTitle}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Set as Sole Live</button>` : ''}
+            <button onclick="window.openExhibitionBuilderById(${ex.id})" data-action="edit-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Edit in Builder</button>
+            ${!ex.require_over_18 ? `<button onclick="window.toggleExhibitionRecentWorks(${ex.id}, this)" data-action="toggle-recent-works" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; ${ex.allow_recent_works_youth ? 'border-color:var(--accent-green); color:var(--accent-green-text);' : ''}">${ex.allow_recent_works_youth ? 'Recent Works: ON' : 'Recent Works: OFF'}</button>` : ''}
           </div>
-          <button data-action="toggle-age-req" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">${ex.require_over_18 ? 'Switch to Below 18 (Youth)' : 'Switch to 18+ (Adults)'}</button>
+          <button onclick="window.toggleExhibitionAge(${ex.id}, this)" data-action="toggle-age-req" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">${ex.require_over_18 ? 'Switch to Below 18 (Youth)' : 'Switch to 18+ (Adults)'}</button>
         </div>
       `;
       container.appendChild(card);
     });
   };
 
+  window.openExhibitionBuilderById = function(id) {
+    const ex = allExhibs.find(e => e.id === id);
+    if (ex) window.openExhibitionBuilder(ex);
+  };
+
   window.toggleExhibitionActive = async function(id, btn) {
-    const original = btn.textContent;
-    btn.textContent = '...';
-    btn.disabled = true;
+    const original = btn ? btn.textContent : '';
+    if (btn) {
+      btn.textContent = '...';
+      btn.disabled = true;
+    }
     try {
       const res = await adminFetch(`/admin/exhibitions/${id}/toggle-active`, { method: 'PATCH' });
       if (res && res.ok) {
+        showToast('Exhibition cycle state updated.', 'success');
         await window.loadExhibitionManager();
+        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
       } else {
-        alert('Could not toggle exhibition cycle state.');
+        showToast('Could not toggle exhibition cycle state.', 'error');
       }
     } catch (err) {
-      alert('Error updating exhibition cycle.');
+      showToast(err.message || 'Error updating exhibition cycle.', 'error');
     } finally {
-      btn.textContent = original;
-      btn.disabled = false;
+      if (btn) {
+        btn.textContent = original;
+        btn.disabled = false;
+      }
     }
   };
 
   window.toggleExhibitionAge = async function(id, btn) {
-    const original = btn.textContent;
-    btn.textContent = '...';
-    btn.disabled = true;
+    const original = btn ? btn.textContent : '';
+    if (btn) {
+      btn.textContent = '...';
+      btn.disabled = true;
+    }
     try {
-      const res = await adminFetch(`/admin/exhibitions/${id}/toggle-age`, { method: 'PATCH' });
+      const res = await adminFetch(`/admin/exhibitions/${id}/toggle-age`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
       if (res && res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const newLabel = data.require_over_18 ? '18+ (Adult Showcase)' : 'Below 18 (Youth Showcase)';
+        showToast(`Age requirement switched to: ${newLabel}`, 'success');
         await window.loadExhibitionManager();
+        if (typeof window.loadExhibitionsData === 'function') {
+          await window.loadExhibitionsData(currentCycleView || 'ALL');
+        }
       } else {
-        alert('Could not toggle age requirement.');
+        const errJson = res ? await res.json().catch(() => ({})) : {};
+        showToast(errJson.error || 'Could not toggle age requirement.', 'error');
       }
     } catch (err) {
-      alert('Error updating exhibition.');
+      showToast(err.message || 'Error updating exhibition.', 'error');
     } finally {
-      btn.textContent = original;
-      btn.disabled = false;
+      if (btn) {
+        btn.textContent = original;
+        btn.disabled = false;
+      }
     }
   };
 

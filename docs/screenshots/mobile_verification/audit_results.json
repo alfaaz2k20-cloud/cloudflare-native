@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-12T08:30:19.804Z",
+  "timestamp": "2026-11-12T10:31:00.425Z",
   "environment": "Headless Chrome (Emulated Mobile & Tablet Viewports via CDP)",
   "methodology": "Synthetic Chrome DevTools Protocol Emulation (Not Physical Device Hardware)",
   "viewportsTested": [
@@ -48,8 +48,8 @@
           "viewportHeight": 844,
           "measuredScrollWidth": 390,
           "hasHorizontalOverflow": false,
-          "sub16pxInputs": 1,
-          "navPaddingTop": "16px",
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
           "screenshotFile": "homepage_390w_390px-iphone-14-ios.jpg"
         },
         "430px-iphone-15-pro-max": {
@@ -580,7 +580,7 @@
   "summary": {
     "totalSnapshots": 60,
     "zeroHorizontalOverflow": true,
-    "fontSizingCompliant": false,
+    "fontSizingCompliant": true,
     "touchTargetsCompliant": true
   }
 }

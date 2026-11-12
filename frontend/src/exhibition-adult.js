@@ -61,7 +61,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const data = await res.json();
-    selectedCycle = data;
+    const activeCycles = Array.isArray(data.active_cycles) ? data.active_cycles : [];
+    // Prioritize adult cycle if multiple active and no specific id requested
+    const adultCycle = (!cycleIdParam && activeCycles.length > 0)
+      ? (activeCycles.find(c => c.require_over_18 !== false && c.require_over_18 !== 0) || data)
+      : data;
+    selectedCycle = adultCycle;
 
     if (cycleTitle) cycleTitle.textContent = selectedCycle.title || 'Curatorial Exhibition';
     if (cycleMeta) {
@@ -107,14 +112,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function isPdfBytes(bytes) {
-    return bytes.length >= 5 &&
+  function isImageOrPdfBytes(bytes) {
+    if (bytes.length >= 5 &&
       bytes[0] === 0x25 && bytes[1] === 0x50 &&
       bytes[2] === 0x44 && bytes[3] === 0x46 &&
-      bytes[4] === 0x2D;
+      bytes[4] === 0x2D) return true; // PDF
+    if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return true; // JPEG
+    if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return true; // PNG
+    if (bytes.length >= 12) {
+      const isRiff = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
+      const isWebp = bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
+      if (isRiff && isWebp) return true; // WebP
+    }
+    return false;
   }
 
-  // 4. Primary Portfolio Upload Handler
+  // 4. Primary Recent Works Upload Handler (PDF or Image, max 15MB)
   portfolioFile?.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!uploadStatus) return;
@@ -123,6 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       uploadedPdfUrl = null;
       uploadedPdfName = null;
       uploadStatus.textContent = '';
+      if (portfolioProgressWrap) portfolioProgressWrap.style.display = 'none';
       return;
     }
 
@@ -135,17 +149,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      const bytes = await readMagicBytes(file, 5);
-      if (!isPdfBytes(bytes)) {
+      const bytes = await readMagicBytes(file, 12);
+      if (!isImageOrPdfBytes(bytes)) {
         uploadStatus.style.color = 'var(--accent-red-text)';
-        uploadStatus.textContent = '✗ Invalid format. Only genuine PDF documents (%PDF-) are accepted.';
+        uploadStatus.textContent = '✗ Invalid format. Only genuine PDF or Image documents (JPEG, PNG, WebP) are accepted.';
         e.target.value = '';
         uploadedPdfUrl = null;
         return;
       }
     } catch {
       uploadStatus.style.color = 'var(--accent-red-text)';
-      uploadStatus.textContent = '✗ Unable to read file header. Please select a valid PDF file.';
+      uploadStatus.textContent = '✗ Unable to read file header. Please select a valid document or image.';
       e.target.value = '';
       return;
     }
@@ -159,7 +173,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await window.globalApiFetch('/exhibitions/upload-portfolio', {
+      const uploadEndpoint = file.type === 'application/pdf'
+        ? '/exhibitions/upload-portfolio'
+        : '/exhibitions/upload-recent-works';
+
+      const res = await window.globalApiFetch(uploadEndpoint, {
         method: 'POST',
         body: formData
       });
@@ -175,7 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (portfolioProgressFill) portfolioProgressFill.style.width = '100%';
       uploadStatus.style.color = 'var(--accent-green-text)';
-      uploadStatus.textContent = `✓ Portfolio uploaded successfully: "${file.name}"`;
+      uploadStatus.textContent = `✓ Recent works uploaded successfully: "${file.name}"`;
     } catch (err) {
       uploadStatus.style.color = 'var(--accent-red-text)';
       uploadStatus.textContent = `✗ Upload failed: ${err.message}`;
@@ -284,7 +302,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (!uploadedPdfUrl) {
-      formMsg.textContent = 'Please upload your artwork portfolio PDF before submitting.';
+      formMsg.textContent = 'Please upload your recent works file (PDF or Image) before submitting.';
       portfolioFile?.focus();
       return;
     }
@@ -318,6 +336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       genre: genre,
       medium: medium,
       portfolio_url: uploadedPdfUrl,
+      recent_works_url: uploadedPdfUrl,
       applicant_note: note || null,
       over_18: true,
       agreed_to_screening: true,
@@ -348,8 +367,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Submit Adult Application →';
+      formMsg.style.display = 'block';
       formMsg.style.color = 'var(--accent-red-text)';
-      formMsg.textContent = `✗ ${err.message}`;
+      formMsg.textContent = `✗ ${err.message || 'Submission failed. Please check your inputs and try again.'}`;
 
       if (window.turnstile && turnstileWidgetId !== null) {
         window.turnstile.reset(turnstileWidgetId);

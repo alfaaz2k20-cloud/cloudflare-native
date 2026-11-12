@@ -428,7 +428,20 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.textContent = currentMode === 'register' ? 'Create Account' : 'Log In';
         submitBtn.disabled = false;
         if (window.turnstile) { try { window.turnstile.reset(); turnstileToken = ''; } catch (_) {} }
-        showHint(data.detail || data.error || 'Authentication failed. Please check credentials.');
+        
+        const rawErr = data.detail || data.error || '';
+        if (currentMode === 'register' && (rawErr.toLowerCase().includes('already registered') || rawErr.toLowerCase().includes('already exists'))) {
+          showHint('An account with this email is already registered! Switching to Log In—please enter your password.');
+          setTimeout(() => {
+            setAuthMode('login');
+            if (emailInput) emailInput.value = emailValue;
+            if (pwInput) pwInput.focus();
+          }, 1400);
+        } else if (currentMode === 'login' && rawErr.toLowerCase().includes('invalid credentials')) {
+          showHint('Invalid email or password. If you have not created an account yet, please click "Register here" below to join.');
+        } else {
+          showHint(rawErr || 'Authentication failed. Please check credentials.');
+        }
       }
     } catch (error) {
       submitBtn.textContent = currentMode === 'register' ? 'Create Account' : 'Log In';
@@ -557,8 +570,8 @@ document.addEventListener('DOMContentLoaded', () => {
               if (submitBtn) submitBtn.disabled = false;
               if (err.status === 404 || err.code === 'ACCOUNT_NOT_FOUND') {
                 setAuthMode('register');
-                showHint(err.message || 'No account found. Please register below with your WhatsApp number to join.');
-                showSocialHint('');
+                showHint('No account found for this Google email. Please complete registration below to join Alfaaz.');
+                showSocialHint('No account found with this Google email. Please register below.', false);
               } else if (err.code === 'NETWORK_ERROR' || (err.message && (err.message.includes('reach backend') || err.message.includes('Failed to fetch')))) {
                 showSocialHint(err.message || 'Connection to auth server failed. Please ensure local server is running.');
               } else {

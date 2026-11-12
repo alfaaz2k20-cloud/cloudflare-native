@@ -1,35 +1,41 @@
-// exhibition.js — Central Exhibition Discovery & Gateway Portal (Alfaaz Collective)
+// exhibition.js — Curatorial Exhibition Guidelines & Intelligent Portal Router (Alfaaz Collective)
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const token = localStorage.getItem('alfaaz_token');
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetParam = (urlParams.get('target') || urlParams.get('stream') || '').toLowerCase();
+  const cycleParam = urlParams.get('id') || urlParams.get('cycle');
 
   // DOM Elements
   const closedMessage = document.getElementById('closedMessage');
   const activePortalContainer = document.getElementById('activePortalContainer');
   const currentShowTitle = document.getElementById('currentShowTitle');
   const currentShowMeta = document.getElementById('currentShowMeta');
-  const currentShowAbout = document.getElementById('currentShowAbout');
-  const btnAdultStream = document.getElementById('btnAdultStream');
-  const btnYouthStream = document.getElementById('btnYouthStream');
+  const cycleCohortBadge = document.getElementById('cycleCohortBadge');
 
-  let activeCycles = [];
-  let userStatusData = null;
+  const actionPrompt = document.getElementById('actionPrompt');
+  const actionTitle = document.getElementById('actionTitle');
+  const actionDesc = document.getElementById('actionDesc');
+  const singleActionWrap = document.getElementById('singleActionWrap');
+  const btnContinueTarget = document.getElementById('btnContinueTarget');
+  const dualChoiceWrap = document.getElementById('dualChoiceWrap');
+  const btnDualYouth = document.getElementById('btnDualYouth');
+  const btnDualAdult = document.getElementById('btnDualAdult');
 
-  // 1. Fetch User Status (if logged in)
-  if (token) {
-    try {
-      const res = await window.globalApiFetch('/exhibitions/user-status');
-      if (res && res.ok) {
-        userStatusData = await res.json();
-      }
-    } catch (err) {
-      console.warn('[Exhibition User Status Fetch Warning]:', err);
-    }
+  function showClosedState() {
+    if (activePortalContainer) activePortalContainer.style.display = 'none';
+    if (closedMessage) closedMessage.style.display = 'block';
   }
 
-  // 2. Fetch Exhibition Configuration & Active Cycles
+  let activeCycles = [];
+  let resolvedCycle = null;
+
+  // 1. Fetch Exhibition Configuration
   try {
-    const res = await window.globalApiFetch('/exhibitions/config');
+    const configUrl = cycleParam
+      ? `/exhibitions/config?id=${encodeURIComponent(cycleParam)}`
+      : '/exhibitions/config';
+
+    const res = await window.globalApiFetch(configUrl);
     if (!res || !res.ok) {
       showClosedState();
       return;
@@ -43,62 +49,99 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     activeCycles = Array.isArray(data.active_cycles) && data.active_cycles.length > 0
       ? data.active_cycles
-      : [{
-          id: data.id || 1,
-          title: data.title || 'Curatorial Open Call',
-          date_text: data.date_text || 'Dates TBA',
-          about_text: data.about_text || '',
-          venue: data.venue || 'Alfaaz Gallery, Srinagar',
-          require_over_18: data.require_over_18 !== false,
-          allow_recent_works_youth: Boolean(data.allow_recent_works_youth)
-        }];
+      : (data.title ? [data] : []);
 
-    // Display primary active cycle info in hero banner
-    const primaryCycle = activeCycles[0];
-    if (primaryCycle) {
-      if (currentShowTitle) currentShowTitle.textContent = primaryCycle.title;
+    if (activeCycles.length === 0) {
+      showClosedState();
+      return;
+    }
+
+    // 2. Resolve Specific Cycle
+    if (cycleParam) {
+      resolvedCycle = activeCycles.find(c => String(c.id) === String(cycleParam)) || data;
+    } else if (activeCycles.length === 1) {
+      resolvedCycle = activeCycles[0];
+    }
+
+    // 3. Update Banner Metadata
+    if (resolvedCycle) {
+      if (currentShowTitle) currentShowTitle.textContent = resolvedCycle.title || 'Curatorial Exhibition';
       if (currentShowMeta) {
-        const venueText = primaryCycle.venue || 'Alfaaz Gallery, Srinagar';
-        const dateText = primaryCycle.date_text || 'Dates Announced Soon';
-        const feeText = primaryCycle.registration_fee ? `Fee: ${primaryCycle.registration_fee}` : 'Curatorial Open Call';
-        currentShowMeta.textContent = `${dateText} — ${venueText} (${feeText})`;
+        currentShowMeta.textContent = `${resolvedCycle.venue || 'Alfaaz Gallery, Srinagar'} — ${resolvedCycle.date_text || 'Dates Announced Soon'}`;
       }
-      if (currentShowAbout && primaryCycle.about_text) {
-        currentShowAbout.textContent = primaryCycle.about_text;
+      if (cycleCohortBadge) {
+        const isYouthCycle = resolvedCycle.require_over_18 === 0 || resolvedCycle.require_over_18 === false;
+        cycleCohortBadge.textContent = isYouthCycle ? 'Youth Exhibition (Below 18)' : 'Exhibition (General / 18+)';
       }
+    } else if (activeCycles.length > 1) {
+      if (currentShowTitle) currentShowTitle.textContent = 'Active Curatorial Cycles';
+      if (currentShowMeta) currentShowMeta.textContent = `${activeCycles.length} concurrent open calls accepting submissions in Srinagar`;
+      if (cycleCohortBadge) cycleCohortBadge.textContent = 'Multiple Cycles Active';
     }
 
-    // Direct gateway buttons to appropriate active cycles
-    const adultCycle = activeCycles.find(c => c.require_over_18 !== false && c.require_over_18 !== 0) || primaryCycle;
-    const youthCycle = activeCycles.find(c => c.require_over_18 === false || c.require_over_18 === 0) || primaryCycle;
-
-    if (btnAdultStream && adultCycle) {
-      btnAdultStream.href = `exhibition-adult.html?id=${encodeURIComponent(adultCycle.id)}`;
-      // Check if user submitted to this adult cycle
-      const adultStatus = userStatusData?.statuses_by_cycle && userStatusData.statuses_by_cycle[adultCycle.title];
-      if (adultStatus?.status) {
-        btnAdultStream.textContent = `View Application (${adultStatus.status}) →`;
-        btnAdultStream.href = 'dashboard.html';
-      }
+    // 4. Resolve Intended Target (Youth vs Adult/General)
+    let determinedTarget = null;
+    if (targetParam === 'youth' || targetParam === 'minor') {
+      determinedTarget = 'youth';
+    } else if (targetParam === 'adult' || targetParam === 'general') {
+      determinedTarget = 'adult';
+    } else if (resolvedCycle) {
+      const isYouthCycle = resolvedCycle.require_over_18 === 0 || resolvedCycle.require_over_18 === false;
+      determinedTarget = isYouthCycle ? 'youth' : 'adult';
     }
 
-    if (btnYouthStream && youthCycle) {
-      btnYouthStream.href = `exhibition-youth.html?id=${encodeURIComponent(youthCycle.id)}`;
-      // Check if user submitted to this youth cycle
-      const youthStatus = userStatusData?.statuses_by_cycle && userStatusData.statuses_by_cycle[youthCycle.title];
-      if (youthStatus?.status) {
-        btnYouthStream.textContent = `View Application (${youthStatus.status}) →`;
-        btnYouthStream.href = 'dashboard.html';
+    // 5. Configure Single Destination or Dual Fallback
+    if (determinedTarget) {
+      if (singleActionWrap) singleActionWrap.style.display = 'block';
+      if (dualChoiceWrap) dualChoiceWrap.style.display = 'none';
+
+      const cycleQuery = resolvedCycle?.id ? `?id=${encodeURIComponent(resolvedCycle.id)}` : (cycleParam ? `?id=${encodeURIComponent(cycleParam)}` : '');
+
+      if (determinedTarget === 'youth') {
+        if (actionPrompt) actionPrompt.textContent = 'Youth Exhibition (Under 18 Years)';
+        if (actionTitle) actionTitle.textContent = 'I Understand & Agree — Continue to Youth Exhibition';
+        if (actionDesc) {
+          actionDesc.textContent = 'You will be taken directly to our youth exhibition intake portal for young artists and students below 18 years.';
+        }
+        if (btnContinueTarget) {
+          btnContinueTarget.textContent = 'I Agree & Continue to Youth Exhibition →';
+          btnContinueTarget.href = `exhibition-youth.html${cycleQuery}`;
+        }
+      } else {
+        if (actionPrompt) actionPrompt.textContent = 'Exhibition Application (General / 18+)';
+        if (actionTitle) actionTitle.textContent = 'I Understand & Agree — Continue to Exhibition';
+        if (actionDesc) {
+          actionDesc.textContent = 'You will be taken directly to our exhibition application portal for artists and cultural practitioners aged 18 and older.';
+        }
+        if (btnContinueTarget) {
+          btnContinueTarget.textContent = 'I Agree & Continue to Exhibition →';
+          btnContinueTarget.href = `exhibition-adult.html${cycleQuery}`;
+        }
+      }
+    } else {
+      // Unspecified target with multiple active shows: offer clear choices below guidelines
+      if (singleActionWrap) singleActionWrap.style.display = 'none';
+      if (dualChoiceWrap) dualChoiceWrap.style.display = 'flex';
+
+      const adultCycle = activeCycles.find(c => c.require_over_18 !== 0 && c.require_over_18 !== false) || activeCycles[0];
+      const youthCycle = activeCycles.find(c => c.require_over_18 === 0 || c.require_over_18 === false) || activeCycles[0];
+
+      if (actionPrompt) actionPrompt.textContent = 'Select Application Portal';
+      if (actionTitle) actionTitle.textContent = 'Choose Your Exhibition Portal';
+      if (actionDesc) {
+        actionDesc.textContent = 'Please choose the portal matching your age category to enter the application form:';
+      }
+
+      if (btnDualYouth && youthCycle) {
+        btnDualYouth.href = `exhibition-youth.html?id=${encodeURIComponent(youthCycle.id)}`;
+      }
+      if (btnDualAdult && adultCycle) {
+        btnDualAdult.href = `exhibition-adult.html?id=${encodeURIComponent(adultCycle.id)}`;
       }
     }
 
   } catch (err) {
-    console.error('[Exhibition Portal Init Error]:', err);
+    console.error('[Exhibition Guidelines Load Error]:', err);
     showClosedState();
-  }
-
-  function showClosedState() {
-    if (closedMessage) closedMessage.style.display = 'block';
-    if (activePortalContainer) activePortalContainer.style.display = 'none';
   }
 });
