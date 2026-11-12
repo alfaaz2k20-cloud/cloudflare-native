@@ -573,3 +573,39 @@ The administration interface (`frontend/admin.html` and `src/admin.js`) was veri
 | **Recruitment & Research Boundary** | `recruit.html`, `research.html` isolated (Rule 8) | **Untouched** | Protected assessment logic insulated |
 | **Secret Redaction Invariant** | Audit logs, documentation, scripts (Rule 1) | **Compliant** | Plaintext keys redacted |
 
+---
+
+## 9. Stage 4: User Feedback Remediation & Workflow Harmonization
+
+### 9.1 Dashboard Bottom Tab Directory Restoration
+- **Requirement**: Restore persistent list of tabs at the bottom of every dashboard section with simple links and brief descriptive text.
+- **Implementation**: Added `.dash-tab-directory` on all 4 tab destinations (`#sectionHome`, `#sectionExplore`, `#sectionActivity`, `#sectionProfile`) in `frontend/dashboard.html`.
+- **Card Content**:
+  1. **Studio Overview**: *"Your active passes, vital notices, and collective status highlights."*
+  2. **Explore & Open Calls**: *"Upcoming community gatherings, creative circle openings, and open exhibitions."*
+  3. **Activity & Records**: *"Confirmed passes, circle membership statuses, and exhibition portfolio reviews."*
+  4. **Identity & Account**: *"Manage profile name, WhatsApp contact for passes, and account security."*
+- **Dynamic State**: Synchronized with `switchTab()` in `frontend/src/dashboard.js`, automatically binding `.active-tab-card` and the `Current Tab` indicator to the active view.
+
+### 9.2 Exhibition Portal Resolution ("Exhibition Portal Closed")
+- **Root Cause**: In local development, migrations 0005–0008 had not been executed against the local Miniflare D1 database, causing queries referencing `status` to throw `no such column: status`. Consequently, `GET /config` defaulted to an empty cycle array and displayed the "Exhibition Portal Closed" fallback view.
+- **Remediation**:
+  1. Applied pending migrations 0005–0008 to the local Miniflare database via `npx wrangler d1 migrations apply DB --local`.
+  2. Implemented database schema resilience in `backend/src/routes/exhibitions.ts`: `GET /config`, `POST /apply`, and `handleCompleteRegistration` now include try/catch fallbacks querying `WHERE is_active = 1` if `status` filtering fails, guaranteeing portal availability across all database environments.
+
+### 9.3 Admin Applicants Dossier Loading Fix
+- **Root Cause**: `GET /admin/exhibitions` queried new safeguarding columns (`guardian_name`, `guardian_rejection_reason`, etc.). When unmigrated, SQLite threw an unhandled error returning `500 Internal Server Error`, while `loadExhibitionsData()` silently returned, leaving `#exhibitionsContainer` in a perpetual "Loading applications..." state.
+- **Remediation**:
+  1. Added schema query fallbacks in `backend/src/routes/admin.ts` to query core application columns if extended safeguarding columns are absent, returning valid JSON arrays rather than 500 errors.
+  2. Updated `loadExhibitionsData()` and filter handlers in `frontend/src/admin.js` to render user-facing empty/error states on failed fetches instead of freezing.
+
+### 9.4 Elimination of Tab & Builder Creation Conflicts
+- **Problem**: Admin interface presented duplicate, conflicting creation mechanisms: an inline raw form and a separate 7-step modal builder in both Events and Exhibitions tabs, with a cross-cutting mode switch in the modal. Furthermore, saving an exhibition from the modal failed due to unmigrated columns and hardcoded `is_active = 0`.
+- **Remediation**:
+  1. **Events Tab**: Removed redundant modal builder button. Gathering creation is handled cleanly and directly via the dedicated 4-field inline form.
+  2. **Exhibitions Tab**: Eliminated the redundant raw 9-field inline form. Replaced with a unified "Launch Exhibition Cycle Builder" panel and "+ New Exhibition Cycle" header button.
+  3. **Dedicated Cycle Builder**: Locked `#exhibitionBuilderModal` exclusively to Exhibition Cycles, removing the conflicting `builderModeSelectorWrap` mode switch.
+  4. **Backend Creation & Activation**: Updated `POST /admin/exhibitions/create` to accept `is_active` directly, activate cycles when saving live, return `{ status: 'SUCCESS', id: newId }`, and provide fallback queries for legacy schema compatibility.
+  5. **Frontend Save Pipeline**: `saveBuilder()` now transmits `is_active` and `status`, refreshes the cycle list and applicants dossier upon save, and displays actionable success/error messaging.
+
+

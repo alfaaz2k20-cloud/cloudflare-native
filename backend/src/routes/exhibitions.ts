@@ -63,7 +63,14 @@ exhibitionsRouter.get('/config', async (c) => {
       .all<any>();
     activeCycles = query.results || [];
   } catch {
-    activeCycles = [];
+    try {
+      const fallback = await c.env.DB
+        .prepare("SELECT * FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC")
+        .all<any>();
+      activeCycles = fallback.results || [];
+    } catch {
+      activeCycles = [];
+    }
   }
 
   if (activeCycles.length === 0) {
@@ -320,26 +327,46 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
 
   let activeCycle: any = null;
   if (requestedId) {
-    activeCycle = await c.env.DB
-      .prepare("SELECT id, title, require_over_18, allow_recent_works_youth FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') AND id = ? LIMIT 1")
-      .bind(requestedId)
-      .first<any>();
+    try {
+      activeCycle = await c.env.DB
+        .prepare("SELECT id, title, require_over_18, allow_recent_works_youth FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') AND id = ? LIMIT 1")
+        .bind(requestedId)
+        .first<any>();
+    } catch {
+      activeCycle = await c.env.DB
+        .prepare("SELECT id, title, require_over_18 FROM exhibitions_list WHERE is_active = 1 AND id = ? LIMIT 1")
+        .bind(requestedId)
+        .first<any>();
+    }
     if (!activeCycle) {
       return c.json({ detail: 'Requested exhibition cycle does not exist or is currently closed.' }, 400);
     }
   } else if (requestedCycle) {
-    activeCycle = await c.env.DB
-      .prepare("SELECT id, title, require_over_18, allow_recent_works_youth FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') AND LOWER(title) = LOWER(?) LIMIT 1")
-      .bind(requestedCycle)
-      .first<any>();
+    try {
+      activeCycle = await c.env.DB
+        .prepare("SELECT id, title, require_over_18, allow_recent_works_youth FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') AND LOWER(title) = LOWER(?) LIMIT 1")
+        .bind(requestedCycle)
+        .first<any>();
+    } catch {
+      activeCycle = await c.env.DB
+        .prepare("SELECT id, title, require_over_18 FROM exhibitions_list WHERE is_active = 1 AND LOWER(title) = LOWER(?) LIMIT 1")
+        .bind(requestedCycle)
+        .first<any>();
+    }
     if (!activeCycle) {
       return c.json({ detail: 'Requested exhibition cycle does not exist or is currently closed.' }, 400);
     }
   } else {
     // Legacy fallback only if completely omitted
-    activeCycle = await c.env.DB
-      .prepare("SELECT id, title, require_over_18, allow_recent_works_youth FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') ORDER BY id ASC LIMIT 1")
-      .first<any>();
+    try {
+      activeCycle = await c.env.DB
+        .prepare("SELECT id, title, require_over_18, allow_recent_works_youth FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') ORDER BY id ASC LIMIT 1")
+        .first<any>();
+    } catch {
+      activeCycle = await c.env.DB
+        .prepare("SELECT id, title, require_over_18 FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC LIMIT 1")
+        .first<any>();
+    }
   }
 
   if (!activeCycle) {
@@ -633,26 +660,46 @@ async function handleCompleteRegistration(c: Context<{ Bindings: Env; Variables:
 
   let targetCycle: { id: number; title: string } | null = null;
   if (exhibitionId) {
-    targetCycle = await c.env.DB
-      .prepare("SELECT id, title FROM exhibitions_list WHERE id = ? AND is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') LIMIT 1")
-      .bind(exhibitionId)
-      .first<any>();
+    try {
+      targetCycle = await c.env.DB
+        .prepare("SELECT id, title FROM exhibitions_list WHERE id = ? AND is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') LIMIT 1")
+        .bind(exhibitionId)
+        .first<any>();
+    } catch {
+      targetCycle = await c.env.DB
+        .prepare("SELECT id, title FROM exhibitions_list WHERE id = ? AND is_active = 1 LIMIT 1")
+        .bind(exhibitionId)
+        .first<any>();
+    }
     if (!targetCycle) {
       return c.json({ detail: 'Specified exhibition cycle was not found or is closed.' }, 400);
     }
   } else if (exhibitionCycle) {
-    targetCycle = await c.env.DB
-      .prepare("SELECT id, title FROM exhibitions_list WHERE LOWER(title) = LOWER(?) AND is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') LIMIT 1")
-      .bind(exhibitionCycle)
-      .first<any>();
+    try {
+      targetCycle = await c.env.DB
+        .prepare("SELECT id, title FROM exhibitions_list WHERE LOWER(title) = LOWER(?) AND is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') LIMIT 1")
+        .bind(exhibitionCycle)
+        .first<any>();
+    } catch {
+      targetCycle = await c.env.DB
+        .prepare("SELECT id, title FROM exhibitions_list WHERE LOWER(title) = LOWER(?) AND is_active = 1 LIMIT 1")
+        .bind(exhibitionCycle)
+        .first<any>();
+    }
     if (!targetCycle) {
       return c.json({ detail: 'Specified exhibition cycle was not found or is closed.' }, 400);
     }
   } else {
     // If neither is supplied, check the first active cycle
-    targetCycle = await c.env.DB
-      .prepare("SELECT id, title FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') ORDER BY id ASC LIMIT 1")
-      .first<any>();
+    try {
+      targetCycle = await c.env.DB
+        .prepare("SELECT id, title FROM exhibitions_list WHERE is_active = 1 AND (status IS NULL OR status = 'PUBLISHED') ORDER BY id ASC LIMIT 1")
+        .first<any>();
+    } catch {
+      targetCycle = await c.env.DB
+        .prepare("SELECT id, title FROM exhibitions_list WHERE is_active = 1 ORDER BY id ASC LIMIT 1")
+        .first<any>();
+    }
   }
 
   if (!targetCycle) {

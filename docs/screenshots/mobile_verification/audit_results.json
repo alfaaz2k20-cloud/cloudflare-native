@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-12T05:43:51.042Z",
+  "timestamp": "2026-11-12T06:46:04.237Z",
   "environment": "Headless Chrome (Emulated Mobile & Tablet Viewports via CDP)",
   "methodology": "Synthetic Chrome DevTools Protocol Emulation (Not Physical Device Hardware)",
   "viewportsTested": [
@@ -428,7 +428,7 @@
           "viewportHeight": 800,
           "measuredScrollWidth": 1280,
           "hasHorizontalOverflow": false,
-          "sub16pxInputs": 47,
+          "sub16pxInputs": 38,
           "navPaddingTop": "19.2px",
           "screenshotFile": "admin_1280w_1280px-desktop-hd.jpg"
         }

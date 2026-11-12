@@ -838,55 +838,13 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.classList.add('open');
   };
 
-  window.openEventBuilder = function(ev = null) {
-    const modal = document.getElementById('exhibitionBuilderModal');
-    if (!modal) return;
-
-    window.switchBuilderMode('event');
-    const modeWrap = document.getElementById('builderModeSelectorWrap');
-    if (modeWrap) modeWrap.style.display = ev ? 'none' : 'flex';
-
-    const idInput = document.getElementById('builderCycleId');
-    const evIdInput = document.getElementById('builderEventId');
-    const nameInput = document.getElementById('evbName');
-    const catInput = document.getElementById('evbCategory');
-    const descInput = document.getElementById('evbDesc');
-    const dateInput = document.getElementById('evbDate');
-    const capInput = document.getElementById('evbCapacity');
-    const guideInput = document.getElementById('evbGuidelines');
-    const regOpenCheck = document.getElementById('evbRegOpen');
-    const liveCheck = document.getElementById('bPublishLive');
-    const msg = document.getElementById('builderMsg');
-
-    if (msg) msg.textContent = '';
-    if (idInput) idInput.value = '';
-
-    if (ev) {
-      if (evIdInput) evIdInput.value = ev.id;
-      if (nameInput) nameInput.value = ev.name || '';
-      if (catInput) catInput.value = '';
-      if (descInput) descInput.value = ev.description || '';
-      if (dateInput) dateInput.value = ev.event_date || '';
-      if (capInput) capInput.value = ev.capacity || 0;
-      if (guideInput) guideInput.value = '';
-      const isOpen = Boolean(ev.registration_open);
-      if (regOpenCheck) regOpenCheck.checked = isOpen;
-      if (liveCheck) liveCheck.checked = isOpen;
-    } else {
-      if (evIdInput) evIdInput.value = '';
-      if (nameInput) nameInput.value = '';
-      if (catInput) catInput.value = '';
-      if (descInput) descInput.value = '';
-      if (dateInput) dateInput.value = '';
-      if (capInput) capInput.value = 0;
-      if (guideInput) guideInput.value = '';
-      if (regOpenCheck) regOpenCheck.checked = true;
-      if (liveCheck) liveCheck.checked = true;
+  window.openEventBuilder = function() {
+    window.switchTab('events');
+    const el = document.getElementById('ev-name');
+    if (el) {
+      el.focus();
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-
-    builderIsDirty = false;
-    window.builderGoStep(1);
-    modal.classList.add('open');
   };
 
   window.closeExhibitionBuilder = function() {
@@ -1159,7 +1117,9 @@ document.addEventListener('DOMContentLoaded', () => {
           tnc_pdf_url,
           registration_fee,
           payment_qr_url,
-          payment_instructions
+          payment_instructions,
+          is_active: isLive,
+          status: isLive ? 'PUBLISHED' : 'DRAFT'
         };
 
         let res;
@@ -1168,25 +1128,11 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'PATCH',
             body: JSON.stringify(payload)
           });
-          if (res && res.ok) {
-            // Check if active state needs alignment
-            const exList = allExhibitions || [];
-            const existing = exList.find(e => e.id === Number(cycleId));
-            if (existing && Boolean(existing.is_active) !== isLive) {
-              await adminFetch(`/admin/exhibitions/${cycleId}/toggle-active`, { method: 'PATCH' });
-            }
-          }
         } else {
           res = await adminFetch('/admin/exhibitions/create', {
             method: 'POST',
             body: JSON.stringify(payload)
           });
-          if (res && res.ok && isLive) {
-            const createdData = await res.clone().json().catch(() => ({}));
-            if (createdData.id) {
-              await adminFetch(`/admin/exhibitions/${createdData.id}/toggle-active`, { method: 'PATCH' });
-            }
-          }
         }
 
         if (res && res.ok) {
@@ -1197,6 +1143,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           showToast(cycleId ? 'Exhibition cycle updated successfully.' : 'New exhibition cycle created successfully.', 'success');
           await window.loadExhibitionManager();
+          await window.loadExhibitionsData('ALL');
           setTimeout(() => {
             const modal = document.getElementById('exhibitionBuilderModal');
             if (modal) modal.classList.remove('open');
@@ -1224,60 +1171,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.createNewExhibition = async function() {
-    const btn = document.getElementById('createExBtn');
-    const msg = document.getElementById('createExMsg');
-
-    const payload = {
-      title: document.getElementById('newExTitle').value.trim(),
-      date_text: document.getElementById('newExDate').value.trim(),
-      venue: document.getElementById('newExVenue').value.trim(),
-      about_text: document.getElementById('newExDesc').value.trim(),
-      require_over_18: Number(document.getElementById('newExAgeReq').value) === 1,
-      tnc_pdf_url: document.getElementById('newExTnc').value.trim(),
-      registration_fee: document.getElementById('newExFee').value.trim(),
-      payment_qr_url: document.getElementById('newExQr').value.trim(),
-      payment_instructions: document.getElementById('newExPayInst').value.trim()
-    };
-
-    if (!payload.title || !payload.date_text || !payload.venue) {
-      if (msg) {
-        msg.textContent = "Title, Dates, and Venue are required.";
-        msg.style.color = "var(--accent-red-text)";
-      }
-      return;
-    }
-
-    if (btn) { btn.textContent = "Creating..."; btn.disabled = true; }
-    try {
-      const res = await adminFetch('/admin/exhibitions/create', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
-
-      if (res && res.ok) {
-        if (msg) {
-          msg.textContent = "✓ Exhibition Created!";
-          msg.style.color = "var(--accent-green-text)";
-        }
-        document.querySelectorAll('#newExTitle, #newExDate, #newExVenue, #newExDesc, #newExTnc, #newExFee, #newExQr, #newExPayInst').forEach(el => el.value = '');
-        await window.loadExhibitionManager();
-        if (typeof window.refreshCuratorialPulse === 'function') window.refreshCuratorialPulse();
-      } else {
-        const err = await res?.json().catch(() => ({}));
-        if (msg) {
-          msg.textContent = err.error || err.detail || "Failed to create exhibition. Title may already exist.";
-          msg.style.color = "var(--accent-red-text)";
-        }
-      }
-    } catch (err) {
-      if (msg) {
-        msg.textContent = "Could not reach server. Please check your connection.";
-        msg.style.color = "var(--accent-red-text)";
-      }
-    } finally {
-      if (btn) { btn.textContent = "Create Exhibition"; btn.disabled = false; }
-      setTimeout(() => { if (msg) msg.textContent = ''; }, 4500);
-    }
+    return window.openExhibitionBuilder();
   };
 
   window.activateExhibition = async function(id, title) {
@@ -1343,6 +1237,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (r && r.ok) {
           allExhibs = await r.json();
           window.filterExhibitions('ALL');
+        } else {
+          const cEl = document.getElementById('exhibitionsContainer');
+          if (cEl) cEl.innerHTML = '<div class="empty-state">Unable to load cycle applications.</div>';
         }
       });
     }
@@ -1350,8 +1247,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.loadExhibitionsData = async function(f) {
     currentCycleView = 'ALL';
+    const container = document.getElementById('exhibitionsContainer');
     const res = await adminFetch('/admin/exhibitions?cycle=ALL');
-    if (!res || !res.ok) return;
+    if (!res || !res.ok) {
+      if (container) container.innerHTML = '<div class="empty-state">Unable to load applicants dossier. Please refresh or verify admin session.</div>';
+      return;
+    }
     allExhibs = await res.json();
     await buildCycleSelector();
     window.renderExhibitions(f);

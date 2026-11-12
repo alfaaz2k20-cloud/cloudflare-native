@@ -260,11 +260,8 @@
 
     <!-- 1. EVENTS PANEL -->
     <div id="tab-events" class="tab-panel active">
-      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div class="section-title">
         <span>Community Gatherings &amp; Events</span>
-        <button type="button" class="action-btn gold" onclick="openEventBuilder()" style="padding: 0.6rem 1.25rem; font-size: 11px;">
-          ✨ Guided Event Builder (7 Steps)
-        </button>
       </div>
       <div class="panel">
         <div class="form-grid">
@@ -285,7 +282,7 @@
       <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <span>Exhibition Management</span>
         <button type="button" class="action-btn gold" onclick="openExhibitionBuilder()" style="padding: 0.6rem 1.25rem; font-size: 11px;">
-          ✨ Guided Exhibition Builder (7 Steps)
+          + New Exhibition Cycle
         </button>
       </div>
 
@@ -298,57 +295,26 @@
       </div>
       
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 4rem;">
-        <div class="panel" style="padding: 2.5rem; margin-bottom: 0;">
-          <h3 style="font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); margin-bottom: 1.5rem;">Create New Cycle</h3>
-          
-          <div style="display: grid; gap: 1rem; margin-bottom: 1.5rem;">
-            <div>
-              <label class="data-label">Exhibition Title *</label>
-              <input type="text" id="newExTitle" placeholder="e.g., Harud 2026">
-            </div>
-            <div>
-              <label class="data-label">Dates *</label>
-              <input type="text" id="newExDate" placeholder="e.g., October 12th - 15th">
-            </div>
-            <div>
-              <label class="data-label">Venue *</label>
-              <input type="text" id="newExVenue" placeholder="e.g., Mahatta Art Gallery">
-            </div>
-            <div>
-              <label class="data-label">Age Requirement Configuration *</label>
-              <select id="newExAgeReq" style="margin: 0; font-size: 12px;">
-                <option value="1">18+ Only (Adult Exhibition — Mandatory 18+ Checkbox)</option>
-                <option value="0">Youth / Open (Under 18 Permitted — No 18+ Gate)</option>
-              </select>
-            </div>
-            <div>
-              <label class="data-label">About / Description</label>
-              <textarea id="newExDesc" rows="3" placeholder="Brief description..."></textarea>
-            </div>
-            <div style="margin-top: 1rem; border-top: 1px dashed var(--grid-border); padding-top: 1rem;">
-               <span style="font-size: 10px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 1px;">Post-Approval Req. (Optional)</span>
-            </div>
-            <div>
-              <label class="data-label">T&C PDF URL</label>
-              <input type="text" id="newExTnc" placeholder="https://...">
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-              <div>
-                <label class="data-label">Reg. Fee (₹)</label>
-                <input type="text" id="newExFee" placeholder="e.g., 500">
+        <div class="panel" style="padding: 2.5rem; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <span style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600;">Exhibition Architecture</span>
+            <h3 style="font-family: var(--font-heading); font-size: 1.6rem; color: var(--text-primary); margin: 0.35rem 0 1rem;">Create Exhibition Cycle</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
+              Configure a new curatorial cycle with dates, venue, eligibility (Adult 18+ vs. Youth under-18), youth safeguarding protocols, optional recent works upload, terms &amp; conditions guidelines, and registration payment settings.
+            </p>
+            <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); border-left: 3px solid var(--accent-gold); padding: 1rem 1.25rem; margin-bottom: 1.75rem;">
+              <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-primary); margin-bottom: 0.25rem;">Guided 7-Step Architect</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;">
+                Includes live public display preview, youth safeguarding validation, and instant draft or live deployment options.
               </div>
-              <div>
-                <label class="data-label">Payment QR URL</label>
-                <input type="text" id="newExQr" placeholder="https://...">
-              </div>
-            </div>
-            <div>
-              <label class="data-label">Payment Instructions</label>
-              <input type="text" id="newExPayInst" placeholder="e.g., UPI to alfaaz@okaxis">
             </div>
           </div>
-          <button id="createExBtn" onclick="createNewExhibition()" class="submit-btn" style="width: 100%;">Create Exhibition</button>
-          <div id="createExMsg" style="margin-top: 1rem; font-size: 11px; text-align: center;"></div>
+          <div>
+            <button id="openExhibitionBuilderBtn" onclick="openExhibitionBuilder()" class="action-btn gold" style="width: 100%; padding: 1rem 1.5rem; font-size: 12px; font-weight: 600; text-align: center; justify-content: center;">
+              ✨ Launch Exhibition Cycle Builder &rarr;
+            </button>
+            <div id="createExMsg" style="margin-top: 0.75rem; font-size: 11px; text-align: center;"></div>
+          </div>
         </div>
 
         <div class="panel" style="padding: 2.5rem; margin-bottom: 0;">
@@ -607,19 +573,9 @@
       <div class="modal-header">
         <div>
           <span style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600;" id="builderSubtitle">Exhibition Architecture</span>
-          <h2 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin: 0.2rem 0;" id="builderModalHeading">Guided Exhibition Builder</h2>
+          <h2 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin: 0.2rem 0;" id="builderModalHeading">Guided Exhibition Cycle Builder</h2>
         </div>
         <button class="action-btn" style="padding: 0.5rem 1rem; border-color: transparent;" onclick="closeExhibitionBuilder()">✕ Close</button>
-      </div>
-
-      <!-- Builder Model Selector (Exhibitions vs Community Events) -->
-      <div id="builderModeSelectorWrap" style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem;">
-        <button type="button" class="action-btn gold" id="bModeExhibitionBtn" onclick="switchBuilderMode('exhibition')" style="padding: 0.5rem 1.25rem; font-size: 11px;">
-          🏛️ Exhibition Cycle
-        </button>
-        <button type="button" class="action-btn" id="bModeEventBtn" onclick="switchBuilderMode('event')" style="padding: 0.5rem 1.25rem; font-size: 11px;">
-          📅 Community Gathering / Event
-        </button>
       </div>
 
       <!-- Builder Step Indicator -->

@@ -234,24 +234,52 @@ adminRouter.post('/exhibitions/create', async (c) => {
   const require_over_18 = body.require_over_18 !== undefined ? (body.require_over_18 ? 1 : 0) : 1;
   const allow_recent_works_youth = body.allow_recent_works_youth !== undefined ? (body.allow_recent_works_youth ? 1 : 0) : 0;
   const cover_image = body.cover_image ? String(body.cover_image).trim() : null;
-  const status = body.status ? String(body.status).trim().toUpperCase() : (body.is_active ? 'PUBLISHED' : 'DRAFT');
+  const is_active = body.is_active !== undefined ? (body.is_active ? 1 : 0) : 0;
+  const status = body.status ? String(body.status).trim().toUpperCase() : (is_active ? 'PUBLISHED' : 'DRAFT');
 
   if (!title) return c.json({ error: 'Title is required' }, 400);
 
-  await c.env.DB.prepare(`
-    INSERT INTO exhibitions_list (
+  let newId: number | undefined;
+  try {
+    if (is_active === 1) {
+      await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0').run();
+    }
+    const insertRes = await c.env.DB.prepare(`
+      INSERT INTO exhibitions_list (
+        title, date_text, venue, about_text, tnc_pdf_url, registration_fee,
+        payment_instructions, payment_qr_url, require_over_18, allow_recent_works_youth,
+        cover_image, status, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
       title, date_text, venue, about_text, tnc_pdf_url, registration_fee,
       payment_instructions, payment_qr_url, require_over_18, allow_recent_works_youth,
       cover_image, status, is_active
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-  `).bind(
-    title, date_text, venue, about_text, tnc_pdf_url, registration_fee,
-    payment_instructions, payment_qr_url, require_over_18, allow_recent_works_youth,
-    cover_image, status
-  ).run();
+    ).run();
+    newId = (insertRes.meta as any)?.last_row_id;
+  } catch (err: any) {
+    try {
+      if (is_active === 1) {
+        await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0').run();
+      }
+      const fallbackRes = await c.env.DB.prepare(`
+        INSERT INTO exhibitions_list (
+          title, date_text, venue, about_text, tnc_pdf_url, registration_fee,
+          payment_instructions, payment_qr_url, require_over_18, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        title, date_text, venue, about_text, tnc_pdf_url, registration_fee,
+        payment_instructions, payment_qr_url, require_over_18, is_active
+      ).run();
+      newId = (fallbackRes.meta as any)?.last_row_id;
+    } catch (fallbackErr: any) {
+      console.error('[Create Exhibition Error]:', fallbackErr);
+      return c.json({ error: fallbackErr.message || 'Failed to create exhibition.' }, 500);
+    }
+  }
 
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
   await logAudit(c.env.DB, admin.email, 'CREATE_EXHIBITION', 'exhibition', title, `Created exhibition cycle ${title} (18+ required: ${require_over_18}, recent works: ${allow_recent_works_youth})`);
-  return c.json({ status: 'SUCCESS' });
+  return c.json({ status: 'SUCCESS', id: newId });
 });
 
 adminRouter.patch('/exhibitions/:id/edit', async (c) => {
@@ -278,18 +306,49 @@ adminRouter.patch('/exhibitions/:id/edit', async (c) => {
   const cover_image = body.cover_image ? String(body.cover_image).trim() : null;
   const status = body.status ? String(body.status).trim().toUpperCase() : (body.is_active ? 'PUBLISHED' : 'DRAFT');
 
-  await c.env.DB.prepare(`
-    UPDATE exhibitions_list
-    SET title = ?, date_text = ?, venue = ?, about_text = ?, tnc_pdf_url = ?,
-        registration_fee = ?, payment_instructions = ?, payment_qr_url = ?,
-        require_over_18 = ?, allow_recent_works_youth = ?, cover_image = ?, status = ?
-    WHERE id = ?
-  `).bind(
-    title, date_text, venue, about_text, tnc_pdf_url,
-    registration_fee, payment_instructions, payment_qr_url,
-    require_over_18, allow_recent_works_youth, cover_image, status,
-    id
-  ).run();
+  try {
+    await c.env.DB.prepare(`
+      UPDATE exhibitions_list
+      SET title = ?, date_text = ?, venue = ?, about_text = ?, tnc_pdf_url = ?,
+          registration_fee = ?, payment_instructions = ?, payment_qr_url = ?,
+          require_over_18 = ?, allow_recent_works_youth = ?, cover_image = ?, status = ?
+      WHERE id = ?
+    `).bind(
+      title, date_text, venue, about_text, tnc_pdf_url,
+      registration_fee, payment_instructions, payment_qr_url,
+      require_over_18, allow_recent_works_youth, cover_image, status,
+      id
+    ).run();
+  } catch (err: any) {
+    try {
+      await c.env.DB.prepare(`
+        UPDATE exhibitions_list
+        SET title = ?, date_text = ?, venue = ?, about_text = ?, tnc_pdf_url = ?,
+            registration_fee = ?, payment_instructions = ?, payment_qr_url = ?,
+            require_over_18 = ?
+        WHERE id = ?
+      `).bind(
+        title, date_text, venue, about_text, tnc_pdf_url,
+        registration_fee, payment_instructions, payment_qr_url,
+        require_over_18,
+        id
+      ).run();
+    } catch (fallbackErr: any) {
+      console.error('[Edit Exhibition Error]:', fallbackErr);
+      return c.json({ error: fallbackErr.message || 'Failed to update exhibition.' }, 500);
+    }
+  }
+
+  if (body.is_active !== undefined) {
+    if (body.is_active) {
+      await c.env.DB.batch([
+        c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0'),
+        c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 1 WHERE id = ?').bind(id)
+      ]);
+    } else {
+      await c.env.DB.prepare('UPDATE exhibitions_list SET is_active = 0 WHERE id = ?').bind(id).run();
+    }
+  }
 
   if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
   await logAudit(c.env.DB, admin.email, 'EDIT_EXHIBITION', 'exhibition', String(id), `Updated exhibition ${title}`);
@@ -583,7 +642,33 @@ adminRouter.get('/exhibitions', async (c) => {
     `);
   }
 
-  const apps = await stmt.all();
+  let apps: any;
+  try {
+    apps = await stmt.all();
+  } catch (err: any) {
+    try {
+      const fallbackStmt = targetCycle
+        ? c.env.DB.prepare(`
+            SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
+                   portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+                   registration_status, payment_proof_url, participant_note_reg, created_at
+            FROM exhibition_applications
+            WHERE exhibition_cycle = ?
+            ORDER BY created_at DESC
+          `).bind(targetCycle)
+        : c.env.DB.prepare(`
+            SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
+                   portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+                   registration_status, payment_proof_url, participant_note_reg, created_at
+            FROM exhibition_applications
+            ORDER BY created_at DESC
+          `);
+      apps = await fallbackStmt.all();
+    } catch (fallbackErr: any) {
+      console.error('[Admin Exhibitions Query Fallback Error]:', fallbackErr);
+      return c.json([]);
+    }
+  }
   return c.json((apps.results || []).map((a: any) => ({
     id: a.id,
     user_email: a.user_email,
