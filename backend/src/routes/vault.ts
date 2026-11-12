@@ -40,6 +40,39 @@ function isValidUrl(val: string, env?: Env): boolean {
   }
 }
 
+function validateFileSignature(buffer: ArrayBuffer): { valid: boolean; mimeType: string } {
+  if (buffer.byteLength < 4) return { valid: false, mimeType: '' };
+  const bytes = new Uint8Array(buffer);
+
+  // PDF: %PDF- (0x25, 0x50, 0x44, 0x46, 0x2D)
+  if (bytes.length >= 5 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2D) {
+    return { valid: true, mimeType: 'application/pdf' };
+  }
+  // JPEG: FF D8 FF
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return { valid: true, mimeType: 'image/jpeg' };
+  }
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 &&
+      bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a) {
+    return { valid: true, mimeType: 'image/png' };
+  }
+  // WebP: RIFF (bytes 0-3) and WEBP (bytes 8-11)
+  if (bytes.length >= 12 &&
+      bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+      bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+    return { valid: true, mimeType: 'image/webp' };
+  }
+  // Plain text (validate no null bytes in first 512 bytes)
+  const sample = bytes.slice(0, Math.min(bytes.length, 512));
+  const hasNullByte = sample.some(b => b === 0);
+  if (!hasNullByte) {
+    return { valid: true, mimeType: 'text/plain' };
+  }
+
+  return { valid: false, mimeType: '' };
+}
+
 // POST /vault/submit - Create creative vault submission
 vaultRouter.post('/submit', requireAuth, rateLimiter({ limit: 10, windowMs: 60000 }), async (c) => {
   const user = c.get('user');
@@ -58,16 +91,38 @@ vaultRouter.post('/submit', requireAuth, rateLimiter({ limit: 10, windowMs: 6000
 
     const file = formData.get('file');
     if (file && typeof file === 'object' && 'arrayBuffer' in file) {
+      const fileObj = file as File;
+
+      // Server-side size cap (20MB)
+      if (fileObj.size > 20 * 1024 * 1024) {
+        return c.json({ error: 'Vault file exceeds the 20MB limit' }, 400);
+      }
+
+      const buffer = await fileObj.arrayBuffer();
+      const sigCheck = validateFileSignature(buffer);
+      if (!sigCheck.valid) {
+        return c.json({ error: 'Unsupported file format. Please upload a genuine PDF, image (JPEG, PNG, WebP), or plain text file.' }, 400);
+      }
+
       if (c.env.VAULT_BUCKET) {
-        const fileObj = file as File;
-        const key = `vault/${Date.now()}-${fileObj.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-        const buffer = await fileObj.arrayBuffer();
+        const emailHashBuf = await crypto.subtle.digest(
+          'SHA-256',
+          new TextEncoder().encode(`${user.email.toLowerCase()}:${c.env.JWT_SECRET || 'alfaaz-vault-salt'}`)
+        );
+        const userHash = Array.from(new Uint8Array(emailHashBuf))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+          .slice(0, 16);
+
+        const sanitized = fileObj.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const key = `vault/${userHash}-${crypto.randomUUID()}-${sanitized}`;
+
         await c.env.VAULT_BUCKET.put(key, buffer, {
-          httpMetadata: { contentType: fileObj.type || 'application/octet-stream' }
+          httpMetadata: { contentType: sigCheck.mimeType }
         });
         file_url = `/vault/file/${encodeURIComponent(key)}`;
       } else {
-        return c.json({ error: 'Direct file upload requires R2 VAULT_BUCKET to be configured. Please submit with a Cloudinary file_url instead.', detail: 'STORAGE_UNCONFIGURED' }, 503);
+        return c.json({ error: 'Direct file upload requires R2 VAULT_BUCKET to be configured.', detail: 'STORAGE_UNCONFIGURED' }, 503);
       }
     } else {
       file_url = (formData.get('file_url') as string) || '';
@@ -105,7 +160,7 @@ vaultRouter.post('/submit', requireAuth, rateLimiter({ limit: 10, windowMs: 6000
   return c.json({ status: 'SUCCESS' });
 });
 
-// GET /vault/file/:key - Serve uploaded file from Cloudflare R2
+// GET /vault/file/:key - Serve uploaded file from Cloudflare R2 with Strict Ownership Verification
 vaultRouter.get('/file/:key{.*}', requireAuth, async (c) => {
   const user = c.get('user');
   const rawKey = c.req.param('key') || '';
@@ -123,7 +178,11 @@ vaultRouter.get('/file/:key{.*}', requireAuth, async (c) => {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
       .slice(0, 16);
-    const isUserOwnedKey = key.startsWith(`portfolios/${userHash}-`);
+
+    const isUserOwnedKey = key.startsWith(`portfolios/${userHash}-`) ||
+      key.startsWith(`payment-proofs/${userHash}-`) ||
+      key.startsWith(`recent-works/${userHash}-`) ||
+      key.startsWith(`vault/${userHash}-`);
 
     if (!isUserOwnedKey) {
       const [ownedSubmissions, ownedExhibitions] = await Promise.all([
@@ -131,8 +190,8 @@ vaultRouter.get('/file/:key{.*}', requireAuth, async (c) => {
           'SELECT file_url FROM submissions WHERE LOWER(author_email) = LOWER(?)'
         ).bind(user.email).all<{ file_url: string }>(),
         c.env.DB.prepare(
-          'SELECT portfolio_url, payment_proof_url FROM exhibition_applications WHERE LOWER(user_email) = LOWER(?)'
-        ).bind(user.email).all<{ portfolio_url?: string; payment_proof_url?: string }>()
+          'SELECT portfolio_url, payment_proof_url, recent_works_url FROM exhibition_applications WHERE LOWER(user_email) = LOWER(?)'
+        ).bind(user.email).all<{ portfolio_url?: string; payment_proof_url?: string; recent_works_url?: string }>()
       ]);
 
       const encodedPath = `/vault/file/${encodeURIComponent(key)}`;
@@ -140,7 +199,8 @@ vaultRouter.get('/file/:key{.*}', requireAuth, async (c) => {
       const allUrls = [
         ...(ownedSubmissions.results || []).map(r => r.file_url),
         ...(ownedExhibitions.results || []).map(r => r.portfolio_url),
-        ...(ownedExhibitions.results || []).map(r => r.payment_proof_url)
+        ...(ownedExhibitions.results || []).map(r => r.payment_proof_url),
+        ...(ownedExhibitions.results || []).map(r => r.recent_works_url)
       ].filter(Boolean);
 
       const isOwner = allUrls.some(stored => {
@@ -166,7 +226,7 @@ vaultRouter.get('/file/:key{.*}', requireAuth, async (c) => {
   headers.set('X-Content-Type-Options', 'nosniff');
 
   const contentType = (object.httpMetadata?.contentType || '').toLowerCase();
-  if (contentType === 'text/html' || contentType === 'image/svg+xml') {
+  if (contentType === 'text/html' || contentType === 'image/svg+xml' || contentType === 'application/octet-stream') {
     headers.set('Content-Disposition', 'attachment');
   }
 

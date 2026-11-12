@@ -1,0 +1,29 @@
+# robots.txt — Alfaaz Collective Crawler Guidelines
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /blogs.html
+Allow: /post.html
+Allow: /submit.html
+Allow: /exhibition.html
+Allow: /tchandervar/
+
+# Protected / Interactive Applications (Do not index)
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /dashboard
+Disallow: /dashboard.html
+Disallow: /recruit
+Disallow: /recruit.html
+Disallow: /research
+Disallow: /research.html
+Disallow: /login
+Disallow: /login.html
+Disallow: /register
+Disallow: /register.html
+Disallow: /reset
+Disallow: /reset.html
+Disallow: /vault
+Disallow: /api/
+
+Sitemap: https://alfaazcollective.org/sitemap.xml

@@ -232,24 +232,120 @@ adminRouter.post('/exhibitions/create', async (c) => {
   const payment_instructions = (body.payment_instructions || '').trim();
   const payment_qr_url = body.payment_qr_url || null;
   const require_over_18 = body.require_over_18 !== undefined ? (body.require_over_18 ? 1 : 0) : 1;
+  const allow_recent_works_youth = body.allow_recent_works_youth !== undefined ? (body.allow_recent_works_youth ? 1 : 0) : 0;
+  const cover_image = body.cover_image ? String(body.cover_image).trim() : null;
+  const status = body.status ? String(body.status).trim().toUpperCase() : (body.is_active ? 'PUBLISHED' : 'DRAFT');
 
   if (!title) return c.json({ error: 'Title is required' }, 400);
 
   await c.env.DB.prepare(`
     INSERT INTO exhibitions_list (
       title, date_text, venue, about_text, tnc_pdf_url, registration_fee,
-      payment_instructions, payment_qr_url, require_over_18, is_active
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-  `).bind(title, date_text, venue, about_text, tnc_pdf_url, registration_fee, payment_instructions, payment_qr_url, require_over_18).run();
+      payment_instructions, payment_qr_url, require_over_18, allow_recent_works_youth,
+      cover_image, status, is_active
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+  `).bind(
+    title, date_text, venue, about_text, tnc_pdf_url, registration_fee,
+    payment_instructions, payment_qr_url, require_over_18, allow_recent_works_youth,
+    cover_image, status
+  ).run();
 
-  await logAudit(c.env.DB, admin.email, 'CREATE_EXHIBITION', 'exhibition', title, `Created exhibition cycle ${title} (18+ required: ${require_over_18})`);
+  await logAudit(c.env.DB, admin.email, 'CREATE_EXHIBITION', 'exhibition', title, `Created exhibition cycle ${title} (18+ required: ${require_over_18}, recent works: ${allow_recent_works_youth})`);
   return c.json({ status: 'SUCCESS' });
+});
+
+adminRouter.patch('/exhibitions/:id/edit', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid exhibition ID' }, 400);
+
+  const ex = await c.env.DB.prepare('SELECT id FROM exhibitions_list WHERE id = ?').bind(id).first();
+  if (!ex) return c.json({ error: 'Exhibition not found.' }, 404);
+
+  const body = await c.req.json().catch(() => ({}));
+  const title = (body.title || '').trim();
+  if (!title) return c.json({ error: 'Title is required' }, 400);
+
+  const date_text = (body.date_text || 'Dates TBD').trim();
+  const venue = (body.venue || 'Venue TBD').trim();
+  const about_text = (body.about_text || '').trim();
+  const tnc_pdf_url = body.tnc_pdf_url || null;
+  const registration_fee = (body.registration_fee || '').trim();
+  const payment_instructions = (body.payment_instructions || '').trim();
+  const payment_qr_url = body.payment_qr_url || null;
+  const require_over_18 = body.require_over_18 !== undefined ? (body.require_over_18 ? 1 : 0) : 1;
+  const allow_recent_works_youth = body.allow_recent_works_youth !== undefined ? (body.allow_recent_works_youth ? 1 : 0) : 0;
+  const cover_image = body.cover_image ? String(body.cover_image).trim() : null;
+  const status = body.status ? String(body.status).trim().toUpperCase() : (body.is_active ? 'PUBLISHED' : 'DRAFT');
+
+  await c.env.DB.prepare(`
+    UPDATE exhibitions_list
+    SET title = ?, date_text = ?, venue = ?, about_text = ?, tnc_pdf_url = ?,
+        registration_fee = ?, payment_instructions = ?, payment_qr_url = ?,
+        require_over_18 = ?, allow_recent_works_youth = ?, cover_image = ?, status = ?
+    WHERE id = ?
+  `).bind(
+    title, date_text, venue, about_text, tnc_pdf_url,
+    registration_fee, payment_instructions, payment_qr_url,
+    require_over_18, allow_recent_works_youth, cover_image, status,
+    id
+  ).run();
+
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
+  await logAudit(c.env.DB, admin.email, 'EDIT_EXHIBITION', 'exhibition', String(id), `Updated exhibition ${title}`);
+  return c.json({ status: 'SUCCESS' });
+});
+
+adminRouter.patch('/events/:id/edit', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid event ID' }, 400);
+
+  const ev = await c.env.DB.prepare('SELECT id FROM events WHERE id = ?').bind(id).first();
+  if (!ev) return c.json({ error: 'Event not found.' }, 404);
+
+  const body = await c.req.json().catch(() => ({}));
+  const name = (body.name || '').trim();
+  if (!name) return c.json({ error: 'Event name is required' }, 400);
+
+  const description = (body.description || '').trim();
+  const event_date = (body.event_date || '').trim();
+  const capacity = parseInt(body.capacity, 10) || 0;
+  const registration_open = body.registration_open !== undefined ? (body.registration_open ? 1 : 0) : 0;
+
+  await c.env.DB.prepare(`
+    UPDATE events
+    SET name = ?, description = ?, event_date = ?, capacity = ?, registration_open = ?
+    WHERE id = ?
+  `).bind(name, description, event_date, capacity, registration_open, id).run();
+
+  if (c.env.CACHE_KV) { try { await c.env.CACHE_KV.delete('notices_feed'); } catch {} }
+  await logAudit(c.env.DB, admin.email, 'EDIT_EVENT', 'event', String(id), `Updated event ${name}`);
+  return c.json({ status: 'SUCCESS' });
+});
+
+adminRouter.patch('/exhibitions/:id/toggle-recent-works', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid exhibition ID' }, 400);
+
+  const ex = await c.env.DB.prepare('SELECT id, title, allow_recent_works_youth FROM exhibitions_list WHERE id = ?').bind(id).first<any>();
+  if (!ex) return c.json({ error: 'Exhibition not found.' }, 404);
+
+  const currentVal = ex.allow_recent_works_youth ? 1 : 0;
+  const nextVal = currentVal ? 0 : 1;
+
+  await c.env.DB.prepare('UPDATE exhibitions_list SET allow_recent_works_youth = ? WHERE id = ?').bind(nextVal, id).run();
+  await logAudit(c.env.DB, admin.email, 'TOGGLE_RECENT_WORKS_YOUTH', 'exhibition', String(id), `Set youth recent works to ${nextVal ? 'ENABLED' : 'DISABLED'}`);
+
+  return c.json({ status: 'SUCCESS', allow_recent_works_youth: nextVal });
 });
 
 adminRouter.get('/exhibitions/list', async (c) => {
   try {
     const list = await c.env.DB.prepare(`
-      SELECT id, title, date_text, is_active, require_over_18
+      SELECT id, title, date_text, venue, about_text, registration_fee, payment_instructions, payment_qr_url, tnc_pdf_url,
+             is_active, require_over_18, allow_recent_works_youth, cover_image, status
       FROM exhibitions_list
       ORDER BY created_at DESC
     `).all();
@@ -258,8 +354,17 @@ adminRouter.get('/exhibitions/list', async (c) => {
       id: e.id,
       title: e.title,
       date_text: e.date_text,
+      venue: e.venue || '',
+      about_text: e.about_text || '',
+      registration_fee: e.registration_fee || '',
+      payment_instructions: e.payment_instructions || '',
+      payment_qr_url: e.payment_qr_url || '',
+      tnc_pdf_url: e.tnc_pdf_url || '',
       is_active: Boolean(e.is_active),
-      require_over_18: e.require_over_18 === undefined || e.require_over_18 === null ? 1 : Number(e.require_over_18)
+      require_over_18: e.require_over_18 === undefined || e.require_over_18 === null ? 1 : Number(e.require_over_18),
+      allow_recent_works_youth: Boolean(e.allow_recent_works_youth),
+      cover_image: e.cover_image || null,
+      status: e.status || 'PUBLISHED'
     })));
   } catch {
     const fallbackList = await c.env.DB.prepare(`
@@ -273,7 +378,10 @@ adminRouter.get('/exhibitions/list', async (c) => {
       title: e.title,
       date_text: e.date_text,
       is_active: Boolean(e.is_active),
-      require_over_18: 1
+      require_over_18: 1,
+      allow_recent_works_youth: false,
+      cover_image: null,
+      status: 'PUBLISHED'
     })));
   }
 });
@@ -337,6 +445,106 @@ adminRouter.patch('/exhibitions/deactivate-all', async (c) => {
   return c.json({ status: 'SUCCESS' });
 });
 
+adminRouter.patch('/exhibitions/applications/:id/verify-guardian', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid application ID' }, 400);
+
+  const body = await c.req.json().catch(() => ({}));
+  const status = (body.status || 'VERIFIED').trim().toUpperCase();
+  if (!['VERIFIED', 'REJECTED', 'PENDING'].includes(status)) {
+    return c.json({ error: 'Valid status required (VERIFIED, REJECTED, PENDING)' }, 400);
+  }
+
+  const app = await c.env.DB.prepare('SELECT id, user_email, full_name, guardian_name FROM exhibition_applications WHERE id = ?').bind(id).first<any>();
+  if (!app) return c.json({ error: 'Application not found.' }, 404);
+
+  const verifiedAt = status !== 'PENDING' ? new Date().toISOString() : null;
+  const verifiedBy = status !== 'PENDING' ? (admin.email || 'admin') : null;
+  const rejectionReason = status === 'REJECTED' ? (body.rejection_reason ? String(body.rejection_reason).trim() : 'Guardian consent rejected by administrator') : null;
+
+  await c.env.DB.prepare(`
+    UPDATE exhibition_applications
+    SET guardian_verification_status = ?,
+        guardian_verified_at = ?,
+        guardian_verified_by = ?,
+        guardian_rejection_reason = ?
+    WHERE id = ?
+  `).bind(status, verifiedAt, verifiedBy, rejectionReason, id).run();
+
+  await logAudit(c.env.DB, admin.email, 'VERIFY_GUARDIAN_CONSENT', 'exhibition_app', String(id), `Guardian verification set to ${status} by ${admin.email}${rejectionReason ? ` (Reason: ${rejectionReason})` : ''}`);
+  return c.json({
+    status: 'SUCCESS',
+    guardian_verification_status: status,
+    guardian_verified_at: verifiedAt,
+    guardian_verified_by: verifiedBy,
+    guardian_rejection_reason: rejectionReason
+  });
+});
+
+adminRouter.post('/exhibitions/applications/:id/guardian/confirm', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid application ID' }, 400);
+
+  const app = await c.env.DB.prepare('SELECT id, user_email, full_name, guardian_name FROM exhibition_applications WHERE id = ?').bind(id).first<any>();
+  if (!app) return c.json({ error: 'Application not found.' }, 404);
+
+  const verifiedAt = new Date().toISOString();
+  const verifiedBy = admin.email || 'admin';
+
+  await c.env.DB.prepare(`
+    UPDATE exhibition_applications
+    SET guardian_verification_status = 'VERIFIED',
+        guardian_verified_at = ?,
+        guardian_verified_by = ?,
+        guardian_rejection_reason = NULL
+    WHERE id = ?
+  `).bind(verifiedAt, verifiedBy, id).run();
+
+  await logAudit(c.env.DB, admin.email, 'VERIFY_GUARDIAN_CONSENT', 'exhibition_app', String(id), `Guardian verification confirmed by ${admin.email}`);
+  return c.json({
+    status: 'SUCCESS',
+    guardian_verification_status: 'VERIFIED',
+    guardian_verified_at: verifiedAt,
+    guardian_verified_by: verifiedBy,
+    guardian_rejection_reason: null
+  });
+});
+
+adminRouter.post('/exhibitions/applications/:id/guardian/reject', async (c) => {
+  const admin = c.get('user');
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) return c.json({ error: 'Invalid application ID' }, 400);
+
+  const body = await c.req.json().catch(() => ({}));
+  const rejectionReason = body.rejection_reason ? String(body.rejection_reason).trim() : 'Guardian consent rejected by administrator';
+
+  const app = await c.env.DB.prepare('SELECT id, user_email, full_name, guardian_name FROM exhibition_applications WHERE id = ?').bind(id).first<any>();
+  if (!app) return c.json({ error: 'Application not found.' }, 404);
+
+  const verifiedAt = new Date().toISOString();
+  const verifiedBy = admin.email || 'admin';
+
+  await c.env.DB.prepare(`
+    UPDATE exhibition_applications
+    SET guardian_verification_status = 'REJECTED',
+        guardian_verified_at = ?,
+        guardian_verified_by = ?,
+        guardian_rejection_reason = ?
+    WHERE id = ?
+  `).bind(verifiedAt, verifiedBy, rejectionReason, id).run();
+
+  await logAudit(c.env.DB, admin.email, 'REJECT_GUARDIAN_CONSENT', 'exhibition_app', String(id), `Guardian verification rejected by ${admin.email}: ${rejectionReason}`);
+  return c.json({
+    status: 'SUCCESS',
+    guardian_verification_status: 'REJECTED',
+    guardian_verified_at: verifiedAt,
+    guardian_verified_by: verifiedBy,
+    guardian_rejection_reason: rejectionReason
+  });
+});
+
 adminRouter.get('/exhibitions', async (c) => {
   const cycleParam = c.req.query('cycle');
   let targetCycle: string | null = null;
@@ -353,7 +561,10 @@ adminRouter.get('/exhibitions', async (c) => {
   if (targetCycle) {
     stmt = c.env.DB.prepare(`
       SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
-             portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+             portfolio_url, recent_works_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+             guardian_name, guardian_relationship, guardian_contact, guardian_consent_granted,
+             guardian_consent_version, guardian_consent_timestamp, participant_assent_granted, guardian_verification_status,
+             guardian_verified_at, guardian_verified_by, guardian_rejection_reason,
              registration_status, payment_proof_url, participant_note_reg, created_at
       FROM exhibition_applications
       WHERE exhibition_cycle = ?
@@ -362,7 +573,10 @@ adminRouter.get('/exhibitions', async (c) => {
   } else {
     stmt = c.env.DB.prepare(`
       SELECT id, user_email, full_name, age, address, whatsapp, exhibition_cycle, genre, medium,
-             portfolio_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+             portfolio_url, recent_works_url, over_19, agreed_to_screening, applicant_note, status, curator_note,
+             guardian_name, guardian_relationship, guardian_contact, guardian_consent_granted,
+             guardian_consent_version, guardian_consent_timestamp, participant_assent_granted, guardian_verification_status,
+             guardian_verified_at, guardian_verified_by, guardian_rejection_reason,
              registration_status, payment_proof_url, participant_note_reg, created_at
       FROM exhibition_applications
       ORDER BY created_at DESC
@@ -381,10 +595,20 @@ adminRouter.get('/exhibitions', async (c) => {
     genre: a.genre,
     medium: a.medium,
     portfolio_url: a.portfolio_url,
+    recent_works_url: a.recent_works_url || null,
     over_18: Boolean(a.over_19),
     over_19: Boolean(a.over_19),
     agreed_to_screening: Boolean(a.agreed_to_screening),
     applicant_note: a.applicant_note || '',
+    guardian_name: a.guardian_name || '',
+    guardian_relationship: a.guardian_relationship || '',
+    guardian_contact: a.guardian_contact || '',
+    guardian_consent_granted: Boolean(a.guardian_consent_granted),
+    guardian_verification_status: a.guardian_verification_status || 'NONE',
+    guardian_verified_at: a.guardian_verified_at || null,
+    guardian_verified_by: a.guardian_verified_by || null,
+    guardian_rejection_reason: a.guardian_rejection_reason || null,
+    participant_assent_granted: Boolean(a.participant_assent_granted),
     status: a.status,
     curator_note: a.curator_note || '',
     registration_status: a.registration_status,
@@ -420,11 +644,22 @@ adminRouter.post('/exhibitions/review', async (c) => {
     return c.json({ error: 'Valid application_id and status are required' }, 400);
   }
 
-  const app = await c.env.DB.prepare('SELECT id, user_email, full_name, exhibition_cycle FROM exhibition_applications WHERE id = ?').bind(applicationId).first<{
-    id: number; user_email: string; full_name: string; exhibition_cycle: string;
+  const app = await c.env.DB.prepare('SELECT id, user_email, full_name, exhibition_cycle, age, over_19, guardian_name, guardian_verification_status FROM exhibition_applications WHERE id = ?').bind(applicationId).first<{
+    id: number; user_email: string; full_name: string; exhibition_cycle: string; age?: number; over_19?: number; guardian_name?: string; guardian_verification_status?: string;
   }>();
 
   if (!app) return c.json({ error: 'Application not found.' }, 404);
+
+  const isMinor = (app.age !== null && app.age !== undefined && app.age < 18) || Boolean(app.guardian_name) || (app.over_19 === 0);
+  if (status === 'APPROVED' && isMinor && app.guardian_verification_status !== 'VERIFIED') {
+    const errorMsg = app.guardian_verification_status === 'REJECTED'
+      ? 'Child Safeguarding Requirement: Guardian consent was rejected by an administrator. This application cannot be approved.'
+      : 'Child Safeguarding Requirement: Cannot approve an under-18 participant without verified guardian consent. Please verify guardian consent before approving.';
+    return c.json({
+      error: errorMsg,
+      code: 'GUARDIAN_CONSENT_UNVERIFIED'
+    }, 400);
+  }
 
   await c.env.DB.prepare(`
     UPDATE exhibition_applications

@@ -23,8 +23,6 @@ export function rateLimiter(config: RateLimitConfig) {
 
     // Trust cf-connecting-ip from the Cloudflare edge; fall back to client-supplied
     // x-forwarded-for in test/development environments (AGENTS.md §3).
-    // In production, prevent unverified edge clients from collapsing into a single
-    // shared 127.0.0.1 bucket by isolating unverified traffic or failing closed when enforced.
     const cfIp = c.req.header('cf-connecting-ip');
     let rawIp: string;
 
@@ -36,7 +34,7 @@ export function rateLimiter(config: RateLimitConfig) {
       if ((c.env as any).FAIL_CLOSED_EDGE_IP) {
         return c.json({ detail: 'Edge client IP verification required.' }, 403);
       }
-      // Fallback: isolate into an ephemeral client identifier rather than a shared 127.0.0.1 bucket
+      // In production, never collapse unknown traffic into a single IP. Isolate into an ephemeral key.
       const fwd = c.req.header('x-forwarded-for')?.split(',')[0].trim();
       rawIp = `unverified:${fwd || crypto.randomUUID()}`;
     }
@@ -45,10 +43,25 @@ export function rateLimiter(config: RateLimitConfig) {
     const normalizedPath = c.req.path.replace(/^\/api(?=\/|$)/, '') || '/';
     const key = `${normalizedPath}:${rawIp}`;
 
-    let record = memoryStore.get(key);
+    const kv = c.env.CACHE_KV;
+    const kvKey = `ratelimit:${key}`;
+    let record: WindowRecord | null = null;
+
+    if (kv) {
+      try {
+        const stored = await kv.get(kvKey, 'json');
+        if (stored && typeof stored === 'object') {
+          record = stored as WindowRecord;
+        }
+      } catch {}
+    }
+
+    if (!record) {
+      record = memoryStore.get(key) || null;
+    }
+
     if (!record) {
       record = { prevCount: 0, curCount: 1, curWindowStart: now };
-      memoryStore.set(key, record);
     } else {
       // Advance sliding window if needed
       if (now >= record.curWindowStart + config.windowMs) {
@@ -72,6 +85,17 @@ export function rateLimiter(config: RateLimitConfig) {
         return c.json({ detail: 'Rate limit exceeded. Please pause momentarily.' }, 429);
       }
       record.curCount += 1;
+    }
+
+    // Save to memory store
+    memoryStore.set(key, record);
+
+    // Save to KV with TTL if available
+    if (kv) {
+      try {
+        const ttlSeconds = Math.max(60, Math.ceil((config.windowMs * 2) / 1000));
+        await kv.put(kvKey, JSON.stringify(record), { expirationTtl: ttlSeconds });
+      } catch {}
     }
 
     // Prune stale records if memoryStore grows large (> 1000 entries)
@@ -118,7 +142,6 @@ export async function verifyTurnstile(
       console.error('[TURNSTILE] Critical: TURNSTILE_SECRET_KEY not configured in production environment; failing closed.');
       return false;
     }
-    // In development and test environments without secret key, bypass with a warning
     return true;
   }
 
@@ -130,7 +153,7 @@ export async function verifyTurnstile(
 
   // In non-production environments (development / test), permit local dummy pass tokens
   if (env !== 'production') {
-    if (trimmedToken === 'dummy-local-pass-token' || trimmedToken === 'dummy-token' || trimmedToken === '0x4AAAAAAtestdummytoken') {
+    if (trimmedToken === 'dummy-local-pass-token' || trimmedToken === 'dummy-token' || trimmedToken === '0x4AAAAAAtestdummytoken' || trimmedToken === 'TEST_PASS_TOKEN' || trimmedToken === 'XXXX.DUMMY.TOKEN.XXXX') {
       return true;
     }
   }
@@ -140,29 +163,14 @@ export async function verifyTurnstile(
     formData.append('secret', secretKey);
     formData.append('response', trimmedToken);
 
-    // Only forward client IP if it is a valid public IP (never pass loopback or private ranges to Cloudflare siteverify)
+    // Only forward client IP if it is a valid public IP
     const isPublicIp = remoteIp &&
       !remoteIp.startsWith('127.') &&
       remoteIp !== 'localhost' &&
       remoteIp !== '::1' &&
       !remoteIp.startsWith('10.') &&
       !remoteIp.startsWith('192.168.') &&
-      !remoteIp.startsWith('172.16.') &&
-      !remoteIp.startsWith('172.17.') &&
-      !remoteIp.startsWith('172.18.') &&
-      !remoteIp.startsWith('172.19.') &&
-      !remoteIp.startsWith('172.20.') &&
-      !remoteIp.startsWith('172.21.') &&
-      !remoteIp.startsWith('172.22.') &&
-      !remoteIp.startsWith('172.23.') &&
-      !remoteIp.startsWith('172.24.') &&
-      !remoteIp.startsWith('172.25.') &&
-      !remoteIp.startsWith('172.26.') &&
-      !remoteIp.startsWith('172.27.') &&
-      !remoteIp.startsWith('172.28.') &&
-      !remoteIp.startsWith('172.29.') &&
-      !remoteIp.startsWith('172.30.') &&
-      !remoteIp.startsWith('172.31.');
+      !remoteIp.startsWith('172.16.');
 
     if (isPublicIp) {
       formData.append('remoteip', remoteIp);

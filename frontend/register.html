@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Alfaaz">
   <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <meta name="description" content="Create a member account with Alfaaz Collective to participate in cultural workshops, creative circles, and exhibition cycles in Srinagar.">
   <title>Register — ALFAAZ Collective</title>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -20,7 +21,7 @@
   <link rel="stylesheet" href="global.css">
   <script type="module" src="src/login.js"></script>
   <style>
-    .auth-card { width: 100%; max-width: 420px; padding: 3.5rem 2.5rem; margin: 6rem auto; position: relative; }
+    .auth-card { box-sizing: border-box; width: 100%; max-width: 420px; padding: 3.5rem 2.5rem; margin: 6rem auto; position: relative; }
     .auth-title { font-family: var(--font-heading); font-size: 2.25rem; text-align: center; margin-bottom: 0.85rem; font-weight: 400; line-height: 1.25; min-height: 2.6rem; }
     .auth-title.ur-hover { display: flex; align-items: center; justify-content: center; }
     .auth-title.ur-hover::before { font-family: var(--font-urdu); font-size: 1.15em; color: var(--text-primary); top: 36%; line-height: 1.2; }
@@ -184,6 +185,16 @@
     .toggle-auth { margin-top: 2rem; text-align: center; font-size: 11px; color: var(--text-secondary); }
     .toggle-auth a { color: var(--accent-gold-text); text-decoration: none; transition: color 0.3s ease; }
     .toggle-auth a:hover { color: var(--accent-green-text); }
+
+    @media (max-width: 768px) {
+      .auth-card {
+        padding: 2rem 1.25rem !important;
+        margin: 4.5rem auto 2rem;
+        box-sizing: border-box;
+      }
+      .auth-title { font-size: 1.85rem; }
+      .auth-input { font-size: 16px !important; }
+    }
   </style>
 </head>
 <body>

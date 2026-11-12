@@ -14,10 +14,10 @@ Alfaaz Collective is a production-grade, Cloudflare-native platform engineered f
    - `POST /auth/federated-login`: Cryptographically verifies Google GIS RS256 ID tokens against Google's public JWKs (`https://www.googleapis.com/oauth2/v3/certs`), validates audience (`aud === GOOGLE_CLIENT_ID`), enforces verified email (`email_verified === true`), maps or upserts user in Cloudflare D1 `users` table, and issues a 7-day sovereign HMAC-SHA256 session JWT.
    - `POST /auth/login` & `POST /auth/register`: Authenticates or creates users using PBKDF2 with SHA-256 (100,000 iterations, 16-byte random salt, constant-time bitwise XOR verification).
    - `POST /auth/forgot-password` & `POST /auth/reset-password`: Single-use 15-minute reset tokens protected by replay ledger in D1 table `consumed_tokens`.
-3. **Database Layer (`database/migrations/0001_initial_schema.sql` to `0005_drop_otp_velocity.sql`)**:
-   - Cloudflare D1 SQLite relational engine running 27 tables with foreign keys and atomic conditional queries.
+3. **Database Layer (`database/migrations/0001_initial_schema.sql` to `0007_youth_safeguarding_and_recent_works.sql`)**:
+   - Cloudflare D1 SQLite relational engine running 28 tables with foreign keys and atomic conditional queries.
    - Non-destructive 12-step table rebuild migration procedure (Rule 6 in `AGENTS.md`).
-   - Sovereign credential storage, contact verification replay ledgers, and rate limiting. (SMS/OTP velocity logging decommissioned on 2026-11-03 per `AGENTS.md §3`).
+   - Sovereign credential storage, contact verification replay ledgers, youth safeguarding verification statuses, and rate limiting. (SMS/OTP velocity logging decommissioned on 2026-11-03 per `AGENTS.md §3`).
 4. **Domain-Isolated Recruitment & Psychometric Research (Rule 8 in `AGENTS.md`)**:
    - Specialized candidate assessment portal (`frontend/recruit.html`, `src/recruit.js`, 14 minigames) and recruiter analytics dashboard (`frontend/research.html`, `src/research.js`).
    - Protected mathematical invariants: precision ratio $TP/(TP+FP)$ and 14-order Latin Square counterbalanced minigame allocation (`LATIN_SQUARE_14`).
@@ -140,15 +140,17 @@ The current development scope covers a comprehensive repository-wide audit, docu
   - `0003_contact_verification.sql`: Contact verification flags, timestamps, and verification_codes table.
   - `0004_exhibition_age_toggle.sql`: Exhibition 18+ requirement toggle.
   - `0005_drop_otp_velocity.sql`: Drops decommissioned otp_velocity_logs and its indexes.
+  - `0006_exhibitions_list.sql`: Multi-cycle exhibition list management table.
+  - `0007_youth_safeguarding_and_recent_works.sql`: Youth safeguarding intake (guardian contact/consent, youth assent, verification status), recent works upload URLs, and cycle-level allow_recent_works_youth.
 - `frontend/`:
-  - `index.html`, `login.html`, `register.html`, `reset.html`, `dashboard.html`, `admin.html`, `blogs.html`, `post.html`, `exhibition.html`, `submit.html`, `recruit.html`, `research.html`, `tchandervar/index.html`.
-  - `global.css`: Brutalist curatorial design tokens, typography, and khadi paper noise filter.
+  - `index.html`, `login.html`, `register.html`, `reset.html`, `dashboard.html`, `admin.html`, `blogs.html`, `post.html`, `exhibition.html`, `submit.html`, `recruit.html`, `research.html`, `tchandervar/index.html`, `404.html`.
+  - `global.css`: Brutalist curatorial design tokens, typography, step indicators, guardian boxes, and khadi paper noise filter.
   - `global.js`: Global API fetch wrapper, Turnstile/GIS initialization, and PWA service worker registration.
-  - `src/`: Client scripts (`login.js`, `dashboard.js`, `admin.js`, `blogs.js`, `post.js`, `exhibition.js`, `submit.js`, `reset.js`, `recruit.js`, `research.js`, and `recruit_games/**`).
-  - `public/`: Service worker (`sw.js`), web manifest, offline page (`offline.html`), icons, and gallery vitrine images.
+  - `src/`: Client scripts (`login.js`, `dashboard.js`, `admin.js`, `blogs.js`, `post.js`, `exhibition.js`, `submit.js`, `reset.js`, `i18n.js`, `recruit.js`, `research.js`, and `recruit_games/**`).
+  - `public/`: Service worker (`sw.js`), web manifest, offline page (`offline.html`), icons, `robots.txt`, and `sitemap.xml`.
   - `vite.config.js`: Rollup multi-page input bundle definition.
 - `tests/`:
-  - 13 Vitest test suites executing 209 automated tests (`auth.test.ts`, `d1_routes.test.ts`, `e2e_federated_auth.test.ts`, `error_paths.test.ts`, `concurrency_adversarial.test.ts`, `admin.test.ts`, `verification_roster.test.ts`, `velocity_turnstile.test.ts`, `events_clubs.test.ts`, `integration.test.ts`, `security_seed.test.ts`, `telemetry_evidence.test.ts`, `sjt_scoring.test.ts`).
+  - 19 Vitest test suites executing 266 automated tests (`auth.test.ts`, `d1_routes.test.ts`, `e2e_federated_auth.test.ts`, `error_paths.test.ts`, `concurrency_adversarial.test.ts`, `admin.test.ts`, `verification_roster.test.ts`, `velocity_turnstile.test.ts`, `events_clubs.test.ts`, `integration.test.ts`, `security_seed.test.ts`, `telemetry_evidence.test.ts`, `sjt_scoring.test.ts`, `exhibitions_multicycle_safeguarding.test.ts`, `session_revocation.test.ts`, `static_asset_headers.test.ts`, `cors_allowlist.test.ts`, `curator_prompt_roles.test.ts`, `sprint3_remediations.test.ts`).
   - `helpers/d1_mock.ts`: In-memory SQLite (`node:sqlite` DatabaseSync) test harness.
 - `scripts/`:
   - `bootstrap-admin.js`: CLI script for administrative credential initialization.

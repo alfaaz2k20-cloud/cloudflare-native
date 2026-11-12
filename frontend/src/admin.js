@@ -345,6 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="badge ${isOpen ? 'badge-open' : 'badge-closed'}">${isOpen ? 'Open' : 'Closed'}</span>
           </div>
           <div class="card-actions-row">
+            <button class="action-btn" style="padding: 0.6rem 0.9rem; font-size:10px; min-height:38px;" data-action="edit-event" data-id="${e.id}">Edit in Builder</button>
             <button class="action-btn ${isOpen ? '' : 'gold'}" style="padding: 0.6rem 0.9rem; font-size:10px; min-height:38px;" data-action="toggle-event" data-id="${e.id}">${isOpen ? 'Close RSVP' : 'Open RSVP'}</button>
             <button class="action-btn gold" style="padding: 0.6rem 0.9rem; font-size:10px; min-height:38px;" data-action="view-registrations" data-id="${e.id}">Registrations</button>
             <button class="action-btn" style="padding: 0.6rem 0.9rem; font-size:10px; min-height:38px; border-color:var(--accent-red); color:var(--accent-red-text);" data-action="delete-event" data-id="${e.id}" data-name="${safeName}">Delete</button>
@@ -361,7 +362,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const id = Number(btn.dataset.id);
           if (!Number.isFinite(id)) return;
           const action = btn.dataset.action;
-          if (action === 'toggle-event') window.toggleEvent(id, btn);
+          if (action === 'edit-event') {
+            const evItem = allEvents.find(x => x.id === id);
+            if (evItem && window.openEventBuilder) window.openEventBuilder(evItem);
+          } else if (action === 'toggle-event') window.toggleEvent(id, btn);
           else if (action === 'view-registrations') window.viewRegistrations(id);
           else if (action === 'delete-event') window.deleteEvent(id, btn.dataset.name || 'this event', btn);
         });
@@ -560,6 +564,11 @@ document.addEventListener('DOMContentLoaded', () => {
           window.toggleExhibitionActive(id, btn);
         } else if (btn.dataset.action === 'toggle-age-req') {
           window.toggleExhibitionAge(id, btn);
+        } else if (btn.dataset.action === 'toggle-recent-works') {
+          window.toggleExhibitionRecentWorks(id, btn);
+        } else if (btn.dataset.action === 'edit-exhibition') {
+          const ex = exhibitions.find(e => e.id === id);
+          if (ex) window.openExhibitionBuilder(ex);
         }
       });
     }
@@ -607,9 +616,11 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-top: 1rem; border-top: 1px dashed var(--grid-border); padding-top: 0.8rem;">
-          <div style="display: flex; gap: 0.5rem;">
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             ${toggleActiveBtn}
             ${!ex.is_active ? `<button data-action="activate-exhibition" data-id="${ex.id}" data-title="${safeTitle}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Set as Sole Live</button>` : ''}
+            <button data-action="edit-exhibition" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">Edit in Builder</button>
+            ${!ex.require_over_18 ? `<button data-action="toggle-recent-works" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px; ${ex.allow_recent_works_youth ? 'border-color:var(--accent-green); color:var(--accent-green-text);' : ''}">${ex.allow_recent_works_youth ? 'Recent Works: ON' : 'Recent Works: OFF'}</button>` : ''}
           </div>
           <button data-action="toggle-age-req" data-id="${ex.id}" class="action-btn" style="padding: 0.5rem 0.8rem; font-size: 9px;">${ex.require_over_18 ? 'Switch to Below 18 (Youth)' : 'Switch to 18+ (Adults)'}</button>
         </div>
@@ -654,6 +665,562 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.textContent = original;
       btn.disabled = false;
     }
+  };
+
+  window.toggleExhibitionRecentWorks = async function(id, btn) {
+    const original = btn.textContent;
+    btn.textContent = '...';
+    btn.disabled = true;
+    try {
+      const res = await adminFetch(`/admin/exhibitions/${id}/toggle-recent-works`, { method: 'PATCH' });
+      if (res && res.ok) {
+        const data = await res.json();
+        showToast(`Youth recent works set to ${data.allow_recent_works_youth ? 'ENABLED' : 'DISABLED'}`, 'success');
+        await window.loadExhibitionManager();
+      } else {
+        alert('Could not toggle recent works setting.');
+      }
+    } catch (err) {
+      alert('Error toggling recent works setting.');
+    } finally {
+      btn.textContent = original;
+      btn.disabled = false;
+    }
+  };
+
+  // ── Unified 7-Step Guided Curatorial & Event Builder ─────────────
+  let builderIsDirty = false;
+  let currentBuilderStep = 1;
+
+  document.getElementById('builderForm')?.addEventListener('input', () => { builderIsDirty = true; });
+  document.getElementById('builderForm')?.addEventListener('change', () => { builderIsDirty = true; });
+
+  window.switchBuilderMode = function(mode) {
+    const modelTypeInput = document.getElementById('builderModelType');
+    if (modelTypeInput) modelTypeInput.value = mode;
+
+    const btnExhib = document.getElementById('bModeExhibitionBtn');
+    const btnEvent = document.getElementById('bModeEventBtn');
+    const subtitle = document.getElementById('builderSubtitle');
+    const heading = document.getElementById('builderModalHeading');
+
+    const pLiveLabel = document.getElementById('bPublishLiveLabel');
+    const sumExhibFields = document.getElementById('bsumExhibitionFields');
+    const sumEventFields = document.getElementById('bsumEventFields');
+
+    // Step labels
+    const s1Label = document.getElementById('bStep1Label');
+    const s2Label = document.getElementById('bStep2Label');
+    const s3Label = document.getElementById('bStep3Label');
+    const s4Label = document.getElementById('bStep4Label');
+    const s5Label = document.getElementById('bStep5Label');
+    const s6Label = document.getElementById('bStep6Label');
+    const s7Label = document.getElementById('bStep7Label');
+
+    if (mode === 'event') {
+      if (btnExhib) btnExhib.className = 'action-btn';
+      if (btnEvent) btnEvent.className = 'action-btn gold';
+      if (subtitle) subtitle.textContent = 'Community Gathering & Event Architecture';
+      const isEdit = Boolean(document.getElementById('builderEventId')?.value);
+      if (heading) heading.textContent = isEdit ? 'Edit Community Gathering' : 'Guided Event Builder';
+
+      if (s1Label) s1Label.textContent = 'Identity';
+      if (s2Label) s2Label.textContent = 'Description';
+      if (s3Label) s3Label.textContent = 'Schedule';
+      if (s4Label) s4Label.textContent = 'Capacity';
+      if (s5Label) s5Label.textContent = 'Notes';
+      if (s6Label) s6Label.textContent = 'RSVP Access';
+      if (s7Label) s7Label.textContent = 'Review & Deploy';
+
+      if (pLiveLabel) pLiveLabel.innerHTML = '<strong>Open RSVPs Immediately:</strong> Allow members to reserve passes upon saving.';
+      if (sumExhibFields) sumExhibFields.style.display = 'none';
+      if (sumEventFields) sumEventFields.style.display = 'block';
+
+      // Toggle inner sections
+      for (let i = 1; i <= 6; i++) {
+        const secEx = document.getElementById(`bSec${i}_exhibition`);
+        const secEv = document.getElementById(`bSec${i}_event`);
+        if (secEx) secEx.style.display = 'none';
+        if (secEv) secEv.style.display = 'block';
+      }
+    } else {
+      if (btnExhib) btnExhib.className = 'action-btn gold';
+      if (btnEvent) btnEvent.className = 'action-btn';
+      if (subtitle) subtitle.textContent = 'Exhibition Architecture';
+      const isEdit = Boolean(document.getElementById('builderCycleId')?.value);
+      if (heading) heading.textContent = isEdit ? 'Edit Exhibition Cycle' : 'Guided Exhibition Builder';
+
+      if (s1Label) s1Label.textContent = 'Identity';
+      if (s2Label) s2Label.textContent = 'Statement';
+      if (s3Label) s3Label.textContent = 'Schedule';
+      if (s4Label) s4Label.textContent = 'Cohort';
+      if (s5Label) s5Label.textContent = 'Guidelines';
+      if (s6Label) s6Label.textContent = 'Access';
+      if (s7Label) s7Label.textContent = 'Review & Deploy';
+
+      if (pLiveLabel) pLiveLabel.innerHTML = '<strong>Activate Immediately:</strong> Open this cycle on the public exhibition portal upon saving.';
+      if (sumExhibFields) sumExhibFields.style.display = 'block';
+      if (sumEventFields) sumEventFields.style.display = 'none';
+
+      // Toggle inner sections
+      for (let i = 1; i <= 6; i++) {
+        const secEx = document.getElementById(`bSec${i}_exhibition`);
+        const secEv = document.getElementById(`bSec${i}_event`);
+        if (secEx) secEx.style.display = 'block';
+        if (secEv) secEv.style.display = 'none';
+      }
+    }
+  };
+
+  window.openExhibitionBuilder = function(cycle = null) {
+    const modal = document.getElementById('exhibitionBuilderModal');
+    if (!modal) return;
+
+    window.switchBuilderMode('exhibition');
+    const modeWrap = document.getElementById('builderModeSelectorWrap');
+    if (modeWrap) modeWrap.style.display = cycle ? 'none' : 'flex';
+
+    const idInput = document.getElementById('builderCycleId');
+    const evIdInput = document.getElementById('builderEventId');
+    const titleInput = document.getElementById('bTitle');
+    const seasonInput = document.getElementById('bSeason');
+    const aboutInput = document.getElementById('bAbout');
+    const coverInput = document.getElementById('bCoverImage');
+    const datesInput = document.getElementById('bDates');
+    const venueInput = document.getElementById('bVenue');
+    const ageReqSelect = document.getElementById('bAgeReq');
+    const allowRecentCheck = document.getElementById('bAllowRecentWorksYouth');
+    const tncInput = document.getElementById('bTnc');
+    const feeInput = document.getElementById('bFee');
+    const qrInput = document.getElementById('bQr');
+    const payInstInput = document.getElementById('bPayInst');
+    const liveCheck = document.getElementById('bPublishLive');
+    const msg = document.getElementById('builderMsg');
+
+    if (msg) msg.textContent = '';
+    if (evIdInput) evIdInput.value = '';
+
+    if (cycle) {
+      if (idInput) idInput.value = cycle.id;
+      if (titleInput) titleInput.value = cycle.title || '';
+      if (seasonInput) seasonInput.value = '';
+      if (aboutInput) aboutInput.value = cycle.about_text || '';
+      if (coverInput) coverInput.value = cycle.cover_image || '';
+      if (datesInput) datesInput.value = cycle.date_text || '';
+      if (venueInput) venueInput.value = cycle.venue || '';
+      if (ageReqSelect) ageReqSelect.value = cycle.require_over_18 ? '1' : '0';
+      if (allowRecentCheck) allowRecentCheck.checked = Boolean(cycle.allow_recent_works_youth);
+      if (tncInput) tncInput.value = cycle.tnc_pdf_url || '';
+      if (feeInput) feeInput.value = cycle.registration_fee || '';
+      if (qrInput) qrInput.value = cycle.payment_qr_url || '';
+      if (payInstInput) payInstInput.value = cycle.payment_instructions || '';
+      if (liveCheck) liveCheck.checked = Boolean(cycle.is_active);
+    } else {
+      if (idInput) idInput.value = '';
+      if (titleInput) titleInput.value = '';
+      if (seasonInput) seasonInput.value = '';
+      if (aboutInput) aboutInput.value = '';
+      if (coverInput) coverInput.value = '';
+      if (datesInput) datesInput.value = '';
+      if (venueInput) venueInput.value = '';
+      if (ageReqSelect) ageReqSelect.value = '1';
+      if (allowRecentCheck) allowRecentCheck.checked = false;
+      if (tncInput) tncInput.value = '';
+      if (feeInput) feeInput.value = '';
+      if (qrInput) qrInput.value = '';
+      if (payInstInput) payInstInput.value = '';
+      if (liveCheck) liveCheck.checked = false;
+    }
+
+    builderIsDirty = false;
+    window.updateBuilderYouthNotice();
+    window.builderGoStep(1);
+    modal.classList.add('open');
+  };
+
+  window.openEventBuilder = function(ev = null) {
+    const modal = document.getElementById('exhibitionBuilderModal');
+    if (!modal) return;
+
+    window.switchBuilderMode('event');
+    const modeWrap = document.getElementById('builderModeSelectorWrap');
+    if (modeWrap) modeWrap.style.display = ev ? 'none' : 'flex';
+
+    const idInput = document.getElementById('builderCycleId');
+    const evIdInput = document.getElementById('builderEventId');
+    const nameInput = document.getElementById('evbName');
+    const catInput = document.getElementById('evbCategory');
+    const descInput = document.getElementById('evbDesc');
+    const dateInput = document.getElementById('evbDate');
+    const capInput = document.getElementById('evbCapacity');
+    const guideInput = document.getElementById('evbGuidelines');
+    const regOpenCheck = document.getElementById('evbRegOpen');
+    const liveCheck = document.getElementById('bPublishLive');
+    const msg = document.getElementById('builderMsg');
+
+    if (msg) msg.textContent = '';
+    if (idInput) idInput.value = '';
+
+    if (ev) {
+      if (evIdInput) evIdInput.value = ev.id;
+      if (nameInput) nameInput.value = ev.name || '';
+      if (catInput) catInput.value = '';
+      if (descInput) descInput.value = ev.description || '';
+      if (dateInput) dateInput.value = ev.event_date || '';
+      if (capInput) capInput.value = ev.capacity || 0;
+      if (guideInput) guideInput.value = '';
+      const isOpen = Boolean(ev.registration_open);
+      if (regOpenCheck) regOpenCheck.checked = isOpen;
+      if (liveCheck) liveCheck.checked = isOpen;
+    } else {
+      if (evIdInput) evIdInput.value = '';
+      if (nameInput) nameInput.value = '';
+      if (catInput) catInput.value = '';
+      if (descInput) descInput.value = '';
+      if (dateInput) dateInput.value = '';
+      if (capInput) capInput.value = 0;
+      if (guideInput) guideInput.value = '';
+      if (regOpenCheck) regOpenCheck.checked = true;
+      if (liveCheck) liveCheck.checked = true;
+    }
+
+    builderIsDirty = false;
+    window.builderGoStep(1);
+    modal.classList.add('open');
+  };
+
+  window.closeExhibitionBuilder = function() {
+    if (builderIsDirty) {
+      if (!confirm('You have unsaved changes in this builder session. Are you sure you want to discard them and exit?')) {
+        return;
+      }
+    }
+    const modal = document.getElementById('exhibitionBuilderModal');
+    if (modal) modal.classList.remove('open');
+    builderIsDirty = false;
+  };
+
+  window.builderGoStep = function(stepNum) {
+    const mode = document.getElementById('builderModelType')?.value || 'exhibition';
+
+    // Validation when stepping forward
+    if (stepNum > currentBuilderStep) {
+      if (currentBuilderStep === 1) {
+        if (mode === 'exhibition') {
+          const title = document.getElementById('bTitle')?.value.trim();
+          if (!title) {
+            alert('Please enter an Exhibition Title before continuing.');
+            document.getElementById('bTitle')?.focus();
+            return;
+          }
+        } else {
+          const name = document.getElementById('evbName')?.value.trim();
+          if (!name) {
+            alert('Please enter an Event Name before continuing.');
+            document.getElementById('evbName')?.focus();
+            return;
+          }
+        }
+      } else if (currentBuilderStep === 3) {
+        if (mode === 'exhibition') {
+          const dates = document.getElementById('bDates')?.value.trim();
+          const venue = document.getElementById('bVenue')?.value.trim();
+          if (!dates || !venue) {
+            alert('Please specify both Show Dates and Gallery Venue.');
+            return;
+          }
+        } else {
+          const evDate = document.getElementById('evbDate')?.value.trim();
+          if (!evDate) {
+            alert('Please provide the Event Schedule / Date & Time.');
+            document.getElementById('evbDate')?.focus();
+            return;
+          }
+        }
+      }
+    }
+
+    currentBuilderStep = stepNum;
+
+    for (let i = 1; i <= 7; i++) {
+      const sec = document.getElementById(`bSec${i}`);
+      const pill = document.getElementById(`bStep${i}`);
+      if (sec) sec.style.display = i === stepNum ? 'block' : 'none';
+      if (pill) {
+        if (i === stepNum) pill.classList.add('active');
+        else pill.classList.remove('active');
+      }
+    }
+
+    if (stepNum === 7) {
+      window.updateBuilderSummaryAndPreview();
+    }
+  };
+
+  window.updateBuilderSummaryAndPreview = function() {
+    const mode = document.getElementById('builderModelType')?.value || 'exhibition';
+    const previewCard = document.getElementById('builderLivePreviewCard');
+
+    if (mode === 'exhibition') {
+      const titleVal = document.getElementById('bTitle')?.value.trim() || 'Untitled Exhibition';
+      const datesVal = document.getElementById('bDates')?.value.trim() || 'Dates TBA';
+      const venueVal = document.getElementById('bVenue')?.value.trim() || 'Venue TBA';
+      const aboutVal = document.getElementById('bAbout')?.value.trim() || 'Curatorial statement will be published shortly.';
+      const isOver18 = document.getElementById('bAgeReq')?.value === '1';
+      const allowRecent = document.getElementById('bAllowRecentWorksYouth')?.checked;
+      const feeVal = document.getElementById('bFee')?.value.trim() || 'Free';
+
+      const sTitle = document.getElementById('bsumTitle');
+      const sDatesVenue = document.getElementById('bsumDatesVenue');
+      const sCohort = document.getElementById('bsumCohort');
+      const sRecent = document.getElementById('bsumRecentWorks');
+      const sFee = document.getElementById('bsumFee');
+
+      if (sTitle) sTitle.textContent = titleVal;
+      if (sDatesVenue) sDatesVenue.textContent = `${datesVal} — ${venueVal}`;
+      if (sCohort) sCohort.textContent = isOver18 ? 'Adults (18+)' : 'Youth (Under 18 with Parental Consent)';
+      if (sRecent) sRecent.textContent = allowRecent ? 'Enabled (Optional Upload)' : 'Disabled';
+      if (sFee) sFee.textContent = feeVal;
+
+      if (previewCard) {
+        const ageBadge = isOver18
+          ? '<span class="badge badge-approved" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Age 18+ (Adult Showcase)</span>'
+          : '<span class="badge badge-pending" style="font-size: 9px; margin-bottom: 0.5rem; display: inline-block;">Below 18 (Youth Showcase)</span>';
+
+        previewCard.innerHTML = `
+          <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem;">
+            ${ageBadge}
+            <div style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--text-primary); margin-bottom: 0.25rem;">
+              ${window.escapeHtml(titleVal)}
+            </div>
+            <div style="font-size: 11px; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.6rem;">
+              Dates: ${window.escapeHtml(datesVal)} · Venue: ${window.escapeHtml(venueVal)} · Fee: ${window.escapeHtml(feeVal)}
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+              ${window.escapeHtml(aboutVal)}
+            </p>
+            <div style="display: flex; justify-content: flex-end;">
+              <span class="action-btn-primary" style="font-size: 11px; padding: 0.4rem 1rem; opacity: 0.85; cursor: default;">
+                Submit Artwork &rarr;
+              </span>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      const nameVal = document.getElementById('evbName')?.value.trim() || 'Untitled Gathering';
+      const dateVal = document.getElementById('evbDate')?.value.trim() || 'Schedule TBA';
+      const descVal = document.getElementById('evbDesc')?.value.trim() || 'Event overview announced shortly.';
+      const capVal = parseInt(document.getElementById('evbCapacity')?.value, 10) || 0;
+      const rsvpOpen = Boolean(document.getElementById('evbRegOpen')?.checked);
+
+      const sTitle = document.getElementById('bsumTitle');
+      const sDatesVenue = document.getElementById('bsumDatesVenue');
+      const sCap = document.getElementById('bsumCapacity');
+      const sRsvp = document.getElementById('bsumRsvp');
+
+      if (sTitle) sTitle.textContent = nameVal;
+      if (sDatesVenue) sDatesVenue.textContent = dateVal;
+      if (sCap) sCap.textContent = capVal === 0 ? 'Open / Unlimited' : `${capVal} Seats`;
+      if (sRsvp) sRsvp.textContent = rsvpOpen ? 'Open (RSVP Active)' : 'Closed / Draft';
+
+      if (previewCard) {
+        previewCard.innerHTML = `
+          <div class="event-entry" style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 1;">
+              <div class="event-name" style="font-family: var(--font-heading); font-size: 1.25rem; margin-bottom: 0.25rem;">${window.escapeHtml(nameVal)}</div>
+              <div class="event-date" style="font-size: 11.5px; color: var(--accent-gold-text); margin-bottom: 0.35rem;">${window.escapeHtml(dateVal)}</div>
+              <div class="event-detail" style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">${window.escapeHtml(descVal)}</div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem;">
+              <span class="action-btn-primary" style="padding: 0.5rem 1.2rem; font-size: 11.5px; opacity: 0.85; cursor: default;">Reserve Pass</span>
+              <span style="font-size: 11px; color: var(--text-secondary);">${capVal === 0 ? 'Unlimited passes' : `${capVal} seats maximum`}</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+  };
+
+  window.updateBuilderYouthNotice = function() {
+    const ageReq = document.getElementById('bAgeReq')?.value;
+    const notice = document.getElementById('bYouthSafeguardNotice');
+    if (notice) notice.style.display = ageReq === '0' ? 'block' : 'none';
+  };
+
+  window.saveBuilder = async function(isLive) {
+    const mode = document.getElementById('builderModelType')?.value || 'exhibition';
+    const msg = document.getElementById('builderMsg');
+    const submitBtn = document.getElementById('builderSubmitBtn');
+    const draftBtn = document.getElementById('builderDraftBtn');
+
+    if (mode === 'event') {
+      const eventId = document.getElementById('builderEventId')?.value;
+      const name = document.getElementById('evbName')?.value.trim();
+      const description = document.getElementById('evbDesc')?.value.trim();
+      const event_date = document.getElementById('evbDate')?.value.trim();
+      const capacity = parseInt(document.getElementById('evbCapacity')?.value, 10) || 0;
+      const registration_open = isLive ? 1 : 0;
+
+      if (!name) {
+        alert('Please enter an Event Name in Step 1.');
+        window.builderGoStep(1);
+        return;
+      }
+
+      if (submitBtn) { submitBtn.textContent = 'Saving...'; submitBtn.disabled = true; }
+      if (draftBtn) { draftBtn.disabled = true; }
+      if (msg) { msg.textContent = 'Saving event to database...'; msg.style.color = 'var(--text-secondary)'; }
+
+      try {
+        let res;
+        if (eventId) {
+          res = await adminFetch(`/admin/events/${eventId}/edit`, {
+            method: 'PATCH',
+            body: JSON.stringify({ name, description, event_date, capacity, registration_open })
+          });
+        } else {
+          res = await adminFetch('/admin/events/create', {
+            method: 'POST',
+            body: JSON.stringify({ name, description, event_date, capacity })
+          });
+          if (res && res.ok && isLive) {
+            // Find newly created event to toggle registration_open
+            const listRes = await adminFetch('/admin/events');
+            if (listRes && listRes.ok) {
+              const items = await listRes.json();
+              const created = items.find(e => e.name === name);
+              if (created && !created.registration_open) {
+                await adminFetch(`/admin/events/${created.id}/toggle`, { method: 'PATCH' });
+              }
+            }
+          }
+        }
+
+        if (res && res.ok) {
+          builderIsDirty = false;
+          if (msg) {
+            msg.textContent = `✓ Community event ${isLive ? 'published live' : 'saved as draft'}.`;
+            msg.style.color = 'var(--accent-green-text)';
+          }
+          showToast(eventId ? 'Event updated successfully.' : 'New event created successfully.', 'success');
+          await window.loadEvents();
+          setTimeout(() => {
+            const modal = document.getElementById('exhibitionBuilderModal');
+            if (modal) modal.classList.remove('open');
+          }, 700);
+        } else {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || err.error || 'Failed to save event.');
+        }
+      } catch (err) {
+        if (msg) {
+          msg.textContent = `✗ ${err.message || 'Error saving event.'}`;
+          msg.style.color = 'var(--accent-red-text)';
+        }
+      } finally {
+        if (submitBtn) { submitBtn.textContent = 'Save & Deploy Live →'; submitBtn.disabled = false; }
+        if (draftBtn) { draftBtn.disabled = false; }
+      }
+    } else {
+      // Exhibition Cycle Model
+      const cycleId = document.getElementById('builderCycleId')?.value;
+      const title = document.getElementById('bTitle')?.value.trim();
+      const date_text = document.getElementById('bDates')?.value.trim();
+      const venue = document.getElementById('bVenue')?.value.trim();
+      const about_text = document.getElementById('bAbout')?.value.trim();
+      const cover_image = document.getElementById('bCoverImage')?.value.trim() || null;
+      const require_over_18 = document.getElementById('bAgeReq')?.value === '1';
+      const allow_recent_works_youth = document.getElementById('bAllowRecentWorksYouth')?.checked ? 1 : 0;
+      const tnc_pdf_url = document.getElementById('bTnc')?.value.trim() || null;
+      const registration_fee = document.getElementById('bFee')?.value.trim() || null;
+      const payment_qr_url = document.getElementById('bQr')?.value.trim() || null;
+      const payment_instructions = document.getElementById('bPayInst')?.value.trim() || null;
+
+      if (!title) {
+        alert('Please enter an Exhibition Title in Step 1.');
+        window.builderGoStep(1);
+        return;
+      }
+
+      if (submitBtn) { submitBtn.textContent = 'Saving Cycle...'; submitBtn.disabled = true; }
+      if (draftBtn) { draftBtn.disabled = true; }
+      if (msg) { msg.textContent = 'Saving cycle to database...'; msg.style.color = 'var(--text-secondary)'; }
+
+      try {
+        const payload = {
+          title,
+          date_text: date_text || 'Dates TBD',
+          venue: venue || 'Alfaaz Gallery, Srinagar',
+          about_text: about_text || '',
+          cover_image,
+          require_over_18,
+          allow_recent_works_youth,
+          tnc_pdf_url,
+          registration_fee,
+          payment_qr_url,
+          payment_instructions
+        };
+
+        let res;
+        if (cycleId) {
+          res = await adminFetch(`/admin/exhibitions/${cycleId}/edit`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+          });
+          if (res && res.ok) {
+            // Check if active state needs alignment
+            const exList = allExhibitions || [];
+            const existing = exList.find(e => e.id === Number(cycleId));
+            if (existing && Boolean(existing.is_active) !== isLive) {
+              await adminFetch(`/admin/exhibitions/${cycleId}/toggle-active`, { method: 'PATCH' });
+            }
+          }
+        } else {
+          res = await adminFetch('/admin/exhibitions/create', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          if (res && res.ok && isLive) {
+            const createdData = await res.clone().json().catch(() => ({}));
+            if (createdData.id) {
+              await adminFetch(`/admin/exhibitions/${createdData.id}/toggle-active`, { method: 'PATCH' });
+            }
+          }
+        }
+
+        if (res && res.ok) {
+          builderIsDirty = false;
+          if (msg) {
+            msg.textContent = `✓ Exhibition cycle ${isLive ? 'published live' : 'saved as draft'}.`;
+            msg.style.color = 'var(--accent-green-text)';
+          }
+          showToast(cycleId ? 'Exhibition cycle updated successfully.' : 'New exhibition cycle created successfully.', 'success');
+          await window.loadExhibitionManager();
+          setTimeout(() => {
+            const modal = document.getElementById('exhibitionBuilderModal');
+            if (modal) modal.classList.remove('open');
+          }, 700);
+        } else {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || err.error || 'Failed to save exhibition cycle.');
+        }
+      } catch (err) {
+        if (msg) {
+          msg.textContent = `✗ ${err.message || 'Error saving exhibition.'}`;
+          msg.style.color = 'var(--accent-red-text)';
+        }
+      } finally {
+        if (submitBtn) { submitBtn.textContent = 'Save & Deploy Live →'; submitBtn.disabled = false; }
+        if (draftBtn) { draftBtn.disabled = false; }
+      }
+    }
+  };
+
+  // Backwards compatibility alias
+  window.saveExhibitionFromBuilder = function() {
+    const isLive = Boolean(document.getElementById('bPublishLive')?.checked);
+    return window.saveBuilder(isLive);
   };
 
   window.createNewExhibition = async function() {
@@ -845,6 +1412,20 @@ document.addEventListener('DOMContentLoaded', () => {
           actionBtns += `<a href="${window.escapeHtml(safePayment)}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-green); color:var(--accent-green-text); text-align:center;">View Payment Receipt ↗</a>`;
         }
       }
+      if (a.recent_works_url) {
+        const safeRecent = window.safeHttpUrl ? window.safeHttpUrl(a.recent_works_url) : null;
+        if (safeRecent) {
+          actionBtns += `<a href="${window.escapeHtml(safeRecent)}" target="_blank" rel="noopener noreferrer" class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-gold); color:var(--accent-gold-text); text-align:center;">View Youth Works ↗</a>`;
+        }
+      }
+      if ((a.age < 18 || a.guardian_name)) {
+        if (a.guardian_verification_status !== 'VERIFIED') {
+          actionBtns += `<button class="action-btn gold" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="verify-guardian" data-id="${Number(a.id)}">Verify Guardian Consent</button>`;
+        }
+        if (a.guardian_verification_status !== 'REJECTED') {
+          actionBtns += `<button class="action-btn" style="padding:0.6rem 1rem; font-size:10px; min-height:40px; border-color:var(--accent-red-border, #bd6f5d); color:var(--accent-red-text, #bd6f5d);" data-action="reject-guardian" data-id="${Number(a.id)}">Reject Consent</button>`;
+        }
+      }
       if (a.registration_status === 'SUBMITTED') {
         actionBtns += `<button class="action-btn gold" style="padding:0.6rem 1rem; font-size:10px; min-height:40px;" data-action="confirm-payment" data-id="${Number(a.id)}">Confirm Payment</button>`;
       }
@@ -913,6 +1494,30 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
+        ${(a.age < 18 || a.guardian_name) ? `
+          <div style="background: rgba(189, 111, 93, 0.05); border: 1px solid var(--accent-gold); padding: 1rem; margin-top: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-gold-text);">🛡️ Youth Safeguarding Dossier</span>
+              <span class="badge ${a.guardian_verification_status === 'VERIFIED' ? 'badge-approved' : (a.guardian_verification_status === 'REJECTED' ? 'badge-rejected' : 'badge-pending')}">Guardian: ${a.guardian_verification_status || 'PENDING'}</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-primary); line-height: 1.6;">
+              <div>Guardian: <strong>${window.escapeHtml(a.guardian_name || '—')}</strong> (${window.escapeHtml(a.guardian_relationship || '—')})</div>
+              <div>Contact: <strong>${window.escapeHtml(a.guardian_contact || '—')}</strong></div>
+              <div>Parental Consent: <strong>${a.guardian_consent_granted ? '✓ Granted by Guardian' : '✗ Missing'}</strong> · Youth Assent: <strong>${a.participant_assent_granted ? '✓ Confirmed by Artist' : '✗ Missing'}</strong></div>
+              ${a.guardian_verified_at && a.guardian_verified_by ? `
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 0.25rem;">
+                  ${a.guardian_verification_status === 'REJECTED' ? '❌ Rejected' : '✓ Verified'} by <strong>${window.escapeHtml(a.guardian_verified_by)}</strong> on ${formatDateTime(a.guardian_verified_at)}
+                </div>
+              ` : ''}
+              ${a.guardian_rejection_reason ? `
+                <div style="font-size: 11px; color: var(--accent-red-text, #bd6f5d); margin-top: 0.35rem; padding: 0.3rem 0.6rem; background: rgba(189, 111, 93, 0.1); border-left: 2px solid var(--accent-red-border, #bd6f5d);">
+                  <strong>Rejection Reason:</strong> ${window.escapeHtml(a.guardian_rejection_reason)}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        ` : ''}
+
         <div class="card-actions-row">
           ${actionBtns}
         </div>
@@ -936,6 +1541,10 @@ document.addEventListener('DOMContentLoaded', () => {
           window.revertExhibition(id, btn);
         } else if (action === 'confirm-payment') {
           window.confirmExhibitionPayment(id, btn);
+        } else if (action === 'verify-guardian') {
+          window.verifyGuardianConsent(id, btn);
+        } else if (action === 'reject-guardian') {
+          window.rejectGuardianConsent(id, btn);
         }
       });
     }
@@ -1018,6 +1627,57 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Could not reach server.');
     } finally {
       if (btn) { btn.textContent = 'Confirm Payment'; btn.disabled = false; }
+    }
+  };
+
+  window.verifyGuardianConsent = async function(id, btn) {
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = 'Verifying...'; btn.disabled = true; }
+    try {
+      const res = await adminFetch(`/admin/exhibitions/applications/${id}/verify-guardian`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'VERIFIED' })
+      });
+      if (res && res.ok) {
+        showToast('Parent/Guardian consent verified successfully.', 'success');
+        await window.loadExhibitionsData(activeCycleFilter || 'ALL');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || err.error || 'Failed to verify guardian consent.');
+      }
+    } catch (e) {
+      alert('Network error while verifying guardian consent.');
+    } finally {
+      if (btn) { btn.textContent = original; btn.disabled = false; }
+    }
+  };
+
+  window.rejectGuardianConsent = async function(id, btn) {
+    const reason = await window.showCuratorPrompt(
+      'Reject Guardian Consent',
+      'Please state the reason for rejecting this guardian consent (e.g. unreachable phone, invalid signature, safeguarding concern):',
+      'Rejection Reason'
+    );
+    if (!reason || !reason.trim()) return;
+
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = 'Rejecting...'; btn.disabled = true; }
+    try {
+      const res = await adminFetch(`/admin/exhibitions/applications/${id}/guardian/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ rejection_reason: reason.trim() })
+      });
+      if (res && res.ok) {
+        showToast('Parent/Guardian consent marked as REJECTED.', 'info');
+        await window.loadExhibitionsData(activeCycleFilter || 'ALL');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || err.error || 'Failed to reject guardian consent.');
+      }
+    } catch (e) {
+      alert('Network error while rejecting guardian consent.');
+    } finally {
+      if (btn) { btn.textContent = original; btn.disabled = false; }
     }
   };
 

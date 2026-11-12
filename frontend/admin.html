@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Alfaaz">
   <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
   <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <meta name="description" content="Curatorial and administrative management console for Alfaaz Collective. Manage exhibition cycles, applications, member rosters, and collective events.">
   <title>Administration — ALFAAZ</title>
   <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="global.css">
@@ -179,7 +180,7 @@
 
   <div class="admin-container">
     <div class="header">
-      <div>Administration</div>
+      <h1 style="font-family: var(--font-heading); font-size: 2.2rem; font-weight: 400; margin: 0; color: var(--text-primary);">Curatorial Administration</h1>
       <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
         <a href="research.html" class="action-btn gold" style="padding: 0.6rem 1.2rem; font-size: 10px; letter-spacing: 1.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px;">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -259,7 +260,12 @@
 
     <!-- 1. EVENTS PANEL -->
     <div id="tab-events" class="tab-panel active">
-      <div class="section-title">Create Event</div>
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <span>Community Gatherings &amp; Events</span>
+        <button type="button" class="action-btn gold" onclick="openEventBuilder()" style="padding: 0.6rem 1.25rem; font-size: 11px;">
+          ✨ Guided Event Builder (7 Steps)
+        </button>
+      </div>
       <div class="panel">
         <div class="form-grid">
           <div class="form-group"><label class="data-label" for="ev-name">Event Name *</label><input type="text" id="ev-name" placeholder="e.g. Live Painting"></div>
@@ -276,7 +282,12 @@
 
     <!-- 2. EXHIBITIONS PANEL -->
     <div id="tab-exhibitions" class="tab-panel">
-      <div class="section-title">Exhibition Management</div>
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <span>Exhibition Management</span>
+        <button type="button" class="action-btn gold" onclick="openExhibitionBuilder()" style="padding: 0.6rem 1.25rem; font-size: 11px;">
+          ✨ Guided Exhibition Builder (7 Steps)
+        </button>
+      </div>
 
       <div class="panel" style="padding: 1.5rem 2.5rem; margin-bottom: 2rem; border-left: 4px solid var(--accent-gold); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
@@ -587,6 +598,309 @@
         <button class="action-btn" style="padding: 0.7rem 1.4rem; font-size: 10px;" id="dialogModalCancelBtn" onclick="window.curatorDialogClose(null)">Cancel</button>
         <button class="action-btn gold" style="padding: 0.7rem 1.4rem; font-size: 10px;" id="dialogModalConfirmBtn">Proceed</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Guided 7-Step Exhibition Builder Modal -->
+  <div class="modal-overlay" id="exhibitionBuilderModal">
+    <div class="modal" style="max-width: 780px;">
+      <div class="modal-header">
+        <div>
+          <span style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600;" id="builderSubtitle">Exhibition Architecture</span>
+          <h2 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin: 0.2rem 0;" id="builderModalHeading">Guided Exhibition Builder</h2>
+        </div>
+        <button class="action-btn" style="padding: 0.5rem 1rem; border-color: transparent;" onclick="closeExhibitionBuilder()">✕ Close</button>
+      </div>
+
+      <!-- Builder Model Selector (Exhibitions vs Community Events) -->
+      <div id="builderModeSelectorWrap" style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 1rem;">
+        <button type="button" class="action-btn gold" id="bModeExhibitionBtn" onclick="switchBuilderMode('exhibition')" style="padding: 0.5rem 1.25rem; font-size: 11px;">
+          🏛️ Exhibition Cycle
+        </button>
+        <button type="button" class="action-btn" id="bModeEventBtn" onclick="switchBuilderMode('event')" style="padding: 0.5rem 1.25rem; font-size: 11px;">
+          📅 Community Gathering / Event
+        </button>
+      </div>
+
+      <!-- Builder Step Indicator -->
+      <div class="step-indicator-bar" style="margin-bottom: 2rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <div class="step-pill active" id="bStep1"><span class="step-num">1</span> <span id="bStep1Label">Identity</span></div>
+        <div class="step-pill" id="bStep2"><span class="step-num">2</span> <span id="bStep2Label">Statement</span></div>
+        <div class="step-pill" id="bStep3"><span class="step-num">3</span> <span id="bStep3Label">Schedule</span></div>
+        <div class="step-pill" id="bStep4"><span class="step-num">4</span> <span id="bStep4Label">Cohort</span></div>
+        <div class="step-pill" id="bStep5"><span class="step-num">5</span> <span id="bStep5Label">Guidelines</span></div>
+        <div class="step-pill" id="bStep6"><span class="step-num">6</span> <span id="bStep6Label">Access</span></div>
+        <div class="step-pill" id="bStep7"><span class="step-num">7</span> <span id="bStep7Label">Review &amp; Deploy</span></div>
+      </div>
+
+      <form id="builderForm" onsubmit="event.preventDefault();">
+        <input type="hidden" id="builderModelType" value="exhibition">
+        <input type="hidden" id="builderCycleId" value="">
+        <input type="hidden" id="builderEventId" value="">
+
+        <!-- Step 1: Basic Info -->
+        <div class="builder-step-section active" id="bSec1">
+          <div id="bSec1_exhibition">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 1: Cycle Name &amp; Identity</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Give this exhibition cycle a title that will be seen by artists across Kashmir.</p>
+            <div style="display: grid; gap: 1rem;">
+              <div>
+                <label class="data-label">Exhibition Title *</label>
+                <input type="text" id="bTitle" placeholder="e.g. Harud 2026 — The Vernacular Breath">
+              </div>
+              <div>
+                <label class="data-label">Internal Reference / Season</label>
+                <input type="text" id="bSeason" placeholder="e.g. Autumn Cycle 2026">
+              </div>
+            </div>
+          </div>
+          <div id="bSec1_event" style="display: none;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 1: Event Name &amp; Gathering Purpose</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Give this community gathering, poetry salon, or workshop a clear, welcoming title.</p>
+            <div style="display: grid; gap: 1rem;">
+              <div>
+                <label class="data-label">Event / Gathering Name *</label>
+                <input type="text" id="evbName" placeholder="e.g. Vernacular Woodwork &amp; Pinjrakari Workshop">
+              </div>
+              <div>
+                <label class="data-label">Focus / Salon Category</label>
+                <input type="text" id="evbCategory" placeholder="e.g. Craft Heritage / Literature">
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 2rem;">
+            <button type="button" class="action-btn gold" onclick="builderGoStep(2)">Next: Statement &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Content & Statement / Narrative -->
+        <div class="builder-step-section" id="bSec2" style="display: none;">
+          <div id="bSec2_exhibition">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 2: Curatorial Statement</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Explain the themes, questions, or invitations for this open call in natural, warm language.</p>
+            <div style="display: grid; gap: 1rem;">
+              <div>
+                <label class="data-label">Curatorial Statement &amp; Guidelines</label>
+                <textarea id="bAbout" rows="4" placeholder="Briefly describe the vision, themes, or medium invitations for this exhibition..."></textarea>
+              </div>
+              <div>
+                <label class="data-label">Cover Image URL (Optional)</label>
+                <input type="text" id="bCoverImage" placeholder="https://res.cloudinary.com/... or storage URL">
+              </div>
+            </div>
+          </div>
+          <div id="bSec2_event" style="display: none;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 2: Gathering Description &amp; Narrative</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Describe what will happen at this session, the facilitators involved, and what participants should expect.</p>
+            <div style="display: grid; gap: 1rem;">
+              <div>
+                <label class="data-label">Event Description &amp; Context</label>
+                <textarea id="evbDesc" rows="4" placeholder="A hands-on workshop exploring traditional Pinjrakari geometric lattice joinery..."></textarea>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+            <button type="button" class="action-btn" onclick="builderGoStep(1)">&larr; Back</button>
+            <button type="button" class="action-btn gold" onclick="builderGoStep(3)">Next: Schedule &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Dates & Venue / Schedule -->
+        <div class="builder-step-section" id="bSec3" style="display: none;">
+          <div id="bSec3_exhibition">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 3: Dates &amp; Gallery Venue</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Where and when will the physical showcase take place in the Kashmir Valley?</p>
+            <div style="display: grid; gap: 1rem;">
+              <div>
+                <label class="data-label">Show Dates *</label>
+                <input type="text" id="bDates" placeholder="e.g. October 12th – 15th, 2026">
+              </div>
+              <div>
+                <label class="data-label">Gallery Venue *</label>
+                <input type="text" id="bVenue" placeholder="e.g. Mahatta Gallery, The Bund, Srinagar">
+              </div>
+            </div>
+          </div>
+          <div id="bSec3_event" style="display: none;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 3: Schedule, Time &amp; Location</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">When and where will this gathering convene?</p>
+            <div style="display: grid; gap: 1rem;">
+              <div>
+                <label class="data-label">Event Schedule / Date &amp; Time *</label>
+                <input type="text" id="evbDate" placeholder="e.g. Saturday, Nov 21 · 4:00 PM at Mahatta Gallery, Srinagar">
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+            <button type="button" class="action-btn" onclick="builderGoStep(2)">&larr; Back</button>
+            <button type="button" class="action-btn gold" onclick="builderGoStep(4)">Next: Cohort &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Eligibility & Age Streams / Capacity -->
+        <div class="builder-step-section" id="bSec4" style="display: none;">
+          <div id="bSec4_exhibition">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 4: Age Cohort &amp; Safeguarding</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Choose whether this showcase is designated for adult practitioners or young artists.</p>
+            <div style="display: grid; gap: 1rem;">
+              <div>
+                <label class="data-label">Cohort Designation *</label>
+                <select id="bAgeReq" style="width: 100%; padding: 0.6rem; font-size: 13px;" onchange="updateBuilderYouthNotice()">
+                  <option value="1">18+ Only (Adult Showcase — Strict 18+ Gate)</option>
+                  <option value="0">Below 18 (Youth Showcase — Parental Consent Required)</option>
+                </select>
+              </div>
+              <div id="bYouthSafeguardNotice" style="display: none; background: rgba(189, 111, 93, 0.08); border-left: 3px solid var(--accent-gold); padding: 1rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);">
+                <strong>Youth Safeguarding Activated:</strong> When selected, applicants under 18 must provide parent/guardian full name, contact, verified relationship, affirmative consent, and youth assent.
+              </div>
+            </div>
+          </div>
+          <div id="bSec4_event" style="display: none;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 4: Attendance Capacity &amp; Seating</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Set the seating capacity for this gathering. Enter 0 for open or unlimited attendance.</p>
+            <div style="display: grid; gap: 1rem;">
+              <div>
+                <label class="data-label">Maximum Capacity (0 = Unlimited)</label>
+                <input type="number" id="evbCapacity" min="0" value="0" placeholder="0">
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+            <button type="button" class="action-btn" onclick="builderGoStep(3)">&larr; Back</button>
+            <button type="button" class="action-btn gold" onclick="builderGoStep(5)">Next: Guidelines &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Step 5: Requirements & Upload Settings / Guidelines -->
+        <div class="builder-step-section" id="bSec5" style="display: none;">
+          <div id="bSec5_exhibition">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 5: Requirements &amp; Portfolio Options</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Configure portfolio submission rules and post-selection guidelines.</p>
+            <div style="display: grid; gap: 1rem;">
+              <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; font-size: 13px; font-weight: 500;">
+                  <input type="checkbox" id="bAllowRecentWorksYouth" style="width: auto;">
+                  <span>Allow Optional Earlier/Recent Works Upload for Youth</span>
+                </label>
+                <p style="font-size: 11px; color: var(--text-secondary); margin: 0.35rem 0 0 1.75rem;">
+                  When enabled for youth cycles, applicants can optionally upload earlier sketches or studies (PDF or images). This remains strictly non-blocking.
+                </p>
+              </div>
+              <div>
+                <label class="data-label">Terms &amp; Conditions Guidelines (PDF URL)</label>
+                <input type="text" id="bTnc" placeholder="https://... guidelines document">
+              </div>
+            </div>
+          </div>
+          <div id="bSec5_event" style="display: none;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 5: Attendee Preparation &amp; Guidelines</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Provide any preparation notes or materials participants should bring.</p>
+            <div style="display: grid; gap: 1rem;">
+              <div>
+                <label class="data-label">Participant Notes / What to Bring</label>
+                <input type="text" id="evbGuidelines" placeholder="e.g. Please bring a sketchpad and comfortable drawing tools.">
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+            <button type="button" class="action-btn" onclick="builderGoStep(4)">&larr; Back</button>
+            <button type="button" class="action-btn gold" onclick="builderGoStep(6)">Next: Access &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Step 6: Registration & Access Settings -->
+        <div class="builder-step-section" id="bSec6" style="display: none;">
+          <div id="bSec6_exhibition">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 6: Registration &amp; Payment Settings</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Set post-selection gallery confirmation details (only applies after artist selection).</p>
+            <div style="display: grid; gap: 1rem;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                  <label class="data-label">Registration Fee (₹)</label>
+                  <input type="text" id="bFee" placeholder="e.g. 500 or Free">
+                </div>
+                <div>
+                  <label class="data-label">Payment QR Image URL</label>
+                  <input type="text" id="bQr" placeholder="https://... UPI QR image">
+                </div>
+              </div>
+              <div>
+                <label class="data-label">Payment Instructions</label>
+                <input type="text" id="bPayInst" placeholder="e.g. UPI to alfaaz@okaxis, or pay at desk on exhibition day">
+              </div>
+            </div>
+          </div>
+          <div id="bSec6_event" style="display: none;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 6: Registration &amp; RSVP Access</h3>
+            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Control whether community members can immediately reserve passes from their dashboard.</p>
+            <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem;">
+              <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; font-size: 13px; font-weight: 500;">
+                <input type="checkbox" id="evbRegOpen" style="width: auto;" checked>
+                <span><strong>Open RSVPs Immediately:</strong> Allow members to reserve passes upon saving.</span>
+              </label>
+              <p style="font-size: 11px; color: var(--text-secondary); margin: 0.35rem 0 0 1.75rem;">
+                Uncheck this to keep this event in draft / announced mode without accepting pass reservations yet.
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+            <button type="button" class="action-btn" onclick="builderGoStep(5)">&larr; Back</button>
+            <button type="button" class="action-btn gold" onclick="builderGoStep(7)">Next: Review &amp; Deploy &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Step 7: Review, Preview & Deploy -->
+        <div class="builder-step-section" id="bSec7" style="display: none;">
+          <h3 style="font-family: var(--font-heading); font-size: 1.4rem; margin-bottom: 0.5rem;">Step 7: Review &amp; Deploy</h3>
+          <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1.5rem;">Review the configured parameters and inspect the public display preview before saving.</p>
+          
+          <div class="review-summary-card" id="builderSummaryCard" style="margin-bottom: 1.5rem; background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem;">
+            <div style="margin-bottom: 0.5rem;"><strong>Title / Name:</strong> <span id="bsumTitle">—</span></div>
+            <div style="margin-bottom: 0.5rem;"><strong>Schedule / Venue:</strong> <span id="bsumDatesVenue">—</span></div>
+            <div id="bsumExhibitionFields">
+              <div style="margin-bottom: 0.5rem;"><strong>Age Cohort:</strong> <span id="bsumCohort">—</span></div>
+              <div style="margin-bottom: 0.5rem;"><strong>Recent Works (Youth):</strong> <span id="bsumRecentWorks">—</span></div>
+              <div><strong>Registration Fee:</strong> <span id="bsumFee">—</span></div>
+            </div>
+            <div id="bsumEventFields" style="display: none;">
+              <div style="margin-bottom: 0.5rem;"><strong>Capacity:</strong> <span id="bsumCapacity">—</span></div>
+              <div><strong>RSVP Access:</strong> <span id="bsumRsvp">—</span></div>
+            </div>
+          </div>
+
+          <!-- Public Display Live Preview -->
+          <div style="margin-bottom: 1.5rem;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.5rem;">
+              Public Display Live Preview (As seen by community)
+            </div>
+            <div id="builderLivePreviewCard" style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.25rem;">
+              <!-- Dynamically populated in JS -->
+            </div>
+          </div>
+
+          <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1rem; margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; font-size: 13px;">
+              <input type="checkbox" id="bPublishLive" style="width: auto;">
+              <span id="bPublishLiveLabel"><strong>Activate Immediately:</strong> Open this cycle on the public exhibition portal upon saving.</span>
+            </label>
+          </div>
+
+          <div id="builderMsg" style="font-size: 12px; margin-bottom: 1rem; text-align: center;"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <button type="button" class="action-btn" onclick="builderGoStep(6)">&larr; Back</button>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <button type="button" class="action-btn" id="builderDraftBtn" onclick="saveBuilder(false)" style="padding: 0.8rem 1.4rem;">
+                Save as Draft
+              </button>
+              <button type="button" class="action-btn gold" id="builderSubmitBtn" onclick="saveBuilder(true)" style="padding: 0.8rem 1.8rem;">
+                Save &amp; Deploy Live &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </form>
     </div>
   </div>
 

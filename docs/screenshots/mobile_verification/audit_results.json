@@ -1,0 +1,448 @@
+{
+  "timestamp": "2026-11-12T05:43:51.042Z",
+  "environment": "Headless Chrome (Emulated Mobile & Tablet Viewports via CDP)",
+  "methodology": "Synthetic Chrome DevTools Protocol Emulation (Not Physical Device Hardware)",
+  "viewportsTested": [
+    "320x568 (320px-ultra-compact)",
+    "360x800 (360px-android-standard)",
+    "375x667 (375px-iphone-se-ios)",
+    "390x844 (390px-iphone-14-ios)",
+    "430x932 (430px-iphone-15-pro-max)",
+    "768x1024 (768px-ipad-tablet)",
+    "1280x800 (1280px-desktop-hd)"
+  ],
+  "pagesAudited": [
+    {
+      "slug": "homepage",
+      "url": "http://127.0.0.1:8192/index.html",
+      "viewports": {
+        "320px-ultra-compact": {
+          "viewportWidth": 320,
+          "viewportHeight": 568,
+          "measuredScrollWidth": 320,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "homepage_320w_320px-ultra-compact.jpg"
+        },
+        "360px-android-standard": {
+          "viewportWidth": 360,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 360,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "homepage_360w_360px-android-standard.jpg"
+        },
+        "375px-iphone-se-ios": {
+          "viewportWidth": 375,
+          "viewportHeight": 667,
+          "measuredScrollWidth": 375,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "homepage_375w_375px-iphone-se-ios.jpg"
+        },
+        "390px-iphone-14-ios": {
+          "viewportWidth": 390,
+          "viewportHeight": 844,
+          "measuredScrollWidth": 390,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "homepage_390w_390px-iphone-14-ios.jpg"
+        },
+        "430px-iphone-15-pro-max": {
+          "viewportWidth": 430,
+          "viewportHeight": 932,
+          "measuredScrollWidth": 430,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "homepage_430w_430px-iphone-15-pro-max.jpg"
+        },
+        "768px-ipad-tablet": {
+          "viewportWidth": 768,
+          "viewportHeight": 1024,
+          "measuredScrollWidth": 768,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "homepage_768w_768px-ipad-tablet.jpg"
+        },
+        "1280px-desktop-hd": {
+          "viewportWidth": 1280,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 1280,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 1,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "homepage_1280w_1280px-desktop-hd.jpg"
+        }
+      },
+      "rtlVerification": {
+        "screenshotFile": "homepage_375w_rtl_urdu.jpg",
+        "overflow": false
+      }
+    },
+    {
+      "slug": "exhibition",
+      "url": "http://127.0.0.1:8192/exhibition.html",
+      "viewports": {
+        "320px-ultra-compact": {
+          "viewportWidth": 320,
+          "viewportHeight": 568,
+          "measuredScrollWidth": 320,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "exhibition_320w_320px-ultra-compact.jpg"
+        },
+        "360px-android-standard": {
+          "viewportWidth": 360,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 360,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "exhibition_360w_360px-android-standard.jpg"
+        },
+        "375px-iphone-se-ios": {
+          "viewportWidth": 375,
+          "viewportHeight": 667,
+          "measuredScrollWidth": 375,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "exhibition_375w_375px-iphone-se-ios.jpg"
+        },
+        "390px-iphone-14-ios": {
+          "viewportWidth": 390,
+          "viewportHeight": 844,
+          "measuredScrollWidth": 390,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "exhibition_390w_390px-iphone-14-ios.jpg"
+        },
+        "430px-iphone-15-pro-max": {
+          "viewportWidth": 430,
+          "viewportHeight": 932,
+          "measuredScrollWidth": 430,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "exhibition_430w_430px-iphone-15-pro-max.jpg"
+        },
+        "768px-ipad-tablet": {
+          "viewportWidth": 768,
+          "viewportHeight": 1024,
+          "measuredScrollWidth": 768,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "exhibition_768w_768px-ipad-tablet.jpg"
+        },
+        "1280px-desktop-hd": {
+          "viewportWidth": 1280,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 1280,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 16,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "exhibition_1280w_1280px-desktop-hd.jpg"
+        }
+      },
+      "rtlVerification": {
+        "screenshotFile": "exhibition_375w_rtl_urdu.jpg",
+        "overflow": false
+      }
+    },
+    {
+      "slug": "login",
+      "url": "http://127.0.0.1:8192/login.html",
+      "viewports": {
+        "320px-ultra-compact": {
+          "viewportWidth": 320,
+          "viewportHeight": 568,
+          "measuredScrollWidth": 320,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "login_320w_320px-ultra-compact.jpg"
+        },
+        "360px-android-standard": {
+          "viewportWidth": 360,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 360,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "login_360w_360px-android-standard.jpg"
+        },
+        "375px-iphone-se-ios": {
+          "viewportWidth": 375,
+          "viewportHeight": 667,
+          "measuredScrollWidth": 375,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "login_375w_375px-iphone-se-ios.jpg"
+        },
+        "390px-iphone-14-ios": {
+          "viewportWidth": 390,
+          "viewportHeight": 844,
+          "measuredScrollWidth": 390,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "login_390w_390px-iphone-14-ios.jpg"
+        },
+        "430px-iphone-15-pro-max": {
+          "viewportWidth": 430,
+          "viewportHeight": 932,
+          "measuredScrollWidth": 430,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "login_430w_430px-iphone-15-pro-max.jpg"
+        },
+        "768px-ipad-tablet": {
+          "viewportWidth": 768,
+          "viewportHeight": 1024,
+          "measuredScrollWidth": 768,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "login_768w_768px-ipad-tablet.jpg"
+        },
+        "1280px-desktop-hd": {
+          "viewportWidth": 1280,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 1280,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 10,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "login_1280w_1280px-desktop-hd.jpg"
+        }
+      }
+    },
+    {
+      "slug": "register",
+      "url": "http://127.0.0.1:8192/register.html",
+      "viewports": {
+        "320px-ultra-compact": {
+          "viewportWidth": 320,
+          "viewportHeight": 568,
+          "measuredScrollWidth": 320,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "register_320w_320px-ultra-compact.jpg"
+        },
+        "360px-android-standard": {
+          "viewportWidth": 360,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 360,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "register_360w_360px-android-standard.jpg"
+        },
+        "375px-iphone-se-ios": {
+          "viewportWidth": 375,
+          "viewportHeight": 667,
+          "measuredScrollWidth": 375,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "register_375w_375px-iphone-se-ios.jpg"
+        },
+        "390px-iphone-14-ios": {
+          "viewportWidth": 390,
+          "viewportHeight": 844,
+          "measuredScrollWidth": 390,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "register_390w_390px-iphone-14-ios.jpg"
+        },
+        "430px-iphone-15-pro-max": {
+          "viewportWidth": 430,
+          "viewportHeight": 932,
+          "measuredScrollWidth": 430,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "register_430w_430px-iphone-15-pro-max.jpg"
+        },
+        "768px-ipad-tablet": {
+          "viewportWidth": 768,
+          "viewportHeight": 1024,
+          "measuredScrollWidth": 768,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "register_768w_768px-ipad-tablet.jpg"
+        },
+        "1280px-desktop-hd": {
+          "viewportWidth": 1280,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 1280,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 10,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "register_1280w_1280px-desktop-hd.jpg"
+        }
+      }
+    },
+    {
+      "slug": "dashboard",
+      "url": "http://127.0.0.1:8192/dashboard.html",
+      "viewports": {
+        "320px-ultra-compact": {
+          "viewportWidth": 320,
+          "viewportHeight": 568,
+          "measuredScrollWidth": 320,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "12px",
+          "screenshotFile": "dashboard_320w_320px-ultra-compact.jpg"
+        },
+        "360px-android-standard": {
+          "viewportWidth": 360,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 360,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "12px",
+          "screenshotFile": "dashboard_360w_360px-android-standard.jpg"
+        },
+        "375px-iphone-se-ios": {
+          "viewportWidth": 375,
+          "viewportHeight": 667,
+          "measuredScrollWidth": 375,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "12px",
+          "screenshotFile": "dashboard_375w_375px-iphone-se-ios.jpg"
+        },
+        "390px-iphone-14-ios": {
+          "viewportWidth": 390,
+          "viewportHeight": 844,
+          "measuredScrollWidth": 390,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "12px",
+          "screenshotFile": "dashboard_390w_390px-iphone-14-ios.jpg"
+        },
+        "430px-iphone-15-pro-max": {
+          "viewportWidth": 430,
+          "viewportHeight": 932,
+          "measuredScrollWidth": 430,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "12px",
+          "screenshotFile": "dashboard_430w_430px-iphone-15-pro-max.jpg"
+        },
+        "768px-ipad-tablet": {
+          "viewportWidth": 768,
+          "viewportHeight": 1024,
+          "measuredScrollWidth": 768,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "12px",
+          "screenshotFile": "dashboard_768w_768px-ipad-tablet.jpg"
+        },
+        "1280px-desktop-hd": {
+          "viewportWidth": 1280,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 1280,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 9,
+          "navPaddingTop": "17.6px",
+          "screenshotFile": "dashboard_1280w_1280px-desktop-hd.jpg"
+        }
+      }
+    },
+    {
+      "slug": "admin",
+      "url": "http://127.0.0.1:8192/admin.html",
+      "viewports": {
+        "320px-ultra-compact": {
+          "viewportWidth": 320,
+          "viewportHeight": 568,
+          "measuredScrollWidth": 320,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "admin_320w_320px-ultra-compact.jpg"
+        },
+        "360px-android-standard": {
+          "viewportWidth": 360,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 360,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "admin_360w_360px-android-standard.jpg"
+        },
+        "375px-iphone-se-ios": {
+          "viewportWidth": 375,
+          "viewportHeight": 667,
+          "measuredScrollWidth": 375,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "admin_375w_375px-iphone-se-ios.jpg"
+        },
+        "390px-iphone-14-ios": {
+          "viewportWidth": 390,
+          "viewportHeight": 844,
+          "measuredScrollWidth": 390,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "admin_390w_390px-iphone-14-ios.jpg"
+        },
+        "430px-iphone-15-pro-max": {
+          "viewportWidth": 430,
+          "viewportHeight": 932,
+          "measuredScrollWidth": 430,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "admin_430w_430px-iphone-15-pro-max.jpg"
+        },
+        "768px-ipad-tablet": {
+          "viewportWidth": 768,
+          "viewportHeight": 1024,
+          "measuredScrollWidth": 768,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 0,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "admin_768w_768px-ipad-tablet.jpg"
+        },
+        "1280px-desktop-hd": {
+          "viewportWidth": 1280,
+          "viewportHeight": 800,
+          "measuredScrollWidth": 1280,
+          "hasHorizontalOverflow": false,
+          "sub16pxInputs": 47,
+          "navPaddingTop": "19.2px",
+          "screenshotFile": "admin_1280w_1280px-desktop-hd.jpg"
+        }
+      },
+      "builderModals": {
+        "exhibitionModalFile": "admin_375w_exhibition_builder_modal.jpg",
+        "eventModalFile": "admin_375w_event_builder_modal.jpg"
+      }
+    }
+  ],
+  "summary": {
+    "totalSnapshots": 46,
+    "zeroHorizontalOverflow": true,
+    "fontSizingCompliant": true,
+    "touchTargetsCompliant": true
+  }
+}

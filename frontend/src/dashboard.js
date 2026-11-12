@@ -741,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="font-size: 11px; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.6rem;">Dates: ${window.escapeHtml(c.date_text || 'Active')}</div>
                 <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">${window.escapeHtml(c.about_text || 'Submit artwork for our gallery showcase.')}</p>
               </div>
-              <a href="exhibition.html?cycle=${encodeURIComponent(c.id)}" class="action-btn-primary" style="font-size: 11px; padding: 0.5rem 1rem; text-align: center; text-decoration: none;">Submit Artwork &rarr;</a>
+              <a href="exhibition.html?id=${encodeURIComponent(c.id)}" class="action-btn-primary" style="font-size: 11px; padding: 0.5rem 1rem; text-align: center; text-decoration: none;">Submit Artwork &rarr;</a>
             </div>
           `;
         }).join('');
@@ -756,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (aboutEl) aboutEl.textContent = single.about_text || cfg.about_text || 'Submit your artwork and portfolio for our upcoming exhibition showcase.';
         const linkBtn = openView ? openView.querySelector('a.action-btn-primary') : null;
         if (linkBtn && single.id) {
-          linkBtn.href = `exhibition.html?cycle=${encodeURIComponent(single.id)}`;
+          linkBtn.href = `exhibition.html?id=${encodeURIComponent(single.id)}`;
         }
       } else {
         const multiCyclesView = document.getElementById('exhibMultiCyclesView');
@@ -770,6 +770,49 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!masterPanel) return;
 
       masterPanel.style.display = 'block';
+
+      // Multi-cycle status representation in Activity View
+      let multiStatusContainer = document.getElementById('exhibMultiStatusContainer');
+      const cycleEntries = data.statuses_by_cycle ? Object.entries(data.statuses_by_cycle) : [];
+      if (cycleEntries.length > 1) {
+        if (!multiStatusContainer) {
+          multiStatusContainer = document.createElement('div');
+          multiStatusContainer.id = 'exhibMultiStatusContainer';
+          multiStatusContainer.style.marginBottom = '1.5rem';
+          multiStatusContainer.style.display = 'flex';
+          multiStatusContainer.style.flexDirection = 'column';
+          multiStatusContainer.style.gap = '0.75rem';
+          masterPanel.parentElement.insertBefore(multiStatusContainer, masterPanel);
+        }
+        multiStatusContainer.innerHTML = `
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.25rem;">
+            Your Active Exhibition Submissions (${cycleEntries.length})
+          </div>
+          ${cycleEntries.map(([cycleTitle, info]) => {
+            let badgeClass = 'badge-pending';
+            let badgeText = 'Under Review';
+            if (info.status === 'APPROVED') {
+              badgeClass = 'badge-approved';
+              badgeText = (info.registration_status === 'CONFIRMED' || info.registration_status === 'SUBMITTED') ? 'Confirmed' : 'Selected for Show';
+            } else if (info.status === 'REJECTED') {
+              badgeClass = 'badge-gold';
+              badgeText = 'Not Selected';
+            }
+            return `
+              <div style="background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                  <span class="badge ${badgeClass}" style="font-size: 9.5px; margin-bottom: 0.25rem; display: inline-block;">${badgeText}</span>
+                  <div style="font-family: var(--font-heading); font-size: 1.2rem; color: var(--text-primary);">${window.escapeHtml(cycleTitle)}</div>
+                  ${info.curator_note ? `<div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 0.2rem; font-style: italic;">"${window.escapeHtml(info.curator_note)}"</div>` : ''}
+                </div>
+                <a href="exhibition.html" class="action-btn-secondary" style="font-size: 11px; padding: 0.4rem 0.8rem;">View Open Call &rarr;</a>
+              </div>
+            `;
+          }).join('')}
+        `;
+      } else if (multiStatusContainer) {
+        multiStatusContainer.remove();
+      }
 
       ['exhibApplyView', 'exhibPendingView', 'exhibRejectedView', 'exhibApprovedView', 'exhibFinalizedView'].forEach((id) => {
         const el = document.getElementById(id);
@@ -853,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Handle exhibition payment proof upload
+  // Handle exhibition payment proof upload (Private Sovereign R2)
   document.getElementById('paymentProofForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const tcChecked = document.getElementById('tcCheckbox')?.checked;
@@ -871,32 +914,50 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const file = fileInput.files[0];
+    if (file.size > 10 * 1024 * 1024) {
+      if (msg) {
+        msg.style.color = 'var(--accent-red-text)';
+        msg.textContent = 'Receipt image exceeds 10MB limit.';
+      }
+      return;
+    }
+
     if (btn) {
       btn.textContent = 'Uploading Proof...';
       btn.disabled = true;
     }
     if (msg) {
       msg.style.color = 'var(--text-secondary)';
-      msg.textContent = 'Uploading transaction screenshot...';
+      msg.textContent = 'Uploading transaction receipt to private storage...';
     }
 
     try {
-      const { cloudName, uploadPreset } = getCloudinaryConfig();
       const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
-      formData.append('upload_preset', uploadPreset);
+      formData.append('file', file);
 
-      const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+      const uploadRes = await window.globalApiFetch('/exhibitions/upload-payment-proof', {
         method: 'POST',
         body: formData
       });
-      const cloudData = await cloudRes.json();
-      if (!cloudData.secure_url) throw new Error('Proof upload failed.');
+
+      if (!uploadRes.ok) {
+        const uploadErr = await uploadRes.json().catch(() => ({}));
+        throw new Error(uploadErr.detail || uploadErr.error || 'Proof upload failed.');
+      }
+
+      const uploadData = await uploadRes.json();
+      const receiptUrl = uploadData.url;
 
       if (msg) msg.textContent = 'Confirming registration...';
+      const targetExhibitionId = userActiveExhibition?.exhibition_id || userActiveExhibition?.id || null;
       const res = await window.globalApiFetch('/exhibitions/finalize', {
         method: 'POST',
-        body: JSON.stringify({ agreed_to_tnc: true, payment_proof_url: cloudData.secure_url })
+        body: JSON.stringify({
+          exhibition_id: targetExhibitionId,
+          agreed_to_tnc: true,
+          payment_proof_url: receiptUrl
+        })
       });
 
       if (res && res.ok) {
@@ -907,7 +968,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Payment submitted successfully.', 'success');
         setTimeout(() => loadExhibitionStatus(), 1500);
       } else {
-        throw new Error('Server rejected the confirmation request.');
+        const finalizeErr = await res.json().catch(() => ({}));
+        throw new Error(finalizeErr.detail || finalizeErr.error || 'Server rejected the confirmation request.');
       }
     } catch (err) {
       if (msg) {
