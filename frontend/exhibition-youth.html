@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#2d2722">
+  <meta name="application-name" content="Alfaaz">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Alfaaz">
+  <link rel="apple-touch-icon" href="/images/icons/icon-192.png">
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <meta name="description" content="Dedicated youth exhibition application intake for artists under 18 years of age with parent/guardian safeguarding at Alfaaz Collective." />
+  <title>Youth Exhibition Application (Under 18) — ALFAAZ</title>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+  <script src="https://unpkg.com/lucide@1.66.0/dist/umd/lucide.min.js" defer></script>
+  <link rel="stylesheet" href="global.css?v=alfaaz-youth">
+  <script type="module" src="global.js"></script>
+  <script type="module" src="src/exhibition-youth.js"></script>
+
+  <style>
+    .page-header { position: relative; min-height: 38vh; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; padding: 6rem 1.5rem 2.5rem; }
+    .page-title { font-family: var(--font-heading); font-size: clamp(2.2rem, 4.5vw, 3.6rem); font-weight: 400; color: var(--text-primary); margin-bottom: 0.5rem; position: relative; z-index: 10; line-height: 1.15; }
+    .page-subtitle { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent-gold-text); position: relative; z-index: 10; font-weight: 600; margin-bottom: 0.85rem; }
+    .curatorial-lead { max-width: 650px; margin: 0 auto; font-size: 14px; color: var(--text-secondary); line-height: 1.65; position: relative; z-index: 10; }
+    
+    .form-container { max-width: 840px; margin: 0 auto; padding: 0 1.5rem 6rem; position: relative; }
+    
+    .cycle-banner {
+      background: var(--bg-secondary);
+      border: 1px solid var(--grid-border);
+      border-left: 4px solid var(--accent-gold);
+      padding: 1.5rem 2rem;
+      margin-top: -2rem;
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      box-shadow: var(--shadow-base);
+    }
+
+    .safeguarding-box {
+      background: rgba(189, 111, 93, 0.05);
+      border: 1px solid var(--accent-gold);
+      padding: 1.75rem 2rem;
+      margin-bottom: 2rem;
+    }
+    .safeguarding-title { font-family: var(--font-heading); font-size: 1.4rem; color: var(--text-primary); margin: 0 0 0.5rem; }
+    .safeguarding-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+
+    .form-panel { background: var(--bg-secondary); border: 1px solid var(--grid-border); padding: 2.5rem; box-shadow: var(--shadow-float); }
+    .section-title-sub { font-family: var(--font-heading); font-size: 1.6rem; color: var(--text-primary); margin-top: 2rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--grid-border); padding-bottom: 0.4rem; }
+    .section-title-sub:first-of-type { margin-top: 0; }
+
+    .field-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.5rem; }
+    .field-hint { font-size: 11.5px; color: var(--text-secondary); letter-spacing: 0.25px; }
+
+    .form-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--grid-border);
+      padding: 0.75rem 0;
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-primary);
+      width: 100%;
+      border-radius: 0;
+      transition: border-color 0.25s ease;
+    }
+    .form-input:focus { outline: none; border-bottom-color: var(--accent-gold); }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem; }
+    .full-width { grid-column: 1 / -1; }
+
+    .progress-bar-wrap { width: 100%; height: 4px; background: var(--grid-border); margin-top: 0.5rem; overflow: hidden; display: none; }
+    .progress-bar-fill { height: 100%; background: var(--accent-gold); width: 0%; transition: width 0.3s ease; }
+
+    .age-warning-banner {
+      display: none;
+      background: rgba(220, 38, 38, 0.08);
+      border: 1px solid var(--accent-red);
+      color: var(--text-primary);
+      padding: 1rem 1.25rem;
+      margin-top: 0.5rem;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    .age-warning-banner a { color: var(--accent-gold-text); font-weight: 600; text-decoration: underline; }
+
+    @media (max-width: 768px) {
+      .page-header { padding-top: 5rem; min-height: 32vh; }
+      .form-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+      .form-input { font-size: 16px !important; }
+      .full-width { grid-column: 1; }
+      .form-panel { padding: 1.75rem 1.25rem; }
+      .cycle-banner { padding: 1.25rem; }
+      .safeguarding-box { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav id="navbar" style="justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="index.html" class="logo ur-hover" data-ur="الفاظ" aria-label="Alfaaz Collective Home">
+        <span class="en-text">ALFAAZ</span>
+      </a>
+    </div>
+    <div class="nav-actions" style="display: flex; gap: 1.5rem; align-items: center;">
+      <a href="exhibition.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
+        Exhibition Hub
+      </a>
+      <a href="dashboard.html" style="font-size: 11px; color: var(--text-secondary); text-decoration: none; text-transform: uppercase; letter-spacing: 2px;">
+        Dashboard
+      </a>
+    </div>
+  </nav>
+
+  <main>
+    <header class="page-header">
+      <video class="bg-video" autoplay loop muted playsinline poster="https://res.cloudinary.com/dmqwjpmjk/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/v1777653360/photo_2026-05-01_22-00-43_jsuqqm.jpg">
+        <source src="https://res.cloudinary.com/dmqwjpmjk/video/upload/v1761507594/portal-bg_oribvr.mp4" type="video/mp4">
+      </video>
+      <div class="video-overlay"></div>
+      <div style="max-width: 800px; padding: 0 1rem;">
+        <span class="page-subtitle">Youth Open Call (Below 18 Years)</span>
+        <h1 class="page-title">Youth Exhibition Intake</h1>
+        <p class="curatorial-lead">
+          For school students, young creators, and emerging artistic voices in Kashmir. Dedicated safeguarding, parental consent, and curatorial support.
+        </p>
+      </div>
+    </header>
+
+    <div class="form-container">
+
+      <!-- Active Cycle Reference Banner -->
+      <div class="cycle-banner" id="cycleBanner">
+        <div>
+          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-gold-text); font-weight: 600;">Exhibition Cycle</span>
+          <h2 id="cycleTitle" style="font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); margin: 0.2rem 0;">Loading cycle...</h2>
+          <div id="cycleMeta" style="font-size: 12px; color: var(--text-secondary);">—</div>
+        </div>
+        <div>
+          <a href="exhibition.html" class="action-btn" style="font-size: 10px; padding: 0.5rem 1rem; text-decoration: none;">
+            Change Show
+          </a>
+        </div>
+      </div>
+
+      <!-- Safeguarding Notice for Parents & Guardians -->
+      <div class="safeguarding-box">
+        <h3 class="safeguarding-title">Alfaaz Youth Safeguarding &amp; Privacy Commitment</h3>
+        <p class="safeguarding-text">
+          Because this applicant is under 18 years old, Alfaaz requires explicit parent or legal guardian authorization. All personal information and uploaded files are stored securely in encrypted private storage and are never shared publicly without parental agreement.
+        </p>
+      </div>
+
+      <!-- Application Form Panel -->
+      <form id="youthForm" class="form-panel" novalidate>
+        
+        <!-- 1. Young Artist Details -->
+        <h3 class="section-title-sub">1. Young Artist Information</h3>
+        <div class="form-grid">
+          <div class="field-group">
+            <label class="input-label" for="fname">Artist Full Name *</label>
+            <span class="field-hint">Young creator's full name or pseudonym</span>
+            <input type="text" id="fname" class="form-input" required placeholder="e.g. Zaira Mir">
+          </div>
+
+          <div class="field-group">
+            <label class="input-label" for="age">Age (Under 18) *</label>
+            <span class="field-hint">Must be between 1 and 17 years old</span>
+            <input type="number" id="age" class="form-input" required min="1" max="17" placeholder="e.g. 15">
+            <div id="ageWarning" class="age-warning-banner">
+              <strong>Notice:</strong> You entered an age of 18 or older. If you are an adult artist, please use our <a href="exhibition-adult.html" id="linkToAdult">Adult Exhibition Portal (18+)</a>.
+            </div>
+          </div>
+
+          <div class="field-group full-width">
+            <label class="input-label" for="address">Where are you from in Kashmir? *</label>
+            <span class="field-hint">Town, district, or city (e.g. Srinagar, Baramulla, Anantnag)</span>
+            <input type="text" id="address" class="form-input" required placeholder="e.g. Rainawari, Srinagar">
+          </div>
+
+          <div class="field-group full-width">
+            <label class="input-label" for="phone">Personal Phone / WhatsApp (Optional)</label>
+            <span class="field-hint">Optional contact for the student; guardian contact is required below</span>
+            <input type="tel" id="phone" class="form-input" placeholder="+91 94190 00000">
+          </div>
+        </div>
+
+        <!-- 2. Parent / Legal Guardian Consent & Safeguarding -->
+        <h3 class="section-title-sub">2. Parent or Legal Guardian Safeguarding</h3>
+        <div class="form-grid">
+          <div class="field-group">
+            <label class="input-label" for="guardianName">Parent / Legal Guardian Full Name *</label>
+            <span class="field-hint">Legal name of mother, father, or legal guardian</span>
+            <input type="text" id="guardianName" class="form-input" required placeholder="e.g. Farooq Ahmad Mir">
+          </div>
+
+          <div class="field-group">
+            <label class="input-label" for="guardianRelationship">Relationship to Artist *</label>
+            <span class="field-hint">e.g. Mother, Father, Legal Guardian</span>
+            <input type="text" id="guardianRelationship" class="form-input" required placeholder="e.g. Father">
+          </div>
+
+          <div class="field-group full-width">
+            <label class="input-label" for="guardianContact">Parent / Guardian Contact Phone or Email *</label>
+            <span class="field-hint">Primary number or email for curatorial notices and safeguarding verification</span>
+            <input type="text" id="guardianContact" class="form-input" required placeholder="+91 99060 00000 or parent@email.com">
+          </div>
+
+          <div class="field-group full-width" style="margin-top: 0.5rem;">
+            <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 13px; color: var(--text-primary); line-height: 1.5;">
+              <input type="checkbox" id="guardianConsent" required style="width: auto; margin-top: 3px;">
+              <span><strong>Parent / Guardian Consent:</strong> As parent or legal guardian, I grant explicit permission for this young artist to participate in this Alfaaz exhibition cycle and consent to curatorial communication.</span>
+            </label>
+          </div>
+
+          <div class="field-group full-width">
+            <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 13px; color: var(--text-primary); line-height: 1.5;">
+              <input type="checkbox" id="participantAssent" required style="width: auto; margin-top: 3px;">
+              <span><strong>Young Participant Assent:</strong> I (the young artist) confirm that I want to take part in this exhibition cycle and that this submitted work is my own original creation.</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Artwork Details & Upload -->
+        <h3 class="section-title-sub">3. Artwork Submission</h3>
+        <div class="form-grid">
+          <div class="field-group">
+            <label class="input-label" for="genre">Artistic Discipline *</label>
+            <span class="field-hint">e.g. Painting, Drawing, Calligraphy, Photography, Sculpture</span>
+            <input type="text" id="genre" class="form-input" required placeholder="e.g. Painting">
+          </div>
+
+          <div class="field-group">
+            <label class="input-label" for="medium">Medium &amp; Dimensions *</label>
+            <span class="field-hint">e.g. Watercolour on Paper, Acrylic on Canvas (12x18 in)</span>
+            <input type="text" id="medium" class="form-input" required placeholder="e.g. Watercolour on Paper (14x20 in)">
+          </div>
+
+          <!-- Primary Portfolio Upload (PDF) -->
+          <div class="field-group full-width">
+            <label class="input-label" for="portfolioFile">Artwork Portfolio (PDF) *</label>
+            <span class="field-hint">Upload photos or scans of your selected artwork in a single PDF document (max 15MB)</span>
+            <div style="margin-top: 0.5rem;">
+              <input type="file" id="portfolioFile" accept="application/pdf" style="padding: 0.5rem 0;">
+            </div>
+            <div class="progress-bar-wrap" id="portfolioProgressWrap">
+              <div class="progress-bar-fill" id="portfolioProgressFill"></div>
+            </div>
+            <div id="uploadStatus" style="font-size: 12px; margin-top: 0.4rem; min-height: 1.2em;"></div>
+          </div>
+
+          <!-- Optional Recent Works / Sketches Upload -->
+          <div class="field-group full-width" style="background: rgba(45, 49, 46, 0.02); border: 1px dashed var(--grid-border); padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <label class="input-label" for="recentWorksFile">Earlier Sketches or Recent Works (Optional)</label>
+              <span class="badge" style="font-size: 9px; border-color: var(--grid-border); color: var(--text-secondary);">Optional</span>
+            </div>
+            <span class="field-hint">Share earlier practice pieces, sketchbook pages, or drafts (PDF or Image, max 15MB)</span>
+            <div style="margin-top: 0.5rem;">
+              <input type="file" id="recentWorksFile" accept="application/pdf,image/jpeg,image/png,image/webp" style="padding: 0.5rem 0;">
+            </div>
+            <div id="recentWorksStatus" style="font-size: 12px; margin-top: 0.4rem; min-height: 1.2em;"></div>
+          </div>
+
+          <div class="field-group full-width">
+            <label class="input-label" for="note">Artist Statement / Story Behind the Work (Optional)</label>
+            <span class="field-hint">Tell our curatorial team what inspired this artwork (max 1000 characters)</span>
+            <textarea id="note" class="form-input" rows="3" placeholder="Explain the thought, feeling, or technique behind your artwork..."></textarea>
+          </div>
+        </div>
+
+        <!-- 4. Curatorial Screening Terms & Bot Defense -->
+        <h3 class="section-title-sub">4. Review &amp; Submission</h3>
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 13px; color: var(--text-primary); line-height: 1.5;">
+            <input type="checkbox" id="agreedToScreening" required style="width: auto; margin-top: 3px;">
+            <span>I agree to the curatorial screening terms and certify that all submitted artwork is the original creation of the young artist.</span>
+          </label>
+        </div>
+
+        <!-- Cloudflare Turnstile -->
+        <div style="margin: 1.5rem 0; min-height: 65px;">
+          <div id="youthTurnstile"></div>
+        </div>
+
+        <div id="formMsg" style="margin-bottom: 1.25rem; font-size: 13px; min-height: 1.4em; text-align: center;"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--grid-border); padding-top: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <a href="exhibition.html" class="action-btn" style="text-decoration: none;">&larr; Return to Exhibition Hub</a>
+          <button type="submit" class="action-btn gold" id="submitBtn" style="padding: 0.85rem 2.25rem; font-size: 11px;">
+            Submit Youth Application &rarr;
+          </button>
+        </div>
+
+      </form>
+
+      <!-- 5. Submission Success Screen -->
+      <div id="successScreen" class="panel text-center" style="display: none; padding: 4rem 2rem;">
+        <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(34, 197, 94, 0.1); border: 2px solid var(--accent-green); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: var(--accent-green-text); font-size: 26px;">
+          ✓
+        </div>
+        <h3 style="font-family: var(--font-heading); font-size: 2.2rem; color: var(--text-primary); margin-bottom: 0.5rem;">
+          Youth Application Successfully Received!
+        </h3>
+        <p style="font-size: 13.5px; color: var(--text-secondary); max-width: 600px; margin: 0 auto 2rem; line-height: 1.7;">
+          Thank you for sharing your artwork with Alfaaz Collective. Your submission has been securely recorded under our youth safeguarding protocol and will be reviewed with care and respect by our curators.
+        </p>
+
+        <div class="review-summary-card" style="max-width: 520px; margin: 0 auto 2rem; text-align: left; background: var(--bg-primary); border: 1px solid var(--grid-border); padding: 1.5rem;">
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.75rem;">
+            What Happens Next?
+          </div>
+          <ul style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; list-style: none; padding: 0;">
+            <li style="margin-bottom: 0.4rem;">1. Curators review the submitted portfolio and verify parent/guardian consent.</li>
+            <li style="margin-bottom: 0.4rem;">2. You can track your application status at any time on your Member Dashboard.</li>
+            <li>3. If selected, you and your guardian will be invited to participate in the exhibition showcase in Srinagar.</li>
+          </ul>
+        </div>
+
+        <a href="dashboard.html" class="action-btn gold" style="display: inline-block; padding: 0.85rem 2rem; font-size: 11px; text-decoration: none;">
+          Go to Member Dashboard &rarr;
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  <footer style="border-top: 1px solid var(--grid-border); padding: 3rem 1.5rem; text-align: center; font-size: 11px; color: var(--text-secondary); letter-spacing: 1px;">
+    <div>ALFAAZ COLLECTIVE // الفاظ کلیکٹو</div>
+    <div style="margin-top: 0.4rem; color: var(--text-secondary);">Srinagar, Kashmir — Independent Multidisciplinary Cultural Organization</div>
+  </footer>
+
+</body>
+</html>

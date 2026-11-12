@@ -165,6 +165,8 @@ const VIEWPORTS = [
 const PAGES = [
   { slug: 'homepage', url: `${BASE_URL}/index.html` },
   { slug: 'exhibition', url: `${BASE_URL}/exhibition.html` },
+  { slug: 'exhibition-youth', url: `${BASE_URL}/exhibition-youth.html` },
+  { slug: 'exhibition-adult', url: `${BASE_URL}/exhibition-adult.html` },
   { slug: 'login', url: `${BASE_URL}/login.html` },
   { slug: 'register', url: `${BASE_URL}/register.html` },
   { slug: 'dashboard', url: `${BASE_URL}/dashboard.html` },
@@ -210,7 +212,7 @@ try {
       });
 
       // Manage auth context per page
-      if (page.slug === 'dashboard' || page.slug === 'admin') {
+      if (page.slug === 'dashboard' || page.slug === 'admin' || page.slug.startsWith('exhibition-')) {
         await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
           source: `
             try {

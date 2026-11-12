@@ -12,6 +12,8 @@ export default defineConfig({
         blogs: resolve(__dirname, 'blogs.html'),
         dashboard: resolve(__dirname, 'dashboard.html'),
         exhibition: resolve(__dirname, 'exhibition.html'),
+        exhibitionYouth: resolve(__dirname, 'exhibition-youth.html'),
+        exhibitionAdult: resolve(__dirname, 'exhibition-adult.html'),
         login: resolve(__dirname, 'login.html'),
         post: resolve(__dirname, 'post.html'),
         register: resolve(__dirname, 'register.html'),

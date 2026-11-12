@@ -608,4 +608,52 @@ The administration interface (`frontend/admin.html` and `src/admin.js`) was veri
   4. **Backend Creation & Activation**: Updated `POST /admin/exhibitions/create` to accept `is_active` directly, activate cycles when saving live, return `{ status: 'SUCCESS', id: newId }`, and provide fallback queries for legacy schema compatibility.
   5. **Frontend Save Pipeline**: `saveBuilder()` now transmits `is_active` and `status`, refreshes the cycle list and applicants dossier upon save, and displays actionable success/error messaging.
 
+### 9.5 Admin `showToast` Resolution & Lightweight Mobile Tab Navigation
+- **Runtime Error Resolution**:
+  - *Symptom*: When deploying or saving an exhibition cycle from the admin builder modal, the browser console threw `✗ showToast is not defined`, crashing the feedback block.
+  - *Fix*: Defined a self-bootstrapping `showToast(message, type, duration)` helper in `frontend/src/admin.js` exported to `window.showToast`. If `#toastContainer` does not exist in the DOM, it is dynamically created and styled with Alfaaz design tokens.
+- **Lightweight One-Liner Tab Navigation**:
+  - *Feedback*: Avoid heavy cards at the bottom of admin tabs on mobile.
+  - *Implementation*: Added an ultra-lightweight one-liner quick navigation bar (`.admin-tab-footer-nav`) across all 8 admin tabs (`#tab-events`, `#tab-exhibitions`, `#tab-clubs`, `#tab-roster`, `#tab-submissions`, `#tab-blogs`, `#tab-audit`, `#tab-diagnostics`):
+    - Example: `Quick Jump: Events (e.g. Salons & Meets) · Exhibitions (e.g. Cycles & Portfolios) · Clubs (e.g. Literary & Film) · Roster (e.g. Members & Contacts) · Submissions (e.g. Artwork & Poetry) · Journal (e.g. Essays & Archives) · Audit (e.g. Security Logs) · Health (e.g. Telemetry & DB)`
+    - Each link triggers `window.switchTab(tab)` and scrolls smoothly to the top of the newly selected panel, providing instant jumping without visual bloat or mobile layout lag.
+
+### 9.6 Pagewise Exhibition Intake & Multi-Language Removal
+- **Removal of Language Toggle**:
+  - Completely removed the `.lang-selector-bar` / `#langSelectorContainer` and dynamic i18n switching DOM from `exhibition.html` and its sub-pages. The exhibition portal now presents a dignified, consistent experience in clean, plain English.
+- **Decoupled Pagewise Architecture**:
+  - *Problem*: Stuffing youth safeguarding, parental consent, adult age confirmation, and portfolio intake into a single monolithic page created cognitive overload and confusing conditional DOM expanding.
+  - *Remediation*:
+    1. **Exhibition Discovery Hub (`frontend/exhibition.html` & `src/exhibition.js`)**:
+       - Central curatorial open-call showcase.
+       - Dynamically renders active cycle cards (venue, dates, fee, curatorial theme) and status badges.
+       - Features two prominent, distinct gateway stream cards directing applicants cleanly to their respective intake page:
+         - **Adult Artist Stream (18 & Above)**: Leads directly to `exhibition-adult.html`.
+         - **Youth Artist Stream (Below 18)**: Leads directly to `exhibition-youth.html`.
+    2. **Dedicated Youth Application Portal (`frontend/exhibition-youth.html` & `src/exhibition-youth.js`)**:
+       - Tailored exclusively for applicants under 18 years of age.
+       - Features prominent Alfaaz Child Safeguarding & Privacy Commitment.
+       - Young artist profile with automatic age check (redirects users entering >= 18 to the adult portal).
+       - Dedicated parent / legal guardian safeguarding section: guardian full name, relationship, contact phone/email, explicit parent consent checkbox, and young artist assent checkbox.
+       - Artwork submission: discipline, medium & dimensions, sovereign R2 private PDF portfolio upload (magic byte `%PDF-` validation, 15MB limit), and optional earlier sketches upload.
+       - Curatorial screening agreement and Cloudflare Turnstile challenge.
+       - Dedicated success confirmation screen directing users to their Member Dashboard.
+    3. **Dedicated Adult Application Portal (`frontend/exhibition-adult.html` & `src/exhibition-adult.js`)**:
+       - Tailored exclusively for artists aged 18 and older.
+       - Adult artist profile with automatic age check (redirects users entering < 18 to the youth portal).
+       - Explicit 18+ confirmation checkbox.
+       - Artwork submission: discipline, medium & dimensions, artist concept note, sovereign R2 private PDF portfolio upload (magic byte `%PDF-` validation, 15MB limit).
+       - Curatorial screening agreement and Cloudflare Turnstile challenge.
+       - Dedicated success confirmation screen directing users to their Member Dashboard.
+    4. **Vite Multi-Page Registration**:
+       - Registered `exhibitionYouth` and `exhibitionAdult` in `frontend/vite.config.js`. Both pages are bundled into `dist/` with optimized chunk sizes.
+
+### 9.7 Verification & Quality Gates
+- **TypeScript Typecheck**: `npm run typecheck` passed with 0 errors.
+- **Integration Test Suite**: `npm test` passed 19/19 test suites, 272/272 tests green.
+- **Hardening Suite**: `npm run test:hardening` verified all 6 database uniqueness constraints and 16,384 SJT profiles within strict bounds.
+- **Vite Production Build**: `npm run build` bundled 15 entrypoints cleanly in 3.73s.
+- **Empirical Mobile Viewport Audit**: `node scripts/mobile_viewport_audit.mjs` captured 60 high-resolution snapshots across 8 pages and 7 viewports (320px, 360px, 375px, 390px, 430px, 768px, 1280px) with **0px horizontal overflow across every single page and viewport**.
+
+
 
