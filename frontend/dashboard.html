@@ -150,30 +150,34 @@
     .tab-directory-subtitle {
       font-size: 13px;
       color: var(--text-secondary);
-      margin: 0 0 1.5rem;
+      margin: 0 0 1.25rem;
     }
-    .tab-directory-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 1rem;
+    .tab-directory-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      width: 100%;
     }
     .tab-directory-card {
       background: #ffffff;
       border: 1px solid var(--grid-border);
-      padding: 1.25rem 1.35rem;
+      padding: 0.9rem 1.25rem;
       text-decoration: none;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      align-items: center;
       justify-content: space-between;
-      min-height: 120px;
+      gap: 1rem;
       transition: all 0.2s ease;
       cursor: pointer;
       position: relative;
+      box-sizing: border-box;
+      width: 100%;
     }
     .tab-directory-card:hover {
       border-color: var(--accent-gold);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(45, 49, 46, 0.05);
+      background: #fbf9f6;
+      transform: translateX(4px);
     }
     .tab-directory-card.active-tab-card {
       background: var(--bg-secondary);
@@ -182,17 +186,46 @@
       transform: none;
       box-shadow: none;
     }
-    .tab-directory-card-top {
+    .tab-directory-item-left {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.5rem;
+      gap: 1.15rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .tab-directory-priority {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      color: var(--accent-gold-text);
+      font-weight: 600;
+      line-height: 1;
+      min-width: 24px;
+      flex-shrink: 0;
+    }
+    .tab-directory-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      min-width: 0;
     }
     .tab-directory-card-title {
       font-family: var(--font-heading);
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       color: var(--text-primary);
       font-weight: 600;
+      line-height: 1.2;
+    }
+    .tab-directory-card-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin: 0;
+    }
+    .tab-directory-item-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
     }
     .tab-directory-card-arrow {
       color: var(--accent-gold-text);
@@ -205,23 +238,15 @@
     .tab-directory-card.active-tab-card .tab-directory-card-arrow {
       display: none;
     }
-    .tab-directory-card-desc {
-      font-size: 12px;
-      color: var(--text-secondary);
-      line-height: 1.55;
-      margin: 0 0 0.75rem;
-      flex-grow: 1;
-    }
     .tab-directory-badge {
       display: none;
-      align-self: flex-start;
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 1px;
       font-weight: 600;
       color: var(--accent-gold-text);
       background: rgba(140, 109, 59, 0.1);
-      padding: 2px 6px;
+      padding: 3px 7px;
       border: 1px solid rgba(140, 109, 59, 0.25);
     }
     .tab-directory-card.active-tab-card .tab-directory-badge {
@@ -758,8 +783,18 @@
         margin-top: 2.25rem;
         padding-top: 1.5rem;
       }
-      .tab-directory-grid {
-        grid-template-columns: 1fr;
+      .tab-directory-card {
+        padding: 0.8rem 1rem;
+      }
+      .tab-directory-item-left {
+        gap: 0.75rem;
+      }
+      .tab-directory-priority {
+        font-size: 1rem;
+        min-width: 20px;
+      }
+      .tab-directory-card-title {
+        font-size: 1.05rem;
       }
     }
 
@@ -859,41 +894,61 @@
         <h3 class="tab-directory-title">Dashboard Sections</h3>
         <p class="tab-directory-subtitle">Quickly jump across workspace areas and manage your collective engagement.</p>
         
-        <div class="tab-directory-grid">
-          <a href="#home" class="tab-directory-card" data-tab-link="home">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Studio Overview</span>
-              <span class="tab-directory-card-arrow">&rarr;</span>
-            </div>
-            <p class="tab-directory-card-desc">Your active passes, vital notices, and collective status highlights.</p>
-            <span class="tab-directory-badge">Current Tab</span>
-          </a>
-
+        <div class="tab-directory-stack">
           <a href="#explore" class="tab-directory-card" data-tab-link="explore">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Explore &amp; Open Calls</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">01</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Explore &amp; Open Calls</span>
+                <span class="tab-directory-card-desc">Upcoming community gatherings, creative circle openings, and open exhibitions.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Upcoming community gatherings, creative circle openings, and open exhibitions.</p>
-            <span class="tab-directory-badge">Current Tab</span>
           </a>
 
           <a href="#activity" class="tab-directory-card" data-tab-link="activity">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Activity &amp; Records</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">02</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Activity &amp; Records</span>
+                <span class="tab-directory-card-desc">Confirmed passes, circle membership statuses, and exhibition portfolio reviews.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Confirmed passes, circle membership statuses, and exhibition portfolio reviews.</p>
-            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#home" class="tab-directory-card" data-tab-link="home">
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">03</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Studio Overview</span>
+                <span class="tab-directory-card-desc">Your active passes, vital notices, and collective status highlights.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
           </a>
 
           <a href="#profile" class="tab-directory-card" data-tab-link="profile">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Identity &amp; Account</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">04</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Identity &amp; Account</span>
+                <span class="tab-directory-card-desc">Manage profile name, WhatsApp contact for passes, and account security.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Manage profile name, WhatsApp contact for passes, and account security.</p>
-            <span class="tab-directory-badge">Current Tab</span>
           </a>
         </div>
       </div>
@@ -1005,41 +1060,61 @@
         <h3 class="tab-directory-title">Dashboard Sections</h3>
         <p class="tab-directory-subtitle">Quickly jump across workspace areas and manage your collective engagement.</p>
         
-        <div class="tab-directory-grid">
-          <a href="#home" class="tab-directory-card" data-tab-link="home">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Studio Overview</span>
-              <span class="tab-directory-card-arrow">&rarr;</span>
-            </div>
-            <p class="tab-directory-card-desc">Your active passes, vital notices, and collective status highlights.</p>
-            <span class="tab-directory-badge">Current Tab</span>
-          </a>
-
+        <div class="tab-directory-stack">
           <a href="#explore" class="tab-directory-card" data-tab-link="explore">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Explore &amp; Open Calls</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">01</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Explore &amp; Open Calls</span>
+                <span class="tab-directory-card-desc">Upcoming community gatherings, creative circle openings, and open exhibitions.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Upcoming community gatherings, creative circle openings, and open exhibitions.</p>
-            <span class="tab-directory-badge">Current Tab</span>
           </a>
 
           <a href="#activity" class="tab-directory-card" data-tab-link="activity">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Activity &amp; Records</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">02</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Activity &amp; Records</span>
+                <span class="tab-directory-card-desc">Confirmed passes, circle membership statuses, and exhibition portfolio reviews.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Confirmed passes, circle membership statuses, and exhibition portfolio reviews.</p>
-            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#home" class="tab-directory-card" data-tab-link="home">
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">03</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Studio Overview</span>
+                <span class="tab-directory-card-desc">Your active passes, vital notices, and collective status highlights.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
           </a>
 
           <a href="#profile" class="tab-directory-card" data-tab-link="profile">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Identity &amp; Account</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">04</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Identity &amp; Account</span>
+                <span class="tab-directory-card-desc">Manage profile name, WhatsApp contact for passes, and account security.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Manage profile name, WhatsApp contact for passes, and account security.</p>
-            <span class="tab-directory-badge">Current Tab</span>
           </a>
         </div>
       </div>
@@ -1178,41 +1253,61 @@
         <h3 class="tab-directory-title">Dashboard Sections</h3>
         <p class="tab-directory-subtitle">Quickly jump across workspace areas and manage your collective engagement.</p>
         
-        <div class="tab-directory-grid">
-          <a href="#home" class="tab-directory-card" data-tab-link="home">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Studio Overview</span>
-              <span class="tab-directory-card-arrow">&rarr;</span>
-            </div>
-            <p class="tab-directory-card-desc">Your active passes, vital notices, and collective status highlights.</p>
-            <span class="tab-directory-badge">Current Tab</span>
-          </a>
-
+        <div class="tab-directory-stack">
           <a href="#explore" class="tab-directory-card" data-tab-link="explore">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Explore &amp; Open Calls</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">01</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Explore &amp; Open Calls</span>
+                <span class="tab-directory-card-desc">Upcoming community gatherings, creative circle openings, and open exhibitions.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Upcoming community gatherings, creative circle openings, and open exhibitions.</p>
-            <span class="tab-directory-badge">Current Tab</span>
           </a>
 
           <a href="#activity" class="tab-directory-card" data-tab-link="activity">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Activity &amp; Records</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">02</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Activity &amp; Records</span>
+                <span class="tab-directory-card-desc">Confirmed passes, circle membership statuses, and exhibition portfolio reviews.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Confirmed passes, circle membership statuses, and exhibition portfolio reviews.</p>
-            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#home" class="tab-directory-card" data-tab-link="home">
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">03</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Studio Overview</span>
+                <span class="tab-directory-card-desc">Your active passes, vital notices, and collective status highlights.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
           </a>
 
           <a href="#profile" class="tab-directory-card" data-tab-link="profile">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Identity &amp; Account</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">04</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Identity &amp; Account</span>
+                <span class="tab-directory-card-desc">Manage profile name, WhatsApp contact for passes, and account security.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Manage profile name, WhatsApp contact for passes, and account security.</p>
-            <span class="tab-directory-badge">Current Tab</span>
           </a>
         </div>
       </div>
@@ -1300,41 +1395,61 @@
         <h3 class="tab-directory-title">Dashboard Sections</h3>
         <p class="tab-directory-subtitle">Quickly jump across workspace areas and manage your collective engagement.</p>
         
-        <div class="tab-directory-grid">
-          <a href="#home" class="tab-directory-card" data-tab-link="home">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Studio Overview</span>
-              <span class="tab-directory-card-arrow">&rarr;</span>
-            </div>
-            <p class="tab-directory-card-desc">Your active passes, vital notices, and collective status highlights.</p>
-            <span class="tab-directory-badge">Current Tab</span>
-          </a>
-
+        <div class="tab-directory-stack">
           <a href="#explore" class="tab-directory-card" data-tab-link="explore">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Explore &amp; Open Calls</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">01</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Explore &amp; Open Calls</span>
+                <span class="tab-directory-card-desc">Upcoming community gatherings, creative circle openings, and open exhibitions.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Upcoming community gatherings, creative circle openings, and open exhibitions.</p>
-            <span class="tab-directory-badge">Current Tab</span>
           </a>
 
           <a href="#activity" class="tab-directory-card" data-tab-link="activity">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Activity &amp; Records</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">02</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Activity &amp; Records</span>
+                <span class="tab-directory-card-desc">Confirmed passes, circle membership statuses, and exhibition portfolio reviews.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Confirmed passes, circle membership statuses, and exhibition portfolio reviews.</p>
-            <span class="tab-directory-badge">Current Tab</span>
+          </a>
+
+          <a href="#home" class="tab-directory-card" data-tab-link="home">
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">03</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Studio Overview</span>
+                <span class="tab-directory-card-desc">Your active passes, vital notices, and collective status highlights.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
+              <span class="tab-directory-card-arrow">&rarr;</span>
+            </div>
           </a>
 
           <a href="#profile" class="tab-directory-card" data-tab-link="profile">
-            <div class="tab-directory-card-top">
-              <span class="tab-directory-card-title">Identity &amp; Account</span>
+            <div class="tab-directory-item-left">
+              <span class="tab-directory-priority">04</span>
+              <div class="tab-directory-text">
+                <span class="tab-directory-card-title">Identity &amp; Account</span>
+                <span class="tab-directory-card-desc">Manage profile name, WhatsApp contact for passes, and account security.</span>
+              </div>
+            </div>
+            <div class="tab-directory-item-right">
+              <span class="tab-directory-badge">Current Tab</span>
               <span class="tab-directory-card-arrow">&rarr;</span>
             </div>
-            <p class="tab-directory-card-desc">Manage profile name, WhatsApp contact for passes, and account security.</p>
-            <span class="tab-directory-badge">Current Tab</span>
           </a>
         </div>
       </div>

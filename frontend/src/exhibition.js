@@ -6,8 +6,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // DOM Elements
   const closedMessage = document.getElementById('closedMessage');
   const activePortalContainer = document.getElementById('activePortalContainer');
-  const showcaseGrid = document.getElementById('showcaseGrid');
-  const totalCyclesCount = document.getElementById('totalCyclesCount');
+  const currentShowTitle = document.getElementById('currentShowTitle');
+  const currentShowMeta = document.getElementById('currentShowMeta');
+  const currentShowAbout = document.getElementById('currentShowAbout');
   const btnAdultStream = document.getElementById('btnAdultStream');
   const btnYouthStream = document.getElementById('btnYouthStream');
 
@@ -52,13 +53,43 @@ document.addEventListener('DOMContentLoaded', async () => {
           allow_recent_works_youth: Boolean(data.allow_recent_works_youth)
         }];
 
-    renderShowcaseGrid(activeCycles);
+    // Display primary active cycle info in hero banner
+    const primaryCycle = activeCycles[0];
+    if (primaryCycle) {
+      if (currentShowTitle) currentShowTitle.textContent = primaryCycle.title;
+      if (currentShowMeta) {
+        const venueText = primaryCycle.venue || 'Alfaaz Gallery, Srinagar';
+        const dateText = primaryCycle.date_text || 'Dates Announced Soon';
+        const feeText = primaryCycle.registration_fee ? `Fee: ${primaryCycle.registration_fee}` : 'Curatorial Open Call';
+        currentShowMeta.textContent = `${dateText} — ${venueText} (${feeText})`;
+      }
+      if (currentShowAbout && primaryCycle.about_text) {
+        currentShowAbout.textContent = primaryCycle.about_text;
+      }
+    }
 
-    // Update gateway button targets with default active cycle
-    const defaultCycle = activeCycles[0];
-    if (defaultCycle) {
-      if (btnAdultStream) btnAdultStream.href = `exhibition-adult.html?id=${encodeURIComponent(defaultCycle.id)}`;
-      if (btnYouthStream) btnYouthStream.href = `exhibition-youth.html?id=${encodeURIComponent(defaultCycle.id)}`;
+    // Direct gateway buttons to appropriate active cycles
+    const adultCycle = activeCycles.find(c => c.require_over_18 !== false && c.require_over_18 !== 0) || primaryCycle;
+    const youthCycle = activeCycles.find(c => c.require_over_18 === false || c.require_over_18 === 0) || primaryCycle;
+
+    if (btnAdultStream && adultCycle) {
+      btnAdultStream.href = `exhibition-adult.html?id=${encodeURIComponent(adultCycle.id)}`;
+      // Check if user submitted to this adult cycle
+      const adultStatus = userStatusData?.statuses_by_cycle && userStatusData.statuses_by_cycle[adultCycle.title];
+      if (adultStatus?.status) {
+        btnAdultStream.textContent = `View Application (${adultStatus.status}) →`;
+        btnAdultStream.href = 'dashboard.html';
+      }
+    }
+
+    if (btnYouthStream && youthCycle) {
+      btnYouthStream.href = `exhibition-youth.html?id=${encodeURIComponent(youthCycle.id)}`;
+      // Check if user submitted to this youth cycle
+      const youthStatus = userStatusData?.statuses_by_cycle && userStatusData.statuses_by_cycle[youthCycle.title];
+      if (youthStatus?.status) {
+        btnYouthStream.textContent = `View Application (${youthStatus.status}) →`;
+        btnYouthStream.href = 'dashboard.html';
+      }
     }
 
   } catch (err) {
@@ -69,76 +100,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   function showClosedState() {
     if (closedMessage) closedMessage.style.display = 'block';
     if (activePortalContainer) activePortalContainer.style.display = 'none';
-  }
-
-  // 3. Render Cycle Cards
-  function renderShowcaseGrid(cycles) {
-    if (!showcaseGrid) return;
-    showcaseGrid.innerHTML = '';
-
-    if (totalCyclesCount) {
-      totalCyclesCount.textContent = `${cycles.length} ${cycles.length === 1 ? 'Open Call' : 'Open Calls'}`;
-    }
-
-    cycles.forEach(cycle => {
-      const card = document.createElement('article');
-      card.className = 'show-card';
-
-      const isYouth = cycle.require_over_18 === false || cycle.require_over_18 === 0;
-      const streamBadge = isYouth
-        ? `<span class="badge badge-pending" style="font-size: 10px; width: fit-content;">Below 18 (Youth Stream)</span>`
-        : `<span class="badge badge-approved" style="font-size: 10px; width: fit-content;">18 &amp; Above (Adult Stream)</span>`;
-
-      // Check if user already submitted to this cycle
-      const cycleStatusInfo = userStatusData?.statuses_by_cycle && userStatusData.statuses_by_cycle[cycle.title];
-      const userCycleStatus = cycleStatusInfo?.status;
-
-      let actionButtonHtml = '';
-      if (userCycleStatus) {
-        actionButtonHtml = `
-          <a href="dashboard.html" class="action-btn" style="display: block; text-align: center; font-size: 11px; padding: 0.75rem 1rem; text-decoration: none;">
-            Application Dossier (${window.escapeHtml(userCycleStatus)}) &rarr;
-          </a>
-        `;
-      } else {
-        const targetUrl = isYouth
-          ? `exhibition-youth.html?id=${encodeURIComponent(cycle.id)}`
-          : `exhibition-adult.html?id=${encodeURIComponent(cycle.id)}`;
-
-        const applyLabel = isYouth
-          ? 'Apply to Youth Stream (Under 18) &rarr;'
-          : 'Apply to Adult Stream (18+) &rarr;';
-
-        actionButtonHtml = `
-          <a href="${targetUrl}" class="action-btn gold" style="display: block; text-align: center; font-size: 11px; padding: 0.75rem 1rem; text-decoration: none;">
-            ${applyLabel}
-          </a>
-        `;
-      }
-
-      const venueText = cycle.venue || 'Alfaaz Gallery, Srinagar';
-      const dateText = cycle.date_text || 'Dates Announced Soon';
-      const feeText = cycle.registration_fee ? `Fee: ${cycle.registration_fee}` : 'Curatorial Open Call';
-
-      card.innerHTML = `
-        <div>
-          ${streamBadge}
-          <h3 class="show-card-title">${window.escapeHtml(cycle.title)}</h3>
-          <div class="show-card-meta">
-            <span>📅 ${window.escapeHtml(dateText)}</span>
-            <span>📍 ${window.escapeHtml(venueText)}</span>
-            <span>🪙 ${window.escapeHtml(feeText)}</span>
-          </div>
-          <p class="show-card-desc">
-            ${window.escapeHtml(cycle.about_text || 'Open call for artistic portfolios, visual expressions, and curatorial participation in Srinagar.')}
-          </p>
-        </div>
-        <div style="margin-top: 1.25rem;">
-          ${actionButtonHtml}
-        </div>
-      `;
-
-      showcaseGrid.appendChild(card);
-    });
   }
 });

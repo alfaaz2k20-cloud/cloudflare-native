@@ -669,38 +669,42 @@ adminRouter.get('/exhibitions', async (c) => {
       return c.json([]);
     }
   }
-  return c.json((apps.results || []).map((a: any) => ({
-    id: a.id,
-    user_email: a.user_email,
-    full_name: a.full_name,
-    age: a.age,
-    address: a.address || '',
-    whatsapp: a.whatsapp || '',
-    exhibition_cycle: a.exhibition_cycle,
-    genre: a.genre,
-    medium: a.medium,
-    portfolio_url: a.portfolio_url,
-    recent_works_url: a.recent_works_url || null,
-    over_18: Boolean(a.over_19),
-    over_19: Boolean(a.over_19),
-    agreed_to_screening: Boolean(a.agreed_to_screening),
-    applicant_note: a.applicant_note || '',
-    guardian_name: a.guardian_name || '',
-    guardian_relationship: a.guardian_relationship || '',
-    guardian_contact: a.guardian_contact || '',
-    guardian_consent_granted: Boolean(a.guardian_consent_granted),
-    guardian_verification_status: a.guardian_verification_status || 'NONE',
-    guardian_verified_at: a.guardian_verified_at || null,
-    guardian_verified_by: a.guardian_verified_by || null,
-    guardian_rejection_reason: a.guardian_rejection_reason || null,
-    participant_assent_granted: Boolean(a.participant_assent_granted),
-    status: a.status,
-    curator_note: a.curator_note || '',
-    registration_status: a.registration_status,
-    payment_proof_url: a.payment_proof_url,
-    participant_note_reg: a.participant_note_reg || '',
-    created_at: a.created_at
-  })));
+  return c.json((apps.results || []).map((a: any) => {
+    const isMinor = (a.age !== null && a.age !== undefined && Number(a.age) < 18) || Boolean(a.guardian_name) || !a.over_19;
+    return {
+      id: a.id,
+      user_email: a.user_email,
+      full_name: a.full_name,
+      age: a.age,
+      address: a.address || '',
+      whatsapp: a.whatsapp || '',
+      exhibition_cycle: a.exhibition_cycle,
+      genre: a.genre,
+      medium: a.medium,
+      portfolio_url: a.portfolio_url,
+      recent_works_url: a.recent_works_url || null,
+      over_18: !isMinor,
+      over_19: !isMinor,
+      is_minor: isMinor,
+      agreed_to_screening: Boolean(a.agreed_to_screening),
+      applicant_note: a.applicant_note || '',
+      guardian_name: a.guardian_name || '',
+      guardian_relationship: a.guardian_relationship || '',
+      guardian_contact: a.guardian_contact || '',
+      guardian_consent_granted: Boolean(a.guardian_consent_granted),
+      guardian_verification_status: a.guardian_verification_status || 'NONE',
+      guardian_verified_at: a.guardian_verified_at || null,
+      guardian_verified_by: a.guardian_verified_by || null,
+      guardian_rejection_reason: a.guardian_rejection_reason || null,
+      participant_assent_granted: Boolean(a.participant_assent_granted),
+      status: a.status,
+      curator_note: a.curator_note || '',
+      registration_status: a.registration_status,
+      payment_proof_url: a.payment_proof_url,
+      participant_note_reg: a.participant_note_reg || '',
+      created_at: a.created_at
+    };
+  }));
 });
 
 adminRouter.get('/exhibitions/cycles', async (c) => {
@@ -1184,30 +1188,34 @@ adminRouter.get('/users', async (c) => {
         whatsapp_number: e.whatsapp_number,
         created_at: e.created_at
       })),
-      exhibitions: userExhibitions.map((x: any) => ({
-        id: x.id,
-        exhibition_cycle: x.exhibition_cycle,
-        full_name: x.full_name,
-        age: x.age,
-        address: x.address,
-        whatsapp: x.whatsapp,
-        genre: x.genre,
-        medium: x.medium,
-        portfolio_url: x.portfolio_url,
-        over_18: Boolean(x.over_19),
-        over_19: Boolean(x.over_19),
-        agreed_to_screening: Boolean(x.agreed_to_screening),
-        applicant_note: x.applicant_note,
-        status: x.status,
-        curator_note: x.curator_note,
-        registration_status: x.registration_status,
-        agreed_to_tnc: Boolean(x.agreed_to_tnc),
-        payment_proof_url: x.payment_proof_url,
-        participant_note_reg: x.participant_note_reg,
-        payment_confirmed_at: x.payment_confirmed_at,
-        registration_fee: x.registration_fee || 'Standard Fee',
-        created_at: x.created_at
-      })),
+      exhibitions: userExhibitions.map((x: any) => {
+        const isMinor = (x.age !== null && x.age !== undefined && Number(x.age) < 18) || Boolean(x.guardian_name) || !x.over_19;
+        return {
+          id: x.id,
+          exhibition_cycle: x.exhibition_cycle,
+          full_name: x.full_name,
+          age: x.age,
+          address: x.address,
+          whatsapp: x.whatsapp,
+          genre: x.genre,
+          medium: x.medium,
+          portfolio_url: x.portfolio_url,
+          over_18: !isMinor,
+          over_19: !isMinor,
+          is_minor: isMinor,
+          agreed_to_screening: Boolean(x.agreed_to_screening),
+          applicant_note: x.applicant_note,
+          status: x.status,
+          curator_note: x.curator_note,
+          registration_status: x.registration_status,
+          agreed_to_tnc: Boolean(x.agreed_to_tnc),
+          payment_proof_url: x.payment_proof_url,
+          participant_note_reg: x.participant_note_reg,
+          payment_confirmed_at: x.payment_confirmed_at,
+          registration_fee: x.registration_fee || 'Standard Fee',
+          created_at: x.created_at
+        };
+      }),
       fees: userFees,
       submissions: userSubmissions.map((s: any) => ({
         id: s.id,

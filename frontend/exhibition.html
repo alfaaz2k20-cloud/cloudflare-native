@@ -156,30 +156,26 @@
       <!-- ── ACTIVE PORTAL CONTAINER ── -->
       <div id="activePortalContainer">
 
-        <!-- 1. MULTIPLE ACTIVE CYCLES SHOWCASE -->
-        <section class="showcase-section" aria-label="Available Exhibition Cycles">
-          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
-            <div>
-              <span style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600;">Current Open Calls</span>
-              <h2 style="font-family: var(--font-heading); font-size: 1.85rem; color: var(--text-primary); font-weight: 400; margin: 0.2rem 0;">Active Exhibition Shows</h2>
-            </div>
-            <span style="font-size: 11px; color: var(--text-secondary); letter-spacing: 0.5px;" id="totalCyclesCount"></span>
+        <!-- 1. ACTIVE EXHIBITION SHOW OVERVIEW -->
+        <section class="active-cycle-banner" id="cycleOverviewSection" aria-label="Current Exhibition Show" style="background: #ffffff; border: 1px solid var(--grid-border); border-left: 4px solid var(--accent-gold); padding: 2rem 2.25rem; margin-bottom: 2.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600;">Current Open Call</span>
+            <span style="font-size: 11px; color: var(--accent-green-text); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;" id="portalStatusBadge">● Accepting Submissions</span>
           </div>
-          <div class="showcase-grid" id="showcaseGrid">
-            <!-- Dynamically populated by exhibition.js -->
-            <div class="panel text-center" style="grid-column: 1 / -1; padding: 2rem;">
-              <span style="font-size: 12px; color: var(--accent-gold-text);">Loading active exhibition cycles...</span>
-            </div>
-          </div>
+          <h2 id="currentShowTitle" style="font-family: var(--font-heading); font-size: clamp(1.75rem, 2.5vw, 2.3rem); color: var(--text-primary); margin: 0.2rem 0 0.5rem; font-weight: 400;">Loading exhibition show...</h2>
+          <div id="currentShowMeta" style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 1rem;">—</div>
+          <p id="currentShowAbout" style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; max-width: 720px; margin: 0;">
+            Alfaaz invites visual artists, sculptors, calligraphers, photographers, and writers to submit their original work for our curated gallery exhibition cycles in Srinagar.
+          </p>
         </section>
 
         <!-- 2. DEDICATED STREAM GATEWAYS (PAGEWISE ARCHITECTURE) -->
         <section aria-label="Application Streams">
           <div style="text-align: center; margin-bottom: 2rem;">
-            <span style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600;">Dedicated Portals</span>
-            <h2 style="font-family: var(--font-heading); font-size: 2.2rem; color: var(--text-primary); font-weight: 400; margin: 0.35rem 0;">Choose Your Application Stream</h2>
+            <span style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600;">Choose Your Stream</span>
+            <h2 style="font-family: var(--font-heading); font-size: 2.2rem; color: var(--text-primary); font-weight: 400; margin: 0.35rem 0;">Exhibition Application Portals</h2>
             <p style="font-size: 13.5px; color: var(--text-secondary); max-width: 620px; margin: 0 auto; line-height: 1.6;">
-              To ensure tailored safeguarding, legal parental consent for minors, and clear requirements, application intake is strictly split by age cohort.
+              Select your application portal below. Each dedicated page provides detailed instructions, curated requirements, and direct review.
             </p>
           </div>
 
@@ -190,13 +186,13 @@
                 <span class="stream-label">Adult Artist Portal</span>
                 <h3 class="stream-title">Ages 18 &amp; Above</h3>
                 <p class="stream-desc">
-                  For independent cultural practitioners, visual artists, and writers. Submit your artwork portfolio and concept statement for open curatorial review.
+                  For independent cultural practitioners, visual artists, and writers. Submit your curated artwork portfolio PDF and artist statement.
                 </p>
                 <ul class="stream-highlights">
                   <li><span class="dot">✓</span> Direct single-applicant intake form</li>
-                  <li><span class="dot">✓</span> Artwork portfolio upload (PDF up to 15MB)</li>
-                  <li><span class="dot">✓</span> Sovereign R2 private file storage</li>
-                  <li><span class="dot">✓</span> Curatorial screening agreement</li>
+                  <li><span class="dot">✓</span> Curated artwork portfolio upload (PDF up to 15MB)</li>
+                  <li><span class="dot">✓</span> Detailed curatorial guidance &amp; instructions on entry</li>
+                  <li><span class="dot">✓</span> Private encrypted R2 file storage</li>
                 </ul>
               </div>
               <div>
@@ -212,60 +208,23 @@
                 <span class="stream-label">Youth &amp; Emerging Portal</span>
                 <h3 class="stream-title">Below 18 Years</h3>
                 <p class="stream-desc">
-                  For students and young artists. Includes child safeguarding, required parent or legal guardian consent, and optional recent sketches.
+                  For students and young artists across Kashmir. Upload your practice sketches or recent creations with parent or legal guardian consent.
                 </p>
                 <ul class="stream-highlights">
-                  <li><span class="dot">✓</span> Safe, privacy-hardened youth intake</li>
-                  <li><span class="dot">✓</span> Parent or legal guardian explicit consent</li>
-                  <li><span class="dot">✓</span> Artwork portfolio upload (PDF up to 15MB)</li>
-                  <li><span class="dot">✓</span> Optional recent creations / sketches upload</li>
+                  <li><span class="dot">✓</span> Streamlined youth intake for emerging creators</li>
+                  <li><span class="dot">✓</span> Earlier sketches or recent creations upload (PDF or Image)</li>
+                  <li><span class="dot">✓</span> Dignified parent or legal guardian consent</li>
+                  <li><span class="dot">✓</span> Step-by-step guidance for students &amp; families</li>
                 </ul>
               </div>
               <div>
                 <a href="exhibition-youth.html" id="btnYouthStream" class="action-btn gold" style="display: block; text-align: center; padding: 0.9rem 1.5rem; font-size: 11px; text-decoration: none;">
-                  Apply as Youth Artist (Under 18) &rarr;
+                  Apply as Youth Artist (Below 18) &rarr;
                 </a>
               </div>
             </div>
           </div>
         </section>
-
-        <!-- 3. PLAIN-LANGUAGE CURATORIAL GUIDELINES -->
-        <div id="instructionsPanel" class="instructions-box">
-          <div class="instructions-header">
-            <span style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); display: block; margin-bottom: 0.25rem;">Guidelines &amp; Portfolio Preparation</span>
-            <h3 class="instructions-title">How to Prepare Your Application</h3>
-            <p class="instructions-intro">
-              Alfaaz review is respectful and comprehensive. Follow these steps to prepare your materials:
-            </p>
-          </div>
-
-          <div class="instructions-grid">
-            <div class="instruction-card">
-              <div class="instruction-step">1</div>
-              <div class="instruction-card-title">Curate Your Work</div>
-              <p class="instruction-card-text">
-                Select 1 to 5 pieces that represent your artistic vision. Compile photos or high-res scans into a single PDF (under 15MB).
-              </p>
-            </div>
-
-            <div class="instruction-card">
-              <div class="instruction-step">2</div>
-              <div class="instruction-card-title">Choose Your Stream</div>
-              <p class="instruction-card-text">
-                Select the Adult Portal (18+) or the Youth Portal (&lt; 18). Minors require parent or guardian authorization before review.
-              </p>
-            </div>
-
-            <div class="instruction-card">
-              <div class="instruction-step">3</div>
-              <div class="instruction-card-title">Track on Dashboard</div>
-              <p class="instruction-card-text">
-                Once submitted, monitor your curatorial dossier, review status, and confirmation announcements directly on your Member Dashboard.
-              </p>
-            </div>
-          </div>
-        </div>
 
       </div>
 

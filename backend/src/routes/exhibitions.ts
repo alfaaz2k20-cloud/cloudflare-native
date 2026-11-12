@@ -378,10 +378,20 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
   const address = String(body.address || '').trim();
   const genre = String(body.genre || '').trim();
   const medium = String(body.medium || '').trim();
-  const portfolioUrl = String(body.portfolio_url || '').trim();
   const whatsapp = String(body.whatsapp || '').trim();
   const applicantNote = body.applicant_note ? String(body.applicant_note).trim() : null;
-  const recentWorksUrl = body.recent_works_url ? String(body.recent_works_url).trim() : null;
+
+  const rawPortfolio = String(body.portfolio_url || '').trim();
+  const rawRecentWorks = String(body.recent_works_url || '').trim();
+
+  // Age criteria & Child Safeguarding determination
+  const requireOver18 = activeCycle.require_over_18 === undefined || activeCycle.require_over_18 === null
+    ? 1
+    : Number(activeCycle.require_over_18);
+  const isMinor = age < 18;
+
+  // For youth (<18), earlier sketches / recent works is the primary artwork upload
+  const effectiveArtworkUrl = isMinor ? (rawRecentWorks || rawPortfolio) : rawPortfolio;
 
   if (!fullName || fullName.length < 2 || fullName.length > 120) {
     return c.json({ detail: 'Full name must be between 2 and 120 characters.' }, 400);
@@ -395,34 +405,38 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
   if (!medium || medium.length < 1 || medium.length > 60) {
     return c.json({ detail: 'Artwork medium is required (max 60 characters).' }, 400);
   }
+  if (!whatsapp || whatsapp.length < 7 || whatsapp.length > 25) {
+    return c.json({ detail: 'A valid WhatsApp or contact phone number is required.' }, 400);
+  }
   if (applicantNote && applicantNote.length > 1000) {
     return c.json({ detail: 'Artist note must not exceed 1000 characters.' }, 400);
   }
 
-  // Portfolio URL ownership & domain validation
+  // Artwork file URL ownership & domain validation
   const userHash = await getUserHash(user.email, c.env.JWT_SECRET);
-  const isValidVaultPortfolio = portfolioUrl.startsWith(`/vault/file/portfolios/${userHash}-`) ||
-    portfolioUrl.startsWith(`/vault/file/portfolios%2F${userHash}-`) ||
-    portfolioUrl.startsWith('/vault/file/');
-  const isTrustedStorage = portfolioUrl.startsWith('https://res.cloudinary.com/') ||
-    portfolioUrl.startsWith('https://alfaazcollective.org/') ||
-    portfolioUrl.startsWith('https://www.alfaazcollective.org/') ||
+  const isValidVaultArtwork = effectiveArtworkUrl.startsWith(`/vault/file/portfolios/${userHash}-`) ||
+    effectiveArtworkUrl.startsWith(`/vault/file/portfolios%2F${userHash}-`) ||
+    effectiveArtworkUrl.startsWith(`/vault/file/recent-works/${userHash}-`) ||
+    effectiveArtworkUrl.startsWith(`/vault/file/recent-works%2F${userHash}-`) ||
+    effectiveArtworkUrl.startsWith('/vault/file/');
+  const isTrustedStorage = effectiveArtworkUrl.startsWith('https://res.cloudinary.com/') ||
+    effectiveArtworkUrl.startsWith('https://alfaazcollective.org/') ||
+    effectiveArtworkUrl.startsWith('https://www.alfaazcollective.org/') ||
     (c.env.ENV !== 'production' && (
-      portfolioUrl.startsWith('http://localhost') ||
-      portfolioUrl.startsWith('https://example.com') ||
-      portfolioUrl.includes('alfaaz.local') ||
-      portfolioUrl.startsWith('https://') ||
-      portfolioUrl.startsWith('http://')
+      effectiveArtworkUrl.startsWith('http://localhost') ||
+      effectiveArtworkUrl.startsWith('https://example.com') ||
+      effectiveArtworkUrl.includes('alfaaz.local') ||
+      effectiveArtworkUrl.startsWith('https://') ||
+      effectiveArtworkUrl.startsWith('http://')
     ));
 
-  if (!portfolioUrl || (!isValidVaultPortfolio && !isTrustedStorage)) {
-    return c.json({ detail: 'A valid uploaded portfolio document is required.' }, 400);
+  if (!effectiveArtworkUrl || (!isValidVaultArtwork && !isTrustedStorage)) {
+    return c.json({ detail: isMinor ? 'Please upload your sketches or recent artwork file (PDF or Image).' : 'A valid uploaded portfolio document is required.' }, 400);
   }
 
-  // Age criteria & Child Safeguarding
-  const requireOver18 = activeCycle.require_over_18 === undefined || activeCycle.require_over_18 === null
-    ? 1
-    : Number(activeCycle.require_over_18);
+  const portfolioUrl = effectiveArtworkUrl;
+  const recentWorksUrl = isMinor ? effectiveArtworkUrl : (rawRecentWorks || null);
+
   const isConfirmedOver18 = Boolean(body.over_18 ?? body.over_19);
 
   let guardianName: string | null = null;
@@ -440,9 +454,6 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
     }
     if (!isConfirmedOver18) {
       return c.json({ detail: 'You must confirm that you are 18 years of age or older to participate in this exhibition cycle.' }, 400);
-    }
-    if (!whatsapp || whatsapp.length < 7 || whatsapp.length > 25) {
-      return c.json({ detail: 'A valid WhatsApp or contact phone number is required.' }, 400);
     }
   } else {
     // Under-18 / Youth Cycle
@@ -498,7 +509,7 @@ exhibitionsRouter.post('/apply', requireAuth, rateLimiter({ limit: 10, windowMs:
   }
 
   try {
-    const over19Val = isConfirmedOver18 ? 1 : 0;
+    const over19Val = isMinor ? 0 : (isConfirmedOver18 ? 1 : 0);
     await c.env.DB
       .prepare(`
         INSERT INTO exhibition_applications (

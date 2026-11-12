@@ -85,8 +85,19 @@
 
     .age-warning-banner a { color: var(--accent-gold-text); font-weight: 600; text-decoration: underline; }
 
+    .instructions-panel {
+      background: #ffffff;
+      border: 1px solid var(--grid-border);
+      border-left: 4px solid var(--accent-gold);
+      padding: 1.75rem 2rem;
+      margin-bottom: 2rem;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
     @media (max-width: 768px) {
       .page-header { padding-top: 5rem; min-height: 32vh; }
+      .instructions-panel { padding: 1.25rem 1rem; }
       .form-grid { grid-template-columns: 1fr; gap: 1.25rem; }
       .form-input { font-size: 16px !important; }
       .full-width { grid-column: 1; }
@@ -141,6 +152,33 @@
           <a href="exhibition.html" class="action-btn" style="font-size: 10px; padding: 0.5rem 1rem; text-decoration: none;">
             Change Show
           </a>
+        </div>
+      </div>
+
+      <!-- Step-by-Step Instructions: How the Adult Exhibition Process Works -->
+      <div class="instructions-panel">
+        <div style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold-text); font-weight: 600; margin-bottom: 0.25rem;">Adult Artist Intake (18 &amp; Above)</div>
+        <h2 style="font-family: var(--font-heading); font-size: 1.55rem; color: var(--text-primary); margin: 0 0 0.5rem; font-weight: 400;">How the Exhibition Selection Process Works</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0 0 1.25rem;">
+          Alfaaz curates seasonal gallery cycles in Srinagar celebrating rigorous contemporary and vernacular practice. Please review our curatorial process:
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.25rem;">
+          <div style="border-top: 1px solid var(--grid-border); padding-top: 0.75rem;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">Step 1 · Concept &amp; Statement</div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">Articulate your artistic inquiry, medium, scale, and the curatorial concept behind the body of work you are presenting.</p>
+          </div>
+          <div style="border-top: 1px solid var(--grid-border); padding-top: 0.75rem;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">Step 2 · Portfolio Dossier</div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">Upload a single curated PDF document (max 15MB) containing clear images of 1–5 works, titles, dimensions, and artist profile.</p>
+          </div>
+          <div style="border-top: 1px solid var(--grid-border); padding-top: 0.75rem;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">Step 3 · Curatorial Assessment</div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">Our curatorial panel evaluates all submissions. Track review progress, curator notes, and decisions on your Member Dashboard.</p>
+          </div>
+          <div style="border-top: 1px solid var(--grid-border); padding-top: 0.75rem;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">Step 4 · Srinagar Exhibition</div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">Selected artists are invited to exhibit in the Srinagar physical showcase and will be featured in the official exhibition publication.</p>
+          </div>
         </div>
       </div>
 

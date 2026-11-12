@@ -652,8 +652,41 @@ The administration interface (`frontend/admin.html` and `src/admin.js`) was veri
 - **TypeScript Typecheck**: `npm run typecheck` passed with 0 errors.
 - **Integration Test Suite**: `npm test` passed 19/19 test suites, 272/272 tests green.
 - **Hardening Suite**: `npm run test:hardening` verified all 6 database uniqueness constraints and 16,384 SJT profiles within strict bounds.
-- **Vite Production Build**: `npm run build` bundled 15 entrypoints cleanly in 3.73s.
+- **Vite Production Build**: `npm run build` bundled 15 entrypoints cleanly in 3.35s.
 - **Empirical Mobile Viewport Audit**: `node scripts/mobile_viewport_audit.mjs` captured 60 high-resolution snapshots across 8 pages and 7 viewports (320px, 360px, 375px, 390px, 430px, 768px, 1280px) with **0px horizontal overflow across every single page and viewport**.
+
+### 9.8 Dashboard Workspace Directory Priority Stack & Admin Applicant Age Classification
+1. **Workspace Directory Vertical Priority Stack**:
+   - *Problem*: Multi-column card grids at the bottom of dashboard panels created visual competition with active workspace content and were awkward on mobile viewports.
+   - *Remediation*: Transformed `.dash-tab-directory` into a single-column, priority-ordered vertical stack (`.tab-directory-stack`) across all four dashboard tabs (`#sectionHome`, `#sectionExplore`, `#sectionActivity`, `#sectionProfile`):
+     - **Priority 01: Explore & Open Calls** (`#explore`): Community gatherings, circle openings, and open exhibitions.
+     - **Priority 02: Activity & Records** (`#activity`): Confirmed passes, circle memberships, and portfolio dossiers.
+     - **Priority 03: Studio Overview** (`#home`): Active passes, vital notices, and collective highlights.
+     - **Priority 04: Identity & Account** (`#profile`): Name, WhatsApp contact, and security.
+   - Each row features a bold priority numeral, title, concise single-line description, and right-aligned arrow / "Current Tab" badge. Full responsive styling ensures zero horizontal overflow down to 320px viewport width.
+2. **Admin Applicant Age Classification Bug Resolution**:
+   - *Root Cause*: The admin interface checked `a.over_19` directly to determine whether an applicant was an adult (`a.over_19 ? '18+ Verified' : 'Youth / Under 18 Entry'`). If SQLite stored `over_19 = 1` or if client state sent a truthy value, minors entering age 12–17 were erroneously flagged with `18+ Verified`.
+   - *Remediation*:
+     - In `backend/src/routes/admin.ts`: Evaluated `const isMinor = (a.age !== null && a.age !== undefined && Number(a.age) < 18) || Boolean(a.guardian_name) || !a.over_19;`, mapping `over_18: !isMinor`, `over_19: !isMinor`, and `is_minor: isMinor`.
+     - In `frontend/src/admin.js`: Replaced raw property inspection with `const isMinorApplicant = (a.age !== null && Number(a.age) < 18) || Boolean(a.guardian_name) || !a.over_18;`. Minors consistently render with the `Below 18 (Youth)` pending badge, eliminating false adult categorizations.
+
+### 9.9 Streamlined Pagewise Exhibitions & Youth Intake Modernization
+1. **Youth Artwork Intake Modernization (<18)**:
+   - *Removal of Portfolio PDF Requirement*: Eliminated the adult-style 15MB curated PDF requirement from `frontend/exhibition-youth.html`. Minors are no longer forced to format formal portfolio documents.
+   - *Primary Artwork Submission*: "Earlier Sketches or Recent Works *" (`accept="application/pdf,image/jpeg,image/png,image/webp"`, max 15MB) is now the primary, required artwork submission for young artists.
+   - *Mandatory WhatsApp Contact*: Made personal phone / WhatsApp input mandatory (`required`) for timely curatorial notifications.
+   - *Streamlined Parental Consent*: Removed repetitive, preachy safeguarding warning banners. Refactored into a clean, dignified "Parent or Legal Guardian Consent" section with guardian name, relationship, contact, explicit permission checkbox, and young artist assent checkbox.
+   - *Backend Route Support*: Updated `POST /exhibitions/apply` in `backend/src/routes/exhibitions.ts` to accept `recent_works_url` as the primary artwork document for minors, enforce mandatory phone numbers, and record the file in both `portfolio_url` (satisfying NOT NULL schema constraints) and `recent_works_url`.
+2. **Dedicated Step-by-Step Instructions on Intake Pages**:
+   - Moved detailed process instructions directly to the top of each dedicated portal:
+     - **Adult Portal (`exhibition-adult.html`)**: Step 1 (Concept & Statement) → Step 2 (Portfolio Dossier) → Step 3 (Curatorial Assessment) → Step 4 (Srinagar Exhibition).
+     - **Youth Portal (`exhibition-youth.html`)**: Step 1 (Creative Work & Sketches) → Step 2 (Guardian Consent) → Step 3 (Curatorial Review) → Step 4 (Srinagar Showcase).
+3. **Clean Exhibition Gateway Hub (`exhibition.html`)**:
+   - Eliminated redundant, visually cluttered sections ("Current Open Calls" + "Dedicated Portals" + trailing duplicate guidelines).
+   - `frontend/exhibition.html` is now a focused curatorial gateway:
+     - Top Curatorial Hero: Displays current active show title, dates, venue, and theme.
+     - Two Sovereign Pathways: Clear Adult Artist (18+) and Youth Artist (Below 18) action cards directing applicants to their respective intake portal with active cycle IDs.
+
 
 
 

@@ -13,6 +13,24 @@ if (!fs.existsSync(SCREENSHOT_DIR)) {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 }
 
+function safeWriteFileSync(filePath, data) {
+  try {
+    fs.writeFileSync(filePath, data);
+    return true;
+  } catch {
+    try {
+      const tempPath = filePath + '.' + Date.now() + '.tmp';
+      fs.writeFileSync(tempPath, data);
+      try { fs.unlinkSync(filePath); } catch {}
+      fs.renameSync(tempPath, filePath);
+      return true;
+    } catch {
+      console.warn(`[WARN] Could not write ${path.basename(filePath)} due to file lock.`);
+      return false;
+    }
+  }
+}
+
 // 1. Static HTTP Server
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -293,8 +311,9 @@ try {
       });
 
       if (shotData && shotData.data) {
-        fs.writeFileSync(screenshotPath, Buffer.from(shotData.data, 'base64'));
-        auditResults.summary.totalSnapshots++;
+        if (safeWriteFileSync(screenshotPath, Buffer.from(shotData.data, 'base64'))) {
+          auditResults.summary.totalSnapshots++;
+        }
       }
 
       console.log(`[${vp.name}] ${vp.width}px: scrollWidth=${metrics.scrollWidth}px (overflow: ${metrics.hasHorizontalOverflow ? 'FAIL' : 'PASS'}), sub16pxInputs=${metrics.sub16pxCount}, navPaddingTop=${metrics.navPaddingTop} -> Saved: ${filename}`);
@@ -344,7 +363,7 @@ try {
       });
       const rtlShot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 80 });
       const rtlFile = `${page.slug}_375w_rtl_urdu.jpg`;
-      fs.writeFileSync(path.join(SCREENSHOT_DIR, rtlFile), Buffer.from(rtlShot.data, 'base64'));
+      safeWriteFileSync(path.join(SCREENSHOT_DIR, rtlFile), Buffer.from(rtlShot.data, 'base64'));
       console.log(`[RTL Mode] ${page.slug} RTL screenshot saved: ${rtlFile} (overflow: ${rtlMetrics.result?.value?.overflow ? 'FAIL' : 'PASS'})`);
       pageRecord.rtlVerification = {
         screenshotFile: rtlFile,
@@ -375,7 +394,7 @@ try {
       await new Promise(r => setTimeout(r, 400));
       const exhibShot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 80 });
       const exhibModalFile = `admin_375w_exhibition_builder_modal.jpg`;
-      fs.writeFileSync(path.join(SCREENSHOT_DIR, exhibModalFile), Buffer.from(exhibShot.data, 'base64'));
+      safeWriteFileSync(path.join(SCREENSHOT_DIR, exhibModalFile), Buffer.from(exhibShot.data, 'base64'));
       console.log(`[Builder Modals] Saved: ${exhibModalFile}`);
 
       console.log(`[Builder Modals] Switching to Event Builder modal at 375px...`);
@@ -389,7 +408,7 @@ try {
       await new Promise(r => setTimeout(r, 400));
       const eventShot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 80 });
       const eventModalFile = `admin_375w_event_builder_modal.jpg`;
-      fs.writeFileSync(path.join(SCREENSHOT_DIR, eventModalFile), Buffer.from(eventShot.data, 'base64'));
+      safeWriteFileSync(path.join(SCREENSHOT_DIR, eventModalFile), Buffer.from(eventShot.data, 'base64'));
       console.log(`[Builder Modals] Saved: ${eventModalFile}`);
 
       pageRecord.builderModals = {
@@ -404,7 +423,7 @@ try {
 
   // Save audit results JSON
   const jsonPath = path.join(SCREENSHOT_DIR, 'audit_results.json');
-  fs.writeFileSync(jsonPath, JSON.stringify(auditResults, null, 2));
+  safeWriteFileSync(jsonPath, JSON.stringify(auditResults, null, 2));
   console.log(`\n✓ Mobile Viewport Audit Complete!`);
   console.log(`Total snapshots captured: ${auditResults.summary.totalSnapshots}`);
   console.log(`Results manifest written to: ${jsonPath}`);

@@ -37,18 +37,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const noteInput = document.getElementById('note');
   const agreedToScreeningCheckbox = document.getElementById('agreedToScreening');
 
-  const portfolioFile = document.getElementById('portfolioFile');
-  const portfolioProgressWrap = document.getElementById('portfolioProgressWrap');
-  const portfolioProgressFill = document.getElementById('portfolioProgressFill');
-  const uploadStatus = document.getElementById('uploadStatus');
-
   const recentWorksFile = document.getElementById('recentWorksFile');
-  const recentWorksStatus = document.getElementById('recentWorksStatus');
+  const recentWorksProgressWrap = document.getElementById('recentWorksProgressWrap');
+  const recentWorksProgressFill = document.getElementById('recentWorksProgressFill');
+  const uploadStatus = document.getElementById('uploadStatus');
 
   // State
   let selectedCycle = null;
-  let uploadedPdfUrl = null;
-  let uploadedPdfName = null;
   let uploadedRecentWorksUrl = null;
   let uploadedRecentWorksName = null;
   let turnstileWidgetId = null;
@@ -136,91 +131,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     return false;
   }
 
-  // 4. Primary Portfolio Upload Handler
-  portfolioFile?.addEventListener('change', async (e) => {
+  // 4. Earlier Sketches or Recent Works Upload Handler (PDF or Image, max 15MB)
+  recentWorksFile?.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!uploadStatus) return;
 
     if (!file) {
-      uploadedPdfUrl = null;
-      uploadedPdfName = null;
-      uploadStatus.textContent = '';
-      return;
-    }
-
-    if (file.size > 15 * 1024 * 1024) {
-      uploadStatus.style.color = 'var(--accent-red-text)';
-      uploadStatus.textContent = '✗ File exceeds the 15MB limit. Please choose a smaller document.';
-      e.target.value = '';
-      uploadedPdfUrl = null;
-      return;
-    }
-
-    try {
-      const bytes = await readMagicBytes(file, 5);
-      if (!isPdfBytes(bytes)) {
-        uploadStatus.style.color = 'var(--accent-red-text)';
-        uploadStatus.textContent = '✗ Invalid format. Only genuine PDF documents (%PDF-) are accepted.';
-        e.target.value = '';
-        uploadedPdfUrl = null;
-        return;
-      }
-    } catch {
-      uploadStatus.style.color = 'var(--accent-red-text)';
-      uploadStatus.textContent = '✗ Unable to read file header. Please select a valid PDF file.';
-      e.target.value = '';
-      return;
-    }
-
-    uploadStatus.style.color = 'var(--accent-gold-text)';
-    uploadStatus.textContent = `Uploading "${file.name}" to Private R2 Storage...`;
-    if (portfolioProgressWrap) portfolioProgressWrap.style.display = 'block';
-    if (portfolioProgressFill) portfolioProgressFill.style.width = '60%';
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const res = await window.globalApiFetch('/exhibitions/upload-portfolio', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.detail || errJson.error || 'Private storage upload failed.');
-      }
-
-      const data = await res.json();
-      uploadedPdfUrl = data.url;
-      uploadedPdfName = file.name;
-
-      if (portfolioProgressFill) portfolioProgressFill.style.width = '100%';
-      uploadStatus.style.color = 'var(--accent-green-text)';
-      uploadStatus.textContent = `✓ Portfolio uploaded successfully: "${file.name}"`;
-    } catch (err) {
-      uploadStatus.style.color = 'var(--accent-red-text)';
-      uploadStatus.textContent = `✗ Upload failed: ${err.message}`;
-      if (portfolioProgressWrap) portfolioProgressWrap.style.display = 'none';
-      uploadedPdfUrl = null;
-    }
-  });
-
-  // 5. Optional Recent Works Upload Handler
-  recentWorksFile?.addEventListener('change', async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!recentWorksStatus) return;
-
-    if (!file) {
       uploadedRecentWorksUrl = null;
       uploadedRecentWorksName = null;
-      recentWorksStatus.textContent = '';
+      uploadStatus.textContent = '';
+      if (recentWorksProgressWrap) recentWorksProgressWrap.style.display = 'none';
       return;
     }
 
     if (file.size > 15 * 1024 * 1024) {
-      recentWorksStatus.style.color = 'var(--accent-red-text)';
-      recentWorksStatus.textContent = '✗ File exceeds 15MB limit.';
+      uploadStatus.style.color = 'var(--accent-red-text)';
+      uploadStatus.textContent = '✗ File exceeds the 15MB limit. Please choose a smaller file.';
       e.target.value = '';
       uploadedRecentWorksUrl = null;
       return;
@@ -229,21 +155,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const bytes = await readMagicBytes(file, 12);
       if (!isImageOrPdfBytes(bytes)) {
-        recentWorksStatus.style.color = 'var(--accent-red-text)';
-        recentWorksStatus.textContent = '✗ Invalid format. Only PDF or image files (JPEG, PNG, WebP) are permitted.';
+        uploadStatus.style.color = 'var(--accent-red-text)';
+        uploadStatus.textContent = '✗ Invalid format. Only PDF or image files (JPEG, PNG, WebP) are permitted.';
         e.target.value = '';
         uploadedRecentWorksUrl = null;
         return;
       }
     } catch {
-      recentWorksStatus.style.color = 'var(--accent-red-text)';
-      recentWorksStatus.textContent = '✗ Unable to read file header.';
+      uploadStatus.style.color = 'var(--accent-red-text)';
+      uploadStatus.textContent = '✗ Unable to read file header. Please select a valid file.';
       e.target.value = '';
       return;
     }
 
-    recentWorksStatus.style.color = 'var(--accent-gold-text)';
-    recentWorksStatus.textContent = `Uploading "${file.name}" to Private Storage...`;
+    uploadStatus.style.color = 'var(--accent-gold-text)';
+    uploadStatus.textContent = `Uploading "${file.name}" to Private R2 Storage...`;
+    if (recentWorksProgressWrap) recentWorksProgressWrap.style.display = 'block';
+    if (recentWorksProgressFill) recentWorksProgressFill.style.width = '60%';
 
     try {
       const formData = new FormData();
@@ -256,18 +184,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.detail || errJson.error || 'Upload failed.');
+        throw new Error(errJson.detail || errJson.error || 'Private storage upload failed.');
       }
 
       const data = await res.json();
       uploadedRecentWorksUrl = data.url;
       uploadedRecentWorksName = file.name;
 
-      recentWorksStatus.style.color = 'var(--accent-green-text)';
-      recentWorksStatus.textContent = `✓ Attached successfully: "${file.name}"`;
+      if (recentWorksProgressFill) recentWorksProgressFill.style.width = '100%';
+      uploadStatus.style.color = 'var(--accent-green-text)';
+      uploadStatus.textContent = `✓ Artwork uploaded successfully: "${file.name}"`;
     } catch (err) {
-      recentWorksStatus.style.color = 'var(--accent-red-text)';
-      recentWorksStatus.textContent = `✗ Upload failed: ${err.message}`;
+      uploadStatus.style.color = 'var(--accent-red-text)';
+      uploadStatus.textContent = `✗ Upload failed: ${err.message}`;
+      if (recentWorksProgressWrap) recentWorksProgressWrap.style.display = 'none';
       uploadedRecentWorksUrl = null;
     }
   });
@@ -352,6 +282,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    if (!phone || phone.length < 7 || phone.length > 25) {
+      formMsg.textContent = 'A valid WhatsApp or contact phone number is required.';
+      phoneInput?.focus();
+      return;
+    }
+
     if (!guardianName) {
       formMsg.textContent = 'Parent or legal guardian name is required.';
       guardianNameInput?.focus();
@@ -394,9 +330,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    if (!uploadedPdfUrl) {
-      formMsg.textContent = 'Please upload the artwork portfolio PDF before submitting.';
-      portfolioFile?.focus();
+    if (!uploadedRecentWorksUrl) {
+      formMsg.textContent = 'Please upload your sketches or recent artwork file (PDF or Image) before submitting.';
+      recentWorksFile?.focus();
       return;
     }
 
@@ -425,11 +361,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       full_name: fname,
       age: ageVal,
       address: address,
-      whatsapp: phone || guardianContact,
+      whatsapp: phone,
       genre: genre,
       medium: medium,
-      portfolio_url: uploadedPdfUrl,
-      recent_works_url: uploadedRecentWorksUrl || null,
+      portfolio_url: uploadedRecentWorksUrl,
+      recent_works_url: uploadedRecentWorksUrl,
       applicant_note: note || null,
       guardian_name: guardianName,
       guardian_relationship: guardianRel,
@@ -438,6 +374,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       participant_assent_granted: 1,
       agreed_to_screening: true,
       over_18: false,
+      over_19: 0,
       'cf-turnstile-response': turnstileToken
     };
 

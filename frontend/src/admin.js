@@ -1376,7 +1376,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const safeCuratorNote = window.escapeHtml(a.curator_note || '—');
       const safeRegNote = window.escapeHtml(a.participant_note_reg || '—');
       const safeDate = a.created_at ? formatDateTime(a.created_at) : 'Date TBD';
-      const ageCategory = a.over_19 ? '18+ Verified' : 'Youth / Under 18 Entry';
+      const isMinorApplicant = (a.age !== null && a.age !== undefined && Number(a.age) < 18) || Boolean(a.guardian_name) || !a.over_18 || Boolean(a.is_minor);
+      const ageCategory = isMinorApplicant ? 'Below 18 (Youth)' : '18+ (Adult)';
 
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; border-bottom:1px solid var(--grid-border); padding-bottom:1rem;">
@@ -1399,7 +1400,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div>
               <div class="data-label">Age & Verification</div>
-              <div class="data-display" style="font-size:12px;">Age: ${a.age || '—'} · <span class="badge ${a.over_19 ? 'badge-verified' : 'badge-pending'}">${ageCategory}</span></div>
+              <div class="data-display" style="font-size:12px;">Age: ${a.age || '—'} · <span class="badge ${isMinorApplicant ? 'badge-pending' : 'badge-verified'}">${ageCategory}</span></div>
             </div>
             <div>
               <div class="data-label">Art Form & Genre</div>
